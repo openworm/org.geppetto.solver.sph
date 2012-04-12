@@ -1,0 +1,24 @@
+Manifest-Version: 1.0
+Export-Package: org.openworm.simulationengine.samplesolver;
+  uses:="org.openworm.simulationengine.core.model,
+   org.openworm.simulationengine.core.solver,
+   org.springframework.stereotype,
+   org.springframework.transaction.annotation"
+Bundle-Vendor: OpenWorm
+Bundle-Version: 1.0.0
+Tool: Bundlor 1.0.0.RELEASE
+Bundle-Name: SPH Solver Provider
+Bundle-ManifestVersion: 2
+Bundle-SymbolicName: org.openworm.simulationengine.solver.sph
+Import-Package: org.apache.commons.logging,
+ org.openworm.simulationengine.core,
+ org.openworm.simulationengine.core.constants,
+ org.openworm.simulationengine.core.model,
+ org.openworm.simulationengine.core.simulation,
+ org.openworm.simulationengine.core.simulator,
+ org.openworm.simulationengine.core.solver,
+ org.openworm.simulationengine.model.sph,
+ org.springframework.stereotype;version="[3.0.0.RELEASE,3.0.0.RELEASE]",
+ org.springframework.transaction.annotation;version="[3.0.0.RELEASE,3.0.0.RELEASE]"
+
+
