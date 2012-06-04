@@ -39,8 +39,8 @@ public class SPHSolverTests {
 	}
 	
 
-	
-	public void _runTests(){
+	@Test
+	public void _runStep(){
 		testClearBuffers();
 		testHashParticles();
 		testSort();
@@ -53,7 +53,7 @@ public class SPHSolverTests {
 		testIntegrate();
 	}
 	
-	@Test
+	//@Test
 	public void testClearBuffers(){
 		solver.queue.finish();
 		System.out.println("Testing stage ClearBuffers:");
@@ -67,7 +67,7 @@ public class SPHSolverTests {
 			System.out.println("Test SUCCEEDED in stage ClearBuffers");
 	}
 	
-	@Test
+	//@Test
 	public void testHashParticles(){
 		// Invoke stage HashParticles
 		solver.queue.finish();
@@ -84,7 +84,7 @@ public class SPHSolverTests {
 		
 	}
 	
-	@Test
+	//@Test
 	public void testSort(){
 		// Invoke stage Sort
 		boolean thisTestPassed = true;
@@ -99,7 +99,7 @@ public class SPHSolverTests {
 		}
 	}
 	
-	@Test
+	//@Test
 	public void testSortPostPass(){
 		// Invoke stage SortPostPass
 		solver.queue.finish();
@@ -116,7 +116,7 @@ public class SPHSolverTests {
 		}
 	}
 	
-	@Test
+	//@Test
 	public void testIndexx(){
 		// Invoke stage Indexx
 		solver.queue.finish();
@@ -132,7 +132,7 @@ public class SPHSolverTests {
 		}
 	}
 	
-	@Test
+	//@Test
 	public void testIndexPostPass(){
 		// Invoke stage IndexPostPass
 		solver.queue.finish();
@@ -148,7 +148,7 @@ public class SPHSolverTests {
 		}
 	}
 	
-	@Test
+	//@Test
 	public void testFindNeighbors(){
 		// Invoke stage FindNeighbors
 		solver.queue.finish();
@@ -164,7 +164,7 @@ public class SPHSolverTests {
 		}
 	}
 	
-	@Test
+	//@Test
 	public void testComputeDensityPressure(){
 		// Invoke stage ComputeDensityPressure
 		solver.queue.finish();
@@ -180,7 +180,7 @@ public class SPHSolverTests {
 		}
 	}
 	
-	@Test
+	//@Test
 	public void testComputeAcceleration(){
 		// Invoke stage ComputeAcceleration
 		solver.queue.finish();
@@ -196,7 +196,7 @@ public class SPHSolverTests {
 		}
 	}
 	
-	@Test
+	//@Test
 	public void testIntegrate(){
 		// Invoke stage Integrate
 		solver.queue.finish();
