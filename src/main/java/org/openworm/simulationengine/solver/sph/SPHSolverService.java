@@ -1,6 +1,8 @@
 package org.openworm.simulationengine.solver.sph;
 
 
+import static java.lang.System.out;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -8,10 +10,13 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 
+import org.bridj.Pointer;
 import org.openworm.simulationengine.core.constants.PhysicsConstants;
 import org.openworm.simulationengine.core.model.IModel;
+import org.openworm.simulationengine.core.model.MathUtils;
 import org.openworm.simulationengine.core.simulation.ITimeConfiguration;
 import org.openworm.simulationengine.core.solver.ISolver;
+import org.openworm.simulationengine.model.sph.SPHConstants;
 import org.openworm.simulationengine.model.sph.SPHModel;
 import org.openworm.simulationengine.model.sph.SPHParticle;
 import org.openworm.simulationengine.model.sph.x.SPHModelX;
@@ -19,12 +24,15 @@ import org.openworm.simulationengine.model.sph.x.SPHParticleX;
 import org.openworm.simulationengine.model.sph.x.Vector3DX;
 import org.springframework.stereotype.Service;
 
-import com.nativelibs4java.opencl.*;
-import com.nativelibs4java.util.*;
+import com.nativelibs4java.opencl.CLBuffer;
+import com.nativelibs4java.opencl.CLContext;
+import com.nativelibs4java.opencl.CLDevice;
+import com.nativelibs4java.opencl.CLKernel;
 import com.nativelibs4java.opencl.CLMem.Usage;
-
-import org.bridj.Pointer;
-import static java.lang.System.*;
+import com.nativelibs4java.opencl.CLProgram;
+import com.nativelibs4java.opencl.CLQueue;
+import com.nativelibs4java.opencl.JavaCL;
+import com.nativelibs4java.util.IOUtils;
 
 @Service
 public class SPHSolverService implements ISolver {
@@ -85,9 +93,9 @@ public class SPHSolverService implements ISolver {
 	{
 		//SPHSolver kernelTest = new SPHSolver();
 		//radixSort = new RadixSortCL();
-		gridCellsX = (int)( ( SPHContstants.XMAX - SPHContstants.XMIN ) / PhysicsConstants.H ) + 1;
-		gridCellsY = (int)( ( SPHContstants.YMAX - SPHContstants.YMIN ) / PhysicsConstants.H ) + 1;
-		gridCellsZ = (int)( ( SPHContstants.ZMAX - SPHContstants.ZMIN ) / PhysicsConstants.H ) + 1;
+		gridCellsX = (int)( ( SPHConstants.XMAX - SPHConstants.XMIN ) / PhysicsConstants.H ) + 1;
+		gridCellsY = (int)( ( SPHConstants.YMAX - SPHConstants.YMIN ) / PhysicsConstants.H ) + 1;
+		gridCellsZ = (int)( ( SPHConstants.ZMAX - SPHConstants.ZMIN ) / PhysicsConstants.H ) + 1;
 		gridCellCount = gridCellsX * gridCellsY * gridCellsZ;
 		model = new SPHModelX(gridCellsX, gridCellsY, gridCellsZ);
 		context = JavaCL.createBestContext();//CLContext.create();
@@ -124,19 +132,19 @@ public class SPHSolverService implements ISolver {
 		
 		// NOTE: do the same for all the neurons, C. elegans has 302 neurons, even if they don't fire and this is HH (squid) it will hopefully give a first indication
 		/* input buffers declarations Pointer Alternative*/
-		accelerationPtr = Pointer.allocateFloats(SPHContstants.PARTICLE_COUNT * 4);
+		accelerationPtr = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 4);
 		gridCellIndexPtr = Pointer.allocateInts((gridCellCount + 1));
 		gridCellIndexFixedUpPtr = Pointer.allocateInts((gridCellCount + 1));
-		neighborMapPtr = Pointer.allocateFloats(SPHContstants.NK * 2);
-		particleIndexPtr = Pointer.allocateInts(SPHContstants.PARTICLE_COUNT * 2);
-		positionPtr = Pointer.allocateFloats(SPHContstants.PARTICLE_COUNT * 4);
-		pressurePtr = Pointer.allocateFloats(SPHContstants.PARTICLE_COUNT * 1);
-		rhoPtr = Pointer.allocateFloats(SPHContstants.PARTICLE_COUNT * 1);
-		rhoInvPtr = Pointer.allocateFloats(SPHContstants.PARTICLE_COUNT * 1);
-		sortedPositionPtr = Pointer.allocateFloats(SPHContstants.PARTICLE_COUNT * 4);
-		sortedVelocityPtr = Pointer.allocateFloats(SPHContstants.PARTICLE_COUNT * 4);
-		velocityPtr = Pointer.allocateFloats(SPHContstants.PARTICLE_COUNT * 4);
-		positionPtrbuff = Pointer.allocateFloats(SPHContstants.PARTICLE_COUNT * 4);
+		neighborMapPtr = Pointer.allocateFloats(SPHConstants.NK * 2);
+		particleIndexPtr = Pointer.allocateInts(SPHConstants.PARTICLE_COUNT * 2);
+		positionPtr = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 4);
+		pressurePtr = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 1);
+		rhoPtr = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 1);
+		rhoInvPtr = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 1);
+		sortedPositionPtr = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 4);
+		sortedVelocityPtr = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 4);
+		velocityPtr = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 4);
+		positionPtrbuff = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 4);
 		/*end declaration*/
 		
 		/*kernels*/
@@ -151,28 +159,28 @@ public class SPHSolverService implements ISolver {
 		sortPostPass = program.createKernel("sortPostPass");
 		//SPHTempRand tr = new SPHTempRand();
 		int index = 0;
-		for(int i = 0;i<SPHContstants.PARTICLE_COUNT;i++){
+		for(int i = 0;i<SPHConstants.PARTICLE_COUNT;i++){
 			if(i != 0)
 				index = index + 4;
 			float r = ((float)randomGenerator.nextInt(PhysicsConstants.RAND_MAX) / (float)PhysicsConstants.RAND_MAX );//tr.rand.next();
 			Vector3DX positionVector = new Vector3DX();
 			Vector3DX velocityVector = new Vector3DX();
-			positionVector.setX(scale(SPHContstants.XMIN, SPHContstants.XMAX/10 , r)); 
+			positionVector.setX(MathUtils.scale(SPHConstants.XMIN, SPHConstants.XMAX/10 , r)); 
 			r = ((float)randomGenerator.nextInt(PhysicsConstants.RAND_MAX) / (float)PhysicsConstants.RAND_MAX );//tr.rand.next();
-			positionVector.setY(scale(SPHContstants.YMIN, SPHContstants.YMAX , r)); 
+			positionVector.setY(MathUtils.scale(SPHConstants.YMIN, SPHConstants.YMAX , r)); 
 			r = ((float)randomGenerator.nextInt(PhysicsConstants.RAND_MAX) / (float)PhysicsConstants.RAND_MAX );//tr.rand.next();
-			positionVector.setZ(scale(SPHContstants.ZMIN, SPHContstants.ZMAX , r));
+			positionVector.setZ(MathUtils.scale(SPHConstants.ZMIN, SPHConstants.ZMAX , r));
 			positionVector.setP(0f);
 			positionPtr.set(index,positionVector.getX());
 			positionPtr.set(index + 1,positionVector.getY());
 			positionPtr.set(index + 2,positionVector.getZ());
 			positionPtr.set(index + 3,positionVector.getP());
 			r = ((float)randomGenerator.nextInt(PhysicsConstants.RAND_MAX) / (float)PhysicsConstants.RAND_MAX );//tr.rand.next();
-			velocityVector.setX(scale(-1.0f, 1.0f, r));
+			velocityVector.setX(MathUtils.scale(-1.0f, 1.0f, r));
 			r = ((float)randomGenerator.nextInt(PhysicsConstants.RAND_MAX) / (float)PhysicsConstants.RAND_MAX );//tr.rand.next();
-			velocityVector.setY(scale(-1.0f, 1.0f, r));
+			velocityVector.setY(MathUtils.scale(-1.0f, 1.0f, r));
 			r = ((float)randomGenerator.nextInt(PhysicsConstants.RAND_MAX) / (float)PhysicsConstants.RAND_MAX );//tr.rand.next();
-			velocityVector.setZ(scale(-1.0f, 1.0f, r));
+			velocityVector.setZ(MathUtils.scale(-1.0f, 1.0f, r));
 			velocityVector.setP(0f);
 			velocityPtr.set(index,velocityVector.getX());
 			velocityPtr.set(index + 1,velocityVector.getY());
@@ -213,7 +221,7 @@ public class SPHSolverService implements ISolver {
 	
 	public int _runClearBuffers(){
 		clearBuffers.setArg(0, neighborMap);
-		clearBuffers.enqueueNDRange(queue, new int[]{0}, new int[] {SPHContstants.PARTICLE_COUNT}, new int[]{256});
+		clearBuffers.enqueueNDRange(queue, new int[]{0}, new int[] {SPHConstants.PARTICLE_COUNT}, new int[]{256});
 		return 0;
 	}
 	
@@ -232,7 +240,7 @@ public class SPHSolverService implements ISolver {
 		computeAcceleration.setArg( 11, PhysicsConstants.MU );
 		computeAcceleration.setArg( 12, PhysicsConstants.SIMULATION_SCALE );
 		computeAcceleration.setArg( 13, acceleration );
-		computeAcceleration.enqueueNDRange(queue, new int[] {0}, new int[] {SPHContstants.PARTICLE_COUNT}, new int[] {256});
+		computeAcceleration.enqueueNDRange(queue, new int[] {0}, new int[] {SPHConstants.PARTICLE_COUNT}, new int[] {256});
 		return 0;
 	}
 	
@@ -247,7 +255,7 @@ public class SPHSolverService implements ISolver {
 		computeDensityPressure.setArg( 7, pressure );
 		computeDensityPressure.setArg( 8, rho );
 		computeDensityPressure.setArg( 9, rhoInv );
-		computeDensityPressure.enqueueNDRange(queue, new int[] {0}, new int[] {SPHContstants.PARTICLE_COUNT}, new int[] {256});
+		computeDensityPressure.enqueueNDRange(queue, new int[] {0}, new int[] {SPHConstants.PARTICLE_COUNT}, new int[] {256});
 		return 0;
 	}
 	
@@ -263,11 +271,11 @@ public class SPHSolverService implements ISolver {
 		findNeighbors.setArg( 7, PhysicsConstants.HASH_GRID_CELL_SIZE );
 		findNeighbors.setArg( 8, PhysicsConstants.HASH_GRID_CELL_SIZE_INV );
 		findNeighbors.setArg( 9, PhysicsConstants.SIMULATION_SCALE );
-		findNeighbors.setArg( 10, SPHContstants.XMIN_F );
-		findNeighbors.setArg( 11, SPHContstants.YMIN_F );
-		findNeighbors.setArg( 12, SPHContstants.ZMIN_F );
+		findNeighbors.setArg( 10, SPHConstants.XMIN_F );
+		findNeighbors.setArg( 11, SPHConstants.YMIN_F );
+		findNeighbors.setArg( 12, SPHConstants.ZMIN_F );
 		findNeighbors.setArg( 13, neighborMap );
-		findNeighbors.enqueueNDRange(queue, new int[] {0}, new int[] {SPHContstants.PARTICLE_COUNT}, new int[] {256});
+		findNeighbors.enqueueNDRange(queue, new int[] {0}, new int[] {SPHConstants.PARTICLE_COUNT}, new int[] {256});
 		return 0;
 	}
 	
@@ -278,11 +286,11 @@ public class SPHSolverService implements ISolver {
 		hashParticles.setArg( 2, gridCellsY );
 		hashParticles.setArg( 3, gridCellsZ );
 		hashParticles.setArg( 4, PhysicsConstants.HASH_GRID_CELL_SIZE_INV );
-		hashParticles.setArg( 5, SPHContstants.XMIN_F );
-		hashParticles.setArg( 6, SPHContstants.YMIN_F );
-		hashParticles.setArg( 7, SPHContstants.ZMIN_F );
+		hashParticles.setArg( 5, SPHConstants.XMIN_F );
+		hashParticles.setArg( 6, SPHConstants.YMIN_F );
+		hashParticles.setArg( 7, SPHConstants.ZMIN_F );
 		hashParticles.setArg( 8, particleIndex );
-		hashParticles.enqueueNDRange(queue, new int[] {0}, new int[] {SPHContstants.PARTICLE_COUNT}, new int[] {256});
+		hashParticles.enqueueNDRange(queue, new int[] {0}, new int[] {SPHConstants.PARTICLE_COUNT}, new int[] {256});
 		return 0;
 	}
 	
@@ -317,16 +325,16 @@ public class SPHSolverService implements ISolver {
 		integrate.setArg( 5, PhysicsConstants.GRAVITY_Z );
 		integrate.setArg( 6, PhysicsConstants.SIMULATION_SCALE_INV );
 		integrate.setArg( 7, PhysicsConstants.TIME_STEP );
-		integrate.setArg( 8, SPHContstants.XMIN_F );
-		integrate.setArg( 9, SPHContstants.XMAX_F );
-		integrate.setArg( 10, SPHContstants.YMIN_F );
-		integrate.setArg( 11, SPHContstants.YMAX_F );
-		integrate.setArg( 12, SPHContstants.ZMIN_F );
-		integrate.setArg( 13, SPHContstants.ZMAX_F );
+		integrate.setArg( 8, SPHConstants.XMIN_F );
+		integrate.setArg( 9, SPHConstants.XMAX_F );
+		integrate.setArg( 10, SPHConstants.YMIN_F );
+		integrate.setArg( 11, SPHConstants.YMAX_F );
+		integrate.setArg( 12, SPHConstants.ZMIN_F );
+		integrate.setArg( 13, SPHConstants.ZMAX_F );
 		integrate.setArg( 14, PhysicsConstants.DAMPING );
 		integrate.setArg( 15, position );
 		integrate.setArg( 16, velocity );
-		integrate.enqueueNDRange(queue, new int[] {0}, new int[] {SPHContstants.PARTICLE_COUNT}, new int[] {256});
+		integrate.enqueueNDRange(queue, new int[] {0}, new int[] {SPHConstants.PARTICLE_COUNT}, new int[] {256});
 		return 0;
 	}
 	
@@ -337,7 +345,7 @@ public class SPHSolverService implements ISolver {
 		sortPostPass.setArg( 2, velocity );
 		sortPostPass.setArg( 3, sortedPosition );
 		sortPostPass.setArg( 4, sortedVelocity );
-		sortPostPass.enqueueNDRange(queue, new int[] {0}, new int[] {SPHContstants.PARTICLE_COUNT}, new int[] {256});
+		sortPostPass.enqueueNDRange(queue, new int[] {0}, new int[] {SPHConstants.PARTICLE_COUNT}, new int[] {256});
 		return 0;
 	}
 	
@@ -350,7 +358,7 @@ public class SPHSolverService implements ISolver {
 		List<int[]> _particleIndex = new ArrayList<int[]>();
 		Pointer<Integer> particleInd = particleIndex.read(queue);
 		queue.finish();
-		for(int i = 0; i < SPHContstants.PARTICLE_COUNT * 2;i+=2){
+		for(int i = 0; i < SPHConstants.PARTICLE_COUNT * 2;i+=2){
 			int[] element = {particleInd.get(i), particleInd.get(i+1)};
 			_particleIndex.add(element);
 		}
@@ -399,9 +407,7 @@ public class SPHSolverService implements ISolver {
 		queue.finish();
 	}
 	
-	private static float scale(float min, float max, float r){
-		return (float)(min + r * (max - min));
-	}
+
 	
 	/*private static int roundUp(int groupSize, int globalSize) {
         int r = globalSize % groupSize;
