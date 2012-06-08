@@ -12,12 +12,9 @@ import org.openworm.simulationengine.core.constants.PhysicsConstants;
 import org.openworm.simulationengine.model.sph.SPHConstants;
 import org.openworm.simulationengine.solver.sph.SPHSolverService;
 
-
-
 public class SPHSolverTests {
 
 	private static SPHSolverService solver = new SPHSolverService();
-
 
 	static final int NO_PARTICLE_ID = -1;
 	static final float EPSILON = 0.1f;
@@ -38,10 +35,10 @@ public class SPHSolverTests {
 		solver.cleanContext();
 	}
 	
-
 	//@Test
-	//PLEASE DON'T UNCOMMENT THIS. KEEP TESTS INDEPENDENT!
-	//	public void _runStep(){
+	// NOTE: PLEASE DON'T COMMIT THIS IF UNCOMMENTED FOR LOCAL TEST. KEEP TESTS INDEPENDENT. 
+	// NOTE: we can still run all of them at once by right clicking class name > run as > junit test
+	// public void _runStep(){
 	//		testClearBuffers();
 	//		testHashParticles();
 	//		testSort();
