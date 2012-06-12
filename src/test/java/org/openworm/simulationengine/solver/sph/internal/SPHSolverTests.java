@@ -25,7 +25,6 @@ public class SPHSolverTests {
 		try {
 			solver.init();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -36,7 +35,7 @@ public class SPHSolverTests {
 	}
 	
 	//@Test
-	// NOTE: PLEASE DON'T COMMIT THIS IF UNCOMMENTED FOR LOCAL TEST. KEEP TESTS INDEPENDENT. 
+	// NOTE: PLEASE DON'T COMMIT THIS IF UNCOMMENTED FOR LOCAL TEST - KEEP TESTS INDEPENDENT IF POSSIBLE. 
 	// NOTE: we can still run all of them at once by right clicking class name > run as > junit test
 	// public void _runStep(){
 	//		testClearBuffers();
@@ -317,7 +316,7 @@ public class SPHSolverTests {
 	}
 	
 	private boolean testEndSortPostPass() {
-		// TODO Auto-generated method stub
+		
 		boolean result = true;
 		int messageCount = 0;
 
@@ -857,7 +856,6 @@ public class SPHSolverTests {
 		solver.queue.finish();
 		solver.velocity.read(solver.queue, solver.velocityPtr, true);
 		solver.queue.finish();
-
 
 		for( int i = 0; i < SPHConstants.PARTICLE_COUNT; ++i ){
 			float[] sortedPosition_ = readField( 4 * i, solver.sortedPositionPtr );

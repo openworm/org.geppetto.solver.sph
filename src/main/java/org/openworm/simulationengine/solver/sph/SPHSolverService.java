@@ -194,8 +194,7 @@ public class SPHSolverService implements ISolver {
 		queue.finish();
 	}
 	
-	public List<List<IModel>> solve(List<IModel> models,
-			ITimeConfiguration timeConfiguration)
+	public List<List<IModel>> solve(List<IModel> models, ITimeConfiguration timeConfiguration)
 	{
 		return null;
 	}
@@ -334,10 +333,7 @@ public class SPHSolverService implements ISolver {
 		return 0;
 	}
 	
-	
 	public int _runSort(){
-		//radixSort.sort( particleIndex );
-		//radixSort.wait();
 		//this version work with qsort
 		int index = 0;
 		List<int[]> _particleIndex = new ArrayList<int[]>();
@@ -361,12 +357,12 @@ public class SPHSolverService implements ISolver {
 	
 	class MyCompare implements Comparator<int[]>{
 		public int compare(int[] o1, int[] o2) {
-			// TODO Auto-generated method stub
 			if( o1[0] < o2[0] ) return -1;
 			if( o1[0] > o2[0]) return +1;
 			return 0;
 		}
 	}
+	
 	void advanceInTime(){
 		step();
 		for (int i = 0;i<model.getParticles().size();i++) {
