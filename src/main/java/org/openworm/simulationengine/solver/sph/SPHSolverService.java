@@ -85,8 +85,12 @@ public class SPHSolverService implements ISolver {
 	public int gridCellCount;
 	
 	public static Random randomGenerator = new Random();
+	
+	public SPHSolverService() throws Exception{
+		this.init();
+	}
 		
-	public void init() throws IOException  
+	private void init() throws IOException  
 	{
 		gridCellsX = (int)( ( SPHConstants.XMAX - SPHConstants.XMIN ) / PhysicsConstants.H ) + 1;
 		gridCellsY = (int)( ( SPHConstants.YMAX - SPHConstants.YMIN ) / PhysicsConstants.H ) + 1;

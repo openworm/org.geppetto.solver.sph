@@ -14,7 +14,7 @@ import org.openworm.simulationengine.solver.sph.SPHSolverService;
 
 public class SPHSolverTests {
 
-	private static SPHSolverService solver = new SPHSolverService();
+	private static SPHSolverService solver;
 
 	static final int NO_PARTICLE_ID = -1;
 	static final float EPSILON = 0.1f;
@@ -23,8 +23,8 @@ public class SPHSolverTests {
 	@BeforeClass 
 	public static void InitSover() {
 		try {
-			solver.init();
-		} catch (IOException e) {
+			solver = new SPHSolverService();
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
