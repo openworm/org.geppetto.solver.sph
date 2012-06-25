@@ -90,7 +90,7 @@ public class SPHSolverService implements ISolver {
 		
 	private void onceOffInit() throws IOException  
 	{
-		context = JavaCL.createBestContext(DeviceFeature.CPU);
+		context = JavaCL.createBestContext(DeviceFeature.GPU);
 		
 		out.println("created "+ context);
 		// an array with available devices
