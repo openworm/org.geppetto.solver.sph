@@ -4,6 +4,8 @@ import static java.lang.System.out;
 
 import java.io.IOException;
 
+import junit.framework.Assert;
+
 import org.bridj.Pointer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -35,8 +37,8 @@ public class SPHSolverTests {
 	}
 	
 	//@Test
-	// NOTE: PLEASE DON'T COMMIT THIS IF UNCOMMENTED FOR LOCAL TEST - KEEP TESTS INDEPENDENT IF POSSIBLE. 
-	// NOTE: we can still run all of them at once by right clicking class name > run as > junit test
+	// NOTE: 1. DON'T COMMIT THIS IF UNCOMMENTED FOR LOCAL TEST - KEEP TESTS INDEPENDENT IF POSSIBLE. 
+	// NOTE: 1. we can also run all the tests at once by right clicking class name > run as > junit test
 	// public void _runStep(){
 	//		testClearBuffers();
 	//		testHashParticles();
@@ -48,7 +50,7 @@ public class SPHSolverTests {
 	//		testComputeDensityPressure();
 	//		testComputeAcceleration();
 	//		testIntegrate();
-	//	}
+	// }
 	
 	@Test
 	public void testClearBuffers(){
@@ -59,9 +61,14 @@ public class SPHSolverTests {
 		solver.queue.finish();
 		thisTestPassed = testEndClearBuffers();
 		if (!thisTestPassed)
+		{
 			System.out.println("Test FAILED in stage ClearBuffers");
+			Assert.fail();
+		}
 		else
+		{
 			System.out.println("Test SUCCEEDED in stage ClearBuffers");
+		}
 	}
 	
 	@Test
@@ -75,6 +82,7 @@ public class SPHSolverTests {
 
 		if( !thisTestPassed ){
 			System.out.println("Test FAILED in stage HashParticles");
+			Assert.fail();
 		}else{
 			System.out.println("Test SUCCEEDED in stage HashParticles");
 		}
@@ -91,6 +99,7 @@ public class SPHSolverTests {
 		thisTestPassed = testEndSort();
 		if( !thisTestPassed ){
 			out.println("Test FAILED in stage Sort");
+			Assert.fail();
 		}else{
 			out.println("Test SUCCEEDED in stage Sort" );
 		}
@@ -108,6 +117,7 @@ public class SPHSolverTests {
 
 		if( !thisTestPassed ){
 			out.println("Test FAILED in stage SortPostPass");
+			Assert.fail();
 		}else{
 			out.println("Test SUCCEEDED in stage SortPostPass");
 		}
@@ -124,6 +134,7 @@ public class SPHSolverTests {
 		thisTestPassed = testEndIndexx();
 		if( !thisTestPassed ){
 			out.println("Test FAILED in stage Indexx");
+			Assert.fail();
 		}else{
 			out.println("Test SUCCEEDED in stage Indexx");
 		}
@@ -140,6 +151,7 @@ public class SPHSolverTests {
 		thisTestPassed = testEndIndexPostPass();
 		if( !thisTestPassed ){
 			out.println("Test FAILED in stage IndexPostPass");
+			Assert.fail();
 		}else{
 			out.println("Test SUCCEEDED in stage IndexPostPass");
 		}
@@ -156,6 +168,7 @@ public class SPHSolverTests {
 		thisTestPassed = testEndFindNeighbors();
 		if( !thisTestPassed ){
 			out.println("Test FAILED in stage FindNeighbors");
+			Assert.fail();
 		}else{
 			out.println("Test SUCCEEDED in stage FindNeighbors");
 		}
@@ -172,6 +185,7 @@ public class SPHSolverTests {
 		thisTestPassed = testEndComputeDensityPressure();
 		if( !thisTestPassed ){
 			out.println("Test FAILED in stage ComputeDensityPressure");
+			Assert.fail();
 		}else{
 			out.println("Test SUCCEEDED in stage ComputeDensityPressure");
 		}
@@ -188,6 +202,7 @@ public class SPHSolverTests {
 		thisTestPassed = testEndComputeAcceleration();
 		if( !thisTestPassed ){
 			out.println("Test FAILED in stage ComputeAcceleration");
+			Assert.fail();
 		}else{
 			out.println("Test SUCCEEDED in stage ComputeAcceleration");
 		}
@@ -204,6 +219,7 @@ public class SPHSolverTests {
 		thisTestPassed = testEndIntegrate();
 		if( !thisTestPassed ){
 			out.println("Test FAILED in stage Integrate");
+			Assert.fail();
 		}else{
 			out.println("Test SUCCEEDED in stage Integrate");
 		}

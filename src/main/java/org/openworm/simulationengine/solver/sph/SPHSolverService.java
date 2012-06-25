@@ -97,7 +97,7 @@ public class SPHSolverService implements ISolver {
 		gridCellsZ = (int)( ( SPHConstants.ZMAX - SPHConstants.ZMIN ) / PhysicsConstants.H ) + 1;
 		gridCellCount = gridCellsX * gridCellsY * gridCellsZ;
 		model = new SPHModelX(gridCellsX, gridCellsY, gridCellsZ);
-		context = JavaCL.createBestContext(DeviceFeature.GPU);
+		context = JavaCL.createBestContext(DeviceFeature.CPU);
 		
 		out.println("created "+ context);
 		// an array with available devices
@@ -121,7 +121,7 @@ public class SPHSolverService implements ISolver {
 		
 		// load sources, create and build program
 		String src = IOUtils.readText(SPHSolverService.class.getResourceAsStream("/resource/sphFluidDemo.cl"));
-		program = context.createProgram(src);//.build();
+		program = context.createProgram(src);
 		
 		/* input buffers declarations Pointer Alternative*/
 		accelerationPtr = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 4);
@@ -150,36 +150,47 @@ public class SPHSolverService implements ISolver {
 		integrate = program.createKernel("integrate");
 		sortPostPass = program.createKernel("sortPostPass");
 		
-		/* particle creation */
+		/* buffers population and particle creation */
 		// TODO: move this out of here (unit tests)
 		int index = 0;
 		for(int i = 0;i<SPHConstants.PARTICLE_COUNT;i++){
 			if(i != 0)
+			{
 				index = index + 4;
-			float r = ((float)randomGenerator.nextInt(PhysicsConstants.RAND_MAX) / (float)PhysicsConstants.RAND_MAX );//tr.rand.next();
+			}
+			
+			/* particle creation */
+			float r = ((float)randomGenerator.nextInt(PhysicsConstants.RAND_MAX) / (float)PhysicsConstants.RAND_MAX );
 			Vector3DX positionVector = new Vector3DX();
 			Vector3DX velocityVector = new Vector3DX();
+			
+			// populate position vector
 			positionVector.setX(MathUtils.scale(SPHConstants.XMIN, SPHConstants.XMAX/10 , r)); 
-			r = ((float)randomGenerator.nextInt(PhysicsConstants.RAND_MAX) / (float)PhysicsConstants.RAND_MAX );//tr.rand.next();
+			r = ((float)randomGenerator.nextInt(PhysicsConstants.RAND_MAX) / (float)PhysicsConstants.RAND_MAX );
 			positionVector.setY(MathUtils.scale(SPHConstants.YMIN, SPHConstants.YMAX , r)); 
-			r = ((float)randomGenerator.nextInt(PhysicsConstants.RAND_MAX) / (float)PhysicsConstants.RAND_MAX );//tr.rand.next();
+			r = ((float)randomGenerator.nextInt(PhysicsConstants.RAND_MAX) / (float)PhysicsConstants.RAND_MAX );
 			positionVector.setZ(MathUtils.scale(SPHConstants.ZMIN, SPHConstants.ZMAX , r));
 			positionVector.setP(0f);
+			// populate velocity vector
+			r = ((float)randomGenerator.nextInt(PhysicsConstants.RAND_MAX) / (float)PhysicsConstants.RAND_MAX );
+			velocityVector.setX(MathUtils.scale(-1.0f, 1.0f, r));
+			r = ((float)randomGenerator.nextInt(PhysicsConstants.RAND_MAX) / (float)PhysicsConstants.RAND_MAX );
+			velocityVector.setY(MathUtils.scale(-1.0f, 1.0f, r));
+			r = ((float)randomGenerator.nextInt(PhysicsConstants.RAND_MAX) / (float)PhysicsConstants.RAND_MAX );
+			velocityVector.setZ(MathUtils.scale(-1.0f, 1.0f, r));
+			velocityVector.setP(0f);
+			/* particle creation */
+			
+			// buffer population
 			positionPtr.set(index,positionVector.getX());
 			positionPtr.set(index + 1,positionVector.getY());
 			positionPtr.set(index + 2,positionVector.getZ());
 			positionPtr.set(index + 3,positionVector.getP());
-			r = ((float)randomGenerator.nextInt(PhysicsConstants.RAND_MAX) / (float)PhysicsConstants.RAND_MAX );//tr.rand.next();
-			velocityVector.setX(MathUtils.scale(-1.0f, 1.0f, r));
-			r = ((float)randomGenerator.nextInt(PhysicsConstants.RAND_MAX) / (float)PhysicsConstants.RAND_MAX );//tr.rand.next();
-			velocityVector.setY(MathUtils.scale(-1.0f, 1.0f, r));
-			r = ((float)randomGenerator.nextInt(PhysicsConstants.RAND_MAX) / (float)PhysicsConstants.RAND_MAX );//tr.rand.next();
-			velocityVector.setZ(MathUtils.scale(-1.0f, 1.0f, r));
-			velocityVector.setP(0f);
 			velocityPtr.set(index,velocityVector.getX());
 			velocityPtr.set(index + 1,velocityVector.getY());
 			velocityPtr.set(index + 2,velocityVector.getZ());
 			velocityPtr.set(index + 3,velocityVector.getP());
+			
 			SPHParticle particle = new SPHParticleX(positionVector, velocityVector, 1);
 			model.getParticles().add(particle);
 		}
@@ -200,14 +211,56 @@ public class SPHSolverService implements ISolver {
 		queue.finish();
 	}
 	
+	public void setModels(List<IModel> models){
+		
+	}
+	
+	public List<IModel> getModels(){
+		List<IModel> models = new ArrayList<IModel>();
+		
+		// TODO: retrieve models from buffers
+		int index = 0;
+		for(int i = 0;i<SPHConstants.PARTICLE_COUNT;i++){
+			if(i != 0)
+			{
+				index = index + 4;
+			}
+			
+			Vector3DX positionVector = new Vector3DX();
+			Vector3DX velocityVector = new Vector3DX();
+			
+			// buffer population
+			positionVector.setX(positionPtr.get(index));
+			positionVector.setY(positionPtr.get(index + 1));
+			positionVector.setZ(positionPtr.get(index + 2));
+			positionVector.setP(positionPtr.get(index + 3));
+			
+			velocityVector.setX(velocityPtr.get(index));
+			velocityVector.setY(velocityPtr.get(index + 1));
+			velocityVector.setZ(velocityPtr.get(index + 2));
+			velocityVector.setP(velocityPtr.get(index + 3));
+			
+			SPHParticle particle = new SPHParticleX(positionVector, velocityVector, 1);
+			model.getParticles().add(particle);
+			// TODO: assign list of models to return variable
+		}
+		
+		return models;
+	}
+	
 	public List<List<IModel>> solve(List<IModel> models, ITimeConfiguration timeConfiguration)
 	{
 		// TODO: extend this to use time configuration to do multiple steps in one go
 		
 		// TODO: 1. populate buffers from list of models
+		this.setModels(models);
+		
 		// TODO: 2. call this.step();
+		
 		// TODO: 3. retrieve values from buffers and populate returned models
-		return null;
+		List<List<IModel>> modelsList = new ArrayList<List<IModel>> ();
+		modelsList.add(this.getModels());
+		return modelsList;
 	}
 	
 	public void cleanContext(){
@@ -374,6 +427,7 @@ public class SPHSolverService implements ISolver {
 		}
 	}
 	
+	// TODO: delete this if never called
 	void advanceInTime(){
 		step();
 		for (int i = 0;i<model.getParticles().size();i++) {
