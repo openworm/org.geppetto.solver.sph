@@ -149,7 +149,9 @@ public class SPHSolverService implements ISolver {
 		indexx = program.createKernel("indexx");
 		integrate = program.createKernel("integrate");
 		sortPostPass = program.createKernel("sortPostPass");
-
+		
+		/* particle creation */
+		// TODO: move this out of here (unit tests)
 		int index = 0;
 		for(int i = 0;i<SPHConstants.PARTICLE_COUNT;i++){
 			if(i != 0)
@@ -200,6 +202,11 @@ public class SPHSolverService implements ISolver {
 	
 	public List<List<IModel>> solve(List<IModel> models, ITimeConfiguration timeConfiguration)
 	{
+		// TODO: extend this to use time configuration to do multiple steps in one go
+		
+		// TODO: 1. populate buffers from list of models
+		// TODO: 2. call this.step();
+		// TODO: 3. retrieve values from buffers and populate returned models
 		return null;
 	}
 	
