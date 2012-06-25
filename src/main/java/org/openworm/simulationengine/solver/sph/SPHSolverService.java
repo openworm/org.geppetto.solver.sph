@@ -16,7 +16,6 @@ import org.openworm.simulationengine.core.model.MathUtils;
 import org.openworm.simulationengine.core.simulation.ITimeConfiguration;
 import org.openworm.simulationengine.core.solver.ISolver;
 import org.openworm.simulationengine.model.sph.SPHConstants;
-import org.openworm.simulationengine.model.sph.SPHModel;
 import org.openworm.simulationengine.model.sph.SPHParticle;
 import org.openworm.simulationengine.model.sph.x.SPHModelX;
 import org.openworm.simulationengine.model.sph.x.SPHParticleX;
@@ -78,7 +77,6 @@ public class SPHSolverService implements ISolver {
 	private CLKernel integrate;
 	private CLKernel sortPostPass;
 	
-	SPHModel model;
 	public int gridCellsX;
 	public int gridCellsY;
 	public int gridCellsZ;
@@ -87,16 +85,11 @@ public class SPHSolverService implements ISolver {
 	public static Random randomGenerator = new Random();
 	
 	public SPHSolverService() throws Exception{
-		this.init();
+		this.onceOffInit();
 	}
 		
-	private void init() throws IOException  
+	private void onceOffInit() throws IOException  
 	{
-		gridCellsX = (int)( ( SPHConstants.XMAX - SPHConstants.XMIN ) / PhysicsConstants.H ) + 1;
-		gridCellsY = (int)( ( SPHConstants.YMAX - SPHConstants.YMIN ) / PhysicsConstants.H ) + 1;
-		gridCellsZ = (int)( ( SPHConstants.ZMAX - SPHConstants.ZMIN ) / PhysicsConstants.H ) + 1;
-		gridCellCount = gridCellsX * gridCellsY * gridCellsZ;
-		model = new SPHModelX(gridCellsX, gridCellsY, gridCellsZ);
 		context = JavaCL.createBestContext(DeviceFeature.CPU);
 		
 		out.println("created "+ context);
@@ -123,7 +116,20 @@ public class SPHSolverService implements ISolver {
 		String src = IOUtils.readText(SPHSolverService.class.getResourceAsStream("/resource/sphFluidDemo.cl"));
 		program = context.createProgram(src);
 		
-		/* input buffers declarations Pointer Alternative*/
+		/*kernels*/
+		clearBuffers = program.createKernel("clearBuffers");
+		computeAcceleration = program.createKernel("computeAcceleration");
+		computeDensityPressure = program.createKernel("computeDensityPressure");
+		findNeighbors = program.createKernel("findNeighbors");
+		hashParticles = program.createKernel("hashParticles");
+		indexPostPass = program.createKernel("indexPostPass");
+		indexx = program.createKernel("indexx");
+		integrate = program.createKernel("integrate");
+		sortPostPass = program.createKernel("sortPostPass");
+	}
+	
+	private void allocateBuffers(){
+		// input buffers declarations
 		accelerationPtr = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 4);
 		gridCellIndexPtr = Pointer.allocateInts((gridCellCount + 1));
 		gridCellIndexFixedUpPtr = Pointer.allocateInts((gridCellCount + 1));
@@ -137,65 +143,8 @@ public class SPHSolverService implements ISolver {
 		sortedVelocityPtr = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 4);
 		velocityPtr = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 4);
 		positionPtrbuff = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 4);
-		/*end declaration*/
 		
-		/*kernels*/
-		clearBuffers = program.createKernel("clearBuffers");
-		computeAcceleration = program.createKernel("computeAcceleration");
-		computeDensityPressure = program.createKernel("computeDensityPressure");
-		findNeighbors = program.createKernel("findNeighbors");
-		hashParticles = program.createKernel("hashParticles");
-		indexPostPass = program.createKernel("indexPostPass");
-		indexx = program.createKernel("indexx");
-		integrate = program.createKernel("integrate");
-		sortPostPass = program.createKernel("sortPostPass");
-		
-		/* buffers population and particle creation */
-		// TODO: move this out of here (unit tests)
-		int index = 0;
-		for(int i = 0;i<SPHConstants.PARTICLE_COUNT;i++){
-			if(i != 0)
-			{
-				index = index + 4;
-			}
-			
-			/* particle creation */
-			float r = ((float)randomGenerator.nextInt(PhysicsConstants.RAND_MAX) / (float)PhysicsConstants.RAND_MAX );
-			Vector3DX positionVector = new Vector3DX();
-			Vector3DX velocityVector = new Vector3DX();
-			
-			// populate position vector
-			positionVector.setX(MathUtils.scale(SPHConstants.XMIN, SPHConstants.XMAX/10 , r)); 
-			r = ((float)randomGenerator.nextInt(PhysicsConstants.RAND_MAX) / (float)PhysicsConstants.RAND_MAX );
-			positionVector.setY(MathUtils.scale(SPHConstants.YMIN, SPHConstants.YMAX , r)); 
-			r = ((float)randomGenerator.nextInt(PhysicsConstants.RAND_MAX) / (float)PhysicsConstants.RAND_MAX );
-			positionVector.setZ(MathUtils.scale(SPHConstants.ZMIN, SPHConstants.ZMAX , r));
-			positionVector.setP(0f);
-			// populate velocity vector
-			r = ((float)randomGenerator.nextInt(PhysicsConstants.RAND_MAX) / (float)PhysicsConstants.RAND_MAX );
-			velocityVector.setX(MathUtils.scale(-1.0f, 1.0f, r));
-			r = ((float)randomGenerator.nextInt(PhysicsConstants.RAND_MAX) / (float)PhysicsConstants.RAND_MAX );
-			velocityVector.setY(MathUtils.scale(-1.0f, 1.0f, r));
-			r = ((float)randomGenerator.nextInt(PhysicsConstants.RAND_MAX) / (float)PhysicsConstants.RAND_MAX );
-			velocityVector.setZ(MathUtils.scale(-1.0f, 1.0f, r));
-			velocityVector.setP(0f);
-			/* particle creation */
-			
-			// buffer population
-			positionPtr.set(index,positionVector.getX());
-			positionPtr.set(index + 1,positionVector.getY());
-			positionPtr.set(index + 2,positionVector.getZ());
-			positionPtr.set(index + 3,positionVector.getP());
-			velocityPtr.set(index,velocityVector.getX());
-			velocityPtr.set(index + 1,velocityVector.getY());
-			velocityPtr.set(index + 2,velocityVector.getZ());
-			velocityPtr.set(index + 3,velocityVector.getP());
-			
-			SPHParticle particle = new SPHParticleX(positionVector, velocityVector, 1);
-			model.getParticles().add(particle);
-		}
-		
-		/*Alternativ buffer defining*/
+		// alternative buffer defining
 		acceleration = context.createBuffer(Usage.InputOutput,accelerationPtr,false);
 		gridCellIndex = context.createBuffer(Usage.InputOutput,gridCellIndexPtr, false);
 		gridCellIndexFixedUp = context.createIntBuffer(Usage.InputOutput,gridCellIndexFixedUpPtr, false);
@@ -212,13 +161,52 @@ public class SPHSolverService implements ISolver {
 	}
 	
 	public void setModels(List<IModel> models){
-		
+		// TODO: generalize this for an arbitrary number of models instead of just one
+		if(!(models == null || models.size() ==0))
+		{
+			SPHModelX mod = (SPHModelX) models.get(0);
+			
+			// set grid dimensions
+			gridCellsX = mod.getCellX();
+			gridCellsY = mod.getCellY();
+			gridCellsZ = mod.getCellZ();
+			gridCellCount = gridCellsX * gridCellsY * gridCellsZ;
+			
+			// allocate buffers - requires global dimensions of the grid
+			this.allocateBuffers();
+			
+			int index = 0;
+			for(int i = 0;i<SPHConstants.PARTICLE_COUNT;i++){
+				if(i != 0)
+				{
+					index = index + 4;
+				}
+				
+				Vector3DX positionVector = (Vector3DX) mod.getParticles().get(i).getPositionVector();
+				Vector3DX velocityVector = (Vector3DX) mod.getParticles().get(i).getVelocityVector();
+				
+				// buffer population
+				positionPtr.set(index,positionVector.getX());
+				positionPtr.set(index + 1,positionVector.getY());
+				positionPtr.set(index + 2,positionVector.getZ());
+				positionPtr.set(index + 3,positionVector.getP());
+				velocityPtr.set(index,velocityVector.getX());
+				velocityPtr.set(index + 1,velocityVector.getY());
+				velocityPtr.set(index + 2,velocityVector.getZ());
+				velocityPtr.set(index + 3,velocityVector.getP());
+			}
+		}
+		else
+		{
+			throw new IllegalArgumentException("SPHSolverService:setModels - invalid models");
+		}
 	}
 	
 	public List<IModel> getModels(){
 		List<IModel> models = new ArrayList<IModel>();
 		
-		// TODO: retrieve models from buffers
+		SPHModelX mod = new SPHModelX(gridCellsX, gridCellsY, gridCellsZ);
+		
 		int index = 0;
 		for(int i = 0;i<SPHConstants.PARTICLE_COUNT;i++){
 			if(i != 0)
@@ -241,9 +229,10 @@ public class SPHSolverService implements ISolver {
 			velocityVector.setP(velocityPtr.get(index + 3));
 			
 			SPHParticle particle = new SPHParticleX(positionVector, velocityVector, 1);
-			model.getParticles().add(particle);
-			// TODO: assign list of models to return variable
+			mod.getParticles().add(particle);
 		}
+		
+		models.add(mod);
 		
 		return models;
 	}
@@ -252,12 +241,13 @@ public class SPHSolverService implements ISolver {
 	{
 		// TODO: extend this to use time configuration to do multiple steps in one go
 		
-		// TODO: 1. populate buffers from list of models
+		// 1. populate buffers from list of models
 		this.setModels(models);
 		
-		// TODO: 2. call this.step();
+		// 2. call this.step();
+		this.step();
 		
-		// TODO: 3. retrieve values from buffers and populate returned models
+		// 3. retrieve values from buffers and populate returned models
 		List<List<IModel>> modelsList = new ArrayList<List<IModel>> ();
 		modelsList.add(this.getModels());
 		return modelsList;
@@ -424,17 +414,6 @@ public class SPHSolverService implements ISolver {
 			if( o1[0] < o2[0] ) return -1;
 			if( o1[0] > o2[0]) return +1;
 			return 0;
-		}
-	}
-	
-	// TODO: delete this if never called
-	void advanceInTime(){
-		step();
-		for (int i = 0;i<model.getParticles().size();i++) {
-			model.getParticles().get(i).getPositionVector().setX(positionPtr.get(4*i));
-			model.getParticles().get(i).getPositionVector().setY(positionPtr.get(4*i+1));
-			model.getParticles().get(i).getPositionVector().setZ(positionPtr.get(4*i+2));
-			model.getParticles().get(i).getPositionVector().setP(positionPtr.get(4*i+3));
 		}
 	}
 	

@@ -2,7 +2,10 @@ package org.openworm.simulationengine.solver.sph.internal;
 
 import static java.lang.System.out;
 
-import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
 
 import junit.framework.Assert;
 
@@ -11,7 +14,13 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.openworm.simulationengine.core.constants.PhysicsConstants;
+import org.openworm.simulationengine.core.model.IModel;
+import org.openworm.simulationengine.core.model.MathUtils;
 import org.openworm.simulationengine.model.sph.SPHConstants;
+import org.openworm.simulationengine.model.sph.SPHParticle;
+import org.openworm.simulationengine.model.sph.x.SPHModelX;
+import org.openworm.simulationengine.model.sph.x.SPHParticleX;
+import org.openworm.simulationengine.model.sph.x.Vector3DX;
 import org.openworm.simulationengine.solver.sph.SPHSolverService;
 
 public class SPHSolverTests {
@@ -21,11 +30,14 @@ public class SPHSolverTests {
 	static final int NO_PARTICLE_ID = -1;
 	static final float EPSILON = 0.1f;
 	static final int MAX_ERRORS = 10;
+	
+	public static Random randomGenerator = new Random();
 
 	@BeforeClass 
 	public static void InitSover() {
 		try {
 			solver = new SPHSolverService();
+			solver.setModels(generateSampleModel());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -897,5 +909,47 @@ public class SPHSolverTests {
 	private float[] readField(int index, Pointer<Float> _field){
 		float[] arr = {_field.get(index),_field.get(index + 1), _field.get(index + 2)};
 		return arr;
+	}
+	
+	private static List<IModel> generateSampleModel(){
+
+		int gridCellsX = (int)( ( SPHConstants.XMAX - SPHConstants.XMIN ) / PhysicsConstants.H ) + 1;
+		int gridCellsY = (int)( ( SPHConstants.YMAX - SPHConstants.YMIN ) / PhysicsConstants.H ) + 1;
+		int gridCellsZ = (int)( ( SPHConstants.ZMAX - SPHConstants.ZMIN ) / PhysicsConstants.H ) + 1;
+        SPHModelX mod = new SPHModelX(gridCellsX, gridCellsY, gridCellsZ);	
+		
+		int index = 0;
+		for(int i = 0;i<SPHConstants.PARTICLE_COUNT;i++){
+			if(i != 0)
+			{
+				index = index + 4;
+			}
+			
+			// particle creation
+			float r = ((float)randomGenerator.nextInt(PhysicsConstants.RAND_MAX) / (float)PhysicsConstants.RAND_MAX );
+			Vector3DX positionVector = new Vector3DX();
+			Vector3DX velocityVector = new Vector3DX();
+			
+			// populate position vector
+			positionVector.setX(MathUtils.scale(SPHConstants.XMIN, SPHConstants.XMAX/10 , r)); 
+			r = ((float)randomGenerator.nextInt(PhysicsConstants.RAND_MAX) / (float)PhysicsConstants.RAND_MAX );
+			positionVector.setY(MathUtils.scale(SPHConstants.YMIN, SPHConstants.YMAX , r)); 
+			r = ((float)randomGenerator.nextInt(PhysicsConstants.RAND_MAX) / (float)PhysicsConstants.RAND_MAX );
+			positionVector.setZ(MathUtils.scale(SPHConstants.ZMIN, SPHConstants.ZMAX , r));
+			positionVector.setP(0f);
+			// populate velocity vector
+			r = ((float)randomGenerator.nextInt(PhysicsConstants.RAND_MAX) / (float)PhysicsConstants.RAND_MAX );
+			velocityVector.setX(MathUtils.scale(-1.0f, 1.0f, r));
+			r = ((float)randomGenerator.nextInt(PhysicsConstants.RAND_MAX) / (float)PhysicsConstants.RAND_MAX );
+			velocityVector.setY(MathUtils.scale(-1.0f, 1.0f, r));
+			r = ((float)randomGenerator.nextInt(PhysicsConstants.RAND_MAX) / (float)PhysicsConstants.RAND_MAX );
+			velocityVector.setZ(MathUtils.scale(-1.0f, 1.0f, r));
+			velocityVector.setP(0f);
+			
+			SPHParticle particle = new SPHParticleX(positionVector, velocityVector, 1);
+			mod.getParticles().add(particle);
+		}
+		
+		return new ArrayList<IModel>(Arrays.asList(mod));
 	}
 }
