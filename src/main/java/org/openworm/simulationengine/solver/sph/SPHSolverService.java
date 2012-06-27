@@ -35,53 +35,53 @@ import com.nativelibs4java.util.IOUtils;
 @Service
 public class SPHSolverService implements ISolver {
 	
-	private CLContext context;
-	public CLQueue queue;
-	private CLProgram program;
-	private CLDevice device;
-	public CLBuffer<Float> acceleration;
-	public CLBuffer<Integer> gridCellIndex;
-	public CLBuffer<Integer> gridCellIndexFixedUp;
-	public CLBuffer<Float> neighborMap;
-	public CLBuffer<Integer> particleIndex;
-	public CLBuffer<Float> position;
-	public CLBuffer<Float> pressure;
-	public CLBuffer<Float> rho;
-	public CLBuffer<Float> rhoInv;
-	public CLBuffer<Float> sortedPosition;
-	public CLBuffer<Float> sortedVelocity;
-	public CLBuffer<Float> velocity;
+	private CLContext _context;
+	public CLQueue _queue;
+	private CLProgram _program;
+	private CLDevice _device;
+	public CLBuffer<Float> _acceleration;
+	public CLBuffer<Integer> _gridCellIndex;
+	public CLBuffer<Integer> _gridCellIndexFixedUp;
+	public CLBuffer<Float> _neighborMap;
+	public CLBuffer<Integer> _particleIndex;
+	public CLBuffer<Float> _position;
+	public CLBuffer<Float> _pressure;
+	public CLBuffer<Float> _rho;
+	public CLBuffer<Float> _rhoInv;
+	public CLBuffer<Float> _sortedPosition;
+	public CLBuffer<Float> _sortedVelocity;
+	public CLBuffer<Float> _velocity;
 	
-	public Pointer<Float> accelerationPtr;
-	public Pointer<Integer> gridCellIndexPtr;
-	public Pointer<Integer> gridCellIndexFixedUpPtr;
-	public Pointer<Float> neighborMapPtr;
-	public Pointer<Integer> particleIndexPtr;
-	public Pointer<Float> positionPtr;
-	public Pointer<Float> positionPtrbuff;
-	public Pointer<Float> pressurePtr;
-	public Pointer<Float> rhoPtr;
-	public Pointer<Float> rhoInvPtr;
-	public Pointer<Float> sortedPositionPtr;
-	public Pointer<Float> sortedVelocityPtr;
-	public Pointer<Float> velocityPtr;
+	public Pointer<Float> _accelerationPtr;
+	public Pointer<Integer> _gridCellIndexPtr;
+	public Pointer<Integer> _gridCellIndexFixedUpPtr;
+	public Pointer<Float> _neighborMapPtr;
+	public Pointer<Integer> _particleIndexPtr;
+	public Pointer<Float> _positionPtr;
+	public Pointer<Float> _positionPtrbuff;
+	public Pointer<Float> _pressurePtr;
+	public Pointer<Float> _rhoPtr;
+	public Pointer<Float> _rhoInvPtr;
+	public Pointer<Float> _sortedPositionPtr;
+	public Pointer<Float> _sortedVelocityPtr;
+	public Pointer<Float> _velocityPtr;
 	
-	private CLKernel clearBuffers;
-	private CLKernel computeAcceleration;
-	private CLKernel computeDensityPressure;
-	private CLKernel findNeighbors;
-	private CLKernel hashParticles;
-	private CLKernel indexPostPass;
-	private CLKernel indexx;
-	private CLKernel integrate;
-	private CLKernel sortPostPass;
+	private CLKernel _clearBuffers;
+	private CLKernel _computeAcceleration;
+	private CLKernel _computeDensityPressure;
+	private CLKernel _findNeighbors;
+	private CLKernel _hashParticles;
+	private CLKernel _indexPostPass;
+	private CLKernel _indexx;
+	private CLKernel _integrate;
+	private CLKernel _sortPostPass;
 	
-	public int gridCellsX;
-	public int gridCellsY;
-	public int gridCellsZ;
-	public int gridCellCount;
+	public int _gridCellsX;
+	public int _gridCellsY;
+	public int _gridCellsZ;
+	public int _gridCellCount;
 	
-	public static Random randomGenerator = new Random();
+	public static Random RandomGenerator = new Random();
 	
 	public SPHSolverService() throws Exception{
 		this.onceOffInit();
@@ -89,11 +89,11 @@ public class SPHSolverService implements ISolver {
 		
 	private void onceOffInit() throws IOException  
 	{
-		context = JavaCL.createBestContext(DeviceFeature.GPU);
+		_context = JavaCL.createBestContext(DeviceFeature.GPU);
 		
-		out.println("created "+ context);
+		out.println("created "+ _context);
 		// an array with available devices
-		CLDevice[] devices = context.getDevices();
+		CLDevice[] devices = _context.getDevices();
 
 		for(int i=0; i<devices.length; i++)
 		{
@@ -101,62 +101,62 @@ public class SPHSolverService implements ISolver {
 		}	
 
 		// have a look at the output and select a device
-		device = devices[0];
-		out.println("Version " + device.getOpenCLVersion());
-		out.println("Version " + device.getDriverVersion());
-		out.println("using "+ device);
-		out.println("max workgroup size: " + device.getMaxWorkGroupSize());
-		out.println("max workitems size: " + device.getMaxWorkItemSizes()[0]);
+		_device = devices[0];
+		out.println("Version " + _device.getOpenCLVersion());
+		out.println("Version " + _device.getDriverVersion());
+		out.println("using "+ _device);
+		out.println("max workgroup size: " + _device.getMaxWorkGroupSize());
+		out.println("max workitems size: " + _device.getMaxWorkItemSizes()[0]);
 		
 		// create command queue on selected device.
-		queue = context.createDefaultQueue();//device.createCommandQueue();
+		_queue = _context.createDefaultQueue();//device.createCommandQueue();
 		
 		// load sources, create and build program
 		String src = IOUtils.readText(SPHSolverService.class.getResourceAsStream("/resource/sphFluidDemo.cl"));
-		program = context.createProgram(src);
+		_program = _context.createProgram(src);
 		
 		/*kernels*/
-		clearBuffers = program.createKernel("clearBuffers");
-		computeAcceleration = program.createKernel("computeAcceleration");
-		computeDensityPressure = program.createKernel("computeDensityPressure");
-		findNeighbors = program.createKernel("findNeighbors");
-		hashParticles = program.createKernel("hashParticles");
-		indexPostPass = program.createKernel("indexPostPass");
-		indexx = program.createKernel("indexx");
-		integrate = program.createKernel("integrate");
-		sortPostPass = program.createKernel("sortPostPass");
+		_clearBuffers = _program.createKernel("clearBuffers");
+		_computeAcceleration = _program.createKernel("computeAcceleration");
+		_computeDensityPressure = _program.createKernel("computeDensityPressure");
+		_findNeighbors = _program.createKernel("findNeighbors");
+		_hashParticles = _program.createKernel("hashParticles");
+		_indexPostPass = _program.createKernel("indexPostPass");
+		_indexx = _program.createKernel("indexx");
+		_integrate = _program.createKernel("integrate");
+		_sortPostPass = _program.createKernel("sortPostPass");
 	}
 	
 	private void allocateBuffers(){
 		// input buffers declarations
-		accelerationPtr = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 4);
-		gridCellIndexPtr = Pointer.allocateInts((gridCellCount + 1));
-		gridCellIndexFixedUpPtr = Pointer.allocateInts((gridCellCount + 1));
-		neighborMapPtr = Pointer.allocateFloats(SPHConstants.NK * 2);
-		particleIndexPtr = Pointer.allocateInts(SPHConstants.PARTICLE_COUNT * 2);
-		positionPtr = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 4);
-		pressurePtr = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 1);
-		rhoPtr = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 1);
-		rhoInvPtr = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 1);
-		sortedPositionPtr = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 4);
-		sortedVelocityPtr = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 4);
-		velocityPtr = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 4);
-		positionPtrbuff = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 4);
+		_accelerationPtr = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 4);
+		_gridCellIndexPtr = Pointer.allocateInts((_gridCellCount + 1));
+		_gridCellIndexFixedUpPtr = Pointer.allocateInts((_gridCellCount + 1));
+		_neighborMapPtr = Pointer.allocateFloats(SPHConstants.NK * 2);
+		_particleIndexPtr = Pointer.allocateInts(SPHConstants.PARTICLE_COUNT * 2);
+		_positionPtr = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 4);
+		_pressurePtr = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 1);
+		_rhoPtr = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 1);
+		_rhoInvPtr = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 1);
+		_sortedPositionPtr = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 4);
+		_sortedVelocityPtr = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 4);
+		_velocityPtr = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 4);
+		_positionPtrbuff = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 4);
 		
 		// alternative buffer defining
-		acceleration = context.createBuffer(Usage.InputOutput,accelerationPtr,false);
-		gridCellIndex = context.createBuffer(Usage.InputOutput,gridCellIndexPtr, false);
-		gridCellIndexFixedUp = context.createIntBuffer(Usage.InputOutput,gridCellIndexFixedUpPtr, false);
-		neighborMap = context.createBuffer(Usage.InputOutput,neighborMapPtr, false);
-		particleIndex = context.createBuffer(Usage.InputOutput,particleIndexPtr ,false);
-		position = context.createBuffer(Usage.InputOutput, positionPtr, false);
-		pressure = context.createBuffer(Usage.InputOutput,pressurePtr,false);
-		rho = context.createBuffer(Usage.InputOutput,rhoPtr,false);
-		rhoInv = context.createBuffer(Usage.InputOutput,rhoInvPtr,false);
-		sortedPosition = context.createBuffer(Usage.InputOutput,sortedPositionPtr,false);
-		sortedVelocity = context.createBuffer(Usage.InputOutput, sortedVelocityPtr,false);
-		velocity = context.createBuffer(Usage.InputOutput,velocityPtr,false);
-		queue.finish();
+		_acceleration = _context.createBuffer(Usage.InputOutput,_accelerationPtr,false);
+		_gridCellIndex = _context.createBuffer(Usage.InputOutput,_gridCellIndexPtr, false);
+		_gridCellIndexFixedUp = _context.createIntBuffer(Usage.InputOutput,_gridCellIndexFixedUpPtr, false);
+		_neighborMap = _context.createBuffer(Usage.InputOutput,_neighborMapPtr, false);
+		_particleIndex = _context.createBuffer(Usage.InputOutput,_particleIndexPtr ,false);
+		_position = _context.createBuffer(Usage.InputOutput, _positionPtr, false);
+		_pressure = _context.createBuffer(Usage.InputOutput,_pressurePtr,false);
+		_rho = _context.createBuffer(Usage.InputOutput,_rhoPtr,false);
+		_rhoInv = _context.createBuffer(Usage.InputOutput,_rhoInvPtr,false);
+		_sortedPosition = _context.createBuffer(Usage.InputOutput,_sortedPositionPtr,false);
+		_sortedVelocity = _context.createBuffer(Usage.InputOutput, _sortedVelocityPtr,false);
+		_velocity = _context.createBuffer(Usage.InputOutput,_velocityPtr,false);
+		_queue.finish();
 	}
 	
 	public void setModels(List<IModel> models){
@@ -166,10 +166,10 @@ public class SPHSolverService implements ISolver {
 			SPHModelX mod = (SPHModelX) models.get(0);
 			
 			// set grid dimensions
-			gridCellsX = mod.getCellX();
-			gridCellsY = mod.getCellY();
-			gridCellsZ = mod.getCellZ();
-			gridCellCount = gridCellsX * gridCellsY * gridCellsZ;
+			_gridCellsX = mod.getCellX();
+			_gridCellsY = mod.getCellY();
+			_gridCellsZ = mod.getCellZ();
+			_gridCellCount = _gridCellsX * _gridCellsY * _gridCellsZ;
 			
 			// allocate buffers - requires global dimensions of the grid
 			this.allocateBuffers();
@@ -185,14 +185,14 @@ public class SPHSolverService implements ISolver {
 				Vector3DX velocityVector = (Vector3DX) mod.getParticles().get(i).getVelocityVector();
 				
 				// buffer population
-				positionPtr.set(index,positionVector.getX());
-				positionPtr.set(index + 1,positionVector.getY());
-				positionPtr.set(index + 2,positionVector.getZ());
-				positionPtr.set(index + 3,positionVector.getP());
-				velocityPtr.set(index,velocityVector.getX());
-				velocityPtr.set(index + 1,velocityVector.getY());
-				velocityPtr.set(index + 2,velocityVector.getZ());
-				velocityPtr.set(index + 3,velocityVector.getP());
+				_positionPtr.set(index,positionVector.getX());
+				_positionPtr.set(index + 1,positionVector.getY());
+				_positionPtr.set(index + 2,positionVector.getZ());
+				_positionPtr.set(index + 3,positionVector.getP());
+				_velocityPtr.set(index,velocityVector.getX());
+				_velocityPtr.set(index + 1,velocityVector.getY());
+				_velocityPtr.set(index + 2,velocityVector.getZ());
+				_velocityPtr.set(index + 3,velocityVector.getP());
 			}
 		}
 		else
@@ -204,7 +204,7 @@ public class SPHSolverService implements ISolver {
 	public List<IModel> getModels(){
 		List<IModel> models = new ArrayList<IModel>();
 		
-		SPHModelX mod = new SPHModelX(gridCellsX, gridCellsY, gridCellsZ);
+		SPHModelX mod = new SPHModelX(_gridCellsX, _gridCellsY, _gridCellsZ);
 		
 		int index = 0;
 		for(int i = 0;i<SPHConstants.PARTICLE_COUNT;i++){
@@ -217,15 +217,15 @@ public class SPHSolverService implements ISolver {
 			Vector3DX velocityVector = new Vector3DX();
 			
 			// buffer population
-			positionVector.setX(positionPtr.get(index));
-			positionVector.setY(positionPtr.get(index + 1));
-			positionVector.setZ(positionPtr.get(index + 2));
-			positionVector.setP(positionPtr.get(index + 3));
+			positionVector.setX(_positionPtr.get(index));
+			positionVector.setY(_positionPtr.get(index + 1));
+			positionVector.setZ(_positionPtr.get(index + 2));
+			positionVector.setP(_positionPtr.get(index + 3));
 			
-			velocityVector.setX(velocityPtr.get(index));
-			velocityVector.setY(velocityPtr.get(index + 1));
-			velocityVector.setZ(velocityPtr.get(index + 2));
-			velocityVector.setP(velocityPtr.get(index + 3));
+			velocityVector.setX(_velocityPtr.get(index));
+			velocityVector.setY(_velocityPtr.get(index + 1));
+			velocityVector.setZ(_velocityPtr.get(index + 2));
+			velocityVector.setP(_velocityPtr.get(index + 3));
 			
 			SPHParticle particle = new SPHParticleX(positionVector, velocityVector, 1);
 			mod.getParticles().add(particle);
@@ -253,158 +253,158 @@ public class SPHSolverService implements ISolver {
 	}
 	
 	public void cleanContext(){
-		this.context.release();
+		this._context.release();
 	}
 	
-	public int _runClearBuffers(){
-		clearBuffers.setArg(0, neighborMap);
-		clearBuffers.enqueueNDRange(queue, new int[] {SPHConstants.PARTICLE_COUNT});
+	public int runClearBuffers(){
+		_clearBuffers.setArg(0, _neighborMap);
+		_clearBuffers.enqueueNDRange(_queue, new int[] {SPHConstants.PARTICLE_COUNT});
 		return 0;
 	}
 	
-	public int _runComputeAcceleration(){
-		computeAcceleration.setArg( 0, neighborMap );
-		computeAcceleration.setArg( 1, pressure );
-		computeAcceleration.setArg( 2, rho );
-		computeAcceleration.setArg( 3, rhoInv );
-		computeAcceleration.setArg( 4, sortedPosition );
-		computeAcceleration.setArg( 5, sortedVelocity );
-		computeAcceleration.setArg( 6, PhysicsConstants.CFLLimit );
-		computeAcceleration.setArg( 7, PhysicsConstants.DEL_2_W_VISCOSITY_COEFFICIENT );
-		computeAcceleration.setArg( 8, PhysicsConstants.GRAD_W_SPIKY_COEFFICIENT );
-		computeAcceleration.setArg( 9, PhysicsConstants.H );
-		computeAcceleration.setArg( 10, PhysicsConstants.MASS );
-		computeAcceleration.setArg( 11, PhysicsConstants.MU );
-		computeAcceleration.setArg( 12, PhysicsConstants.SIMULATION_SCALE );
-		computeAcceleration.setArg( 13, acceleration );
-		computeAcceleration.enqueueNDRange(queue, new int[] {SPHConstants.PARTICLE_COUNT});
+	public int runComputeAcceleration(){
+		_computeAcceleration.setArg( 0, _neighborMap );
+		_computeAcceleration.setArg( 1, _pressure );
+		_computeAcceleration.setArg( 2, _rho );
+		_computeAcceleration.setArg( 3, _rhoInv );
+		_computeAcceleration.setArg( 4, _sortedPosition );
+		_computeAcceleration.setArg( 5, _sortedVelocity );
+		_computeAcceleration.setArg( 6, PhysicsConstants.CFLLimit );
+		_computeAcceleration.setArg( 7, PhysicsConstants.DEL_2_W_VISCOSITY_COEFFICIENT );
+		_computeAcceleration.setArg( 8, PhysicsConstants.GRAD_W_SPIKY_COEFFICIENT );
+		_computeAcceleration.setArg( 9, PhysicsConstants.H );
+		_computeAcceleration.setArg( 10, PhysicsConstants.MASS );
+		_computeAcceleration.setArg( 11, PhysicsConstants.MU );
+		_computeAcceleration.setArg( 12, PhysicsConstants.SIMULATION_SCALE );
+		_computeAcceleration.setArg( 13, _acceleration );
+		_computeAcceleration.enqueueNDRange(_queue, new int[] {SPHConstants.PARTICLE_COUNT});
 		return 0;
 	}
 	
-	public int _runComputeDensityPressure(){
-		computeDensityPressure.setArg( 0, neighborMap );
-		computeDensityPressure.setArg( 1, PhysicsConstants.W_POLY_6_COEFFICIENT );
-		computeDensityPressure.setArg( 2, PhysicsConstants.H );
-		computeDensityPressure.setArg( 3, PhysicsConstants.MASS );
-		computeDensityPressure.setArg( 4, PhysicsConstants.RHO0 );
-		computeDensityPressure.setArg( 5, PhysicsConstants.SIMULATION_SCALE );
-		computeDensityPressure.setArg( 6, PhysicsConstants.STIFFNESS );
-		computeDensityPressure.setArg( 7, pressure );
-		computeDensityPressure.setArg( 8, rho );
-		computeDensityPressure.setArg( 9, rhoInv );
-		computeDensityPressure.enqueueNDRange(queue, new int[] {SPHConstants.PARTICLE_COUNT});
+	public int runComputeDensityPressure(){
+		_computeDensityPressure.setArg( 0, _neighborMap );
+		_computeDensityPressure.setArg( 1, PhysicsConstants.W_POLY_6_COEFFICIENT );
+		_computeDensityPressure.setArg( 2, PhysicsConstants.H );
+		_computeDensityPressure.setArg( 3, PhysicsConstants.MASS );
+		_computeDensityPressure.setArg( 4, PhysicsConstants.RHO0 );
+		_computeDensityPressure.setArg( 5, PhysicsConstants.SIMULATION_SCALE );
+		_computeDensityPressure.setArg( 6, PhysicsConstants.STIFFNESS );
+		_computeDensityPressure.setArg( 7, _pressure );
+		_computeDensityPressure.setArg( 8, _rho );
+		_computeDensityPressure.setArg( 9, _rhoInv );
+		_computeDensityPressure.enqueueNDRange(_queue, new int[] {SPHConstants.PARTICLE_COUNT});
 		return 0;
 	}
 	
-	public int _runFindNeighbors(){
-		findNeighbors.setArg( 0, gridCellIndexFixedUp );
-		findNeighbors.setArg( 1, sortedPosition );
-		gridCellCount = ((gridCellsX) * (gridCellsY)) * (gridCellsZ);
-		findNeighbors.setArg( 2, gridCellCount );
-		findNeighbors.setArg( 3, gridCellsX );
-		findNeighbors.setArg( 4, gridCellsY );
-		findNeighbors.setArg( 5, gridCellsZ );
-		findNeighbors.setArg( 6, PhysicsConstants.H );
-		findNeighbors.setArg( 7, PhysicsConstants.HASH_GRID_CELL_SIZE );
-		findNeighbors.setArg( 8, PhysicsConstants.HASH_GRID_CELL_SIZE_INV );
-		findNeighbors.setArg( 9, PhysicsConstants.SIMULATION_SCALE );
-		findNeighbors.setArg( 10, SPHConstants.XMIN_F );
-		findNeighbors.setArg( 11, SPHConstants.YMIN_F );
-		findNeighbors.setArg( 12, SPHConstants.ZMIN_F );
-		findNeighbors.setArg( 13, neighborMap );
-		findNeighbors.enqueueNDRange(queue, new int[] {SPHConstants.PARTICLE_COUNT});
+	public int runFindNeighbors(){
+		_findNeighbors.setArg( 0, _gridCellIndexFixedUp );
+		_findNeighbors.setArg( 1, _sortedPosition );
+		_gridCellCount = ((_gridCellsX) * (_gridCellsY)) * (_gridCellsZ);
+		_findNeighbors.setArg( 2, _gridCellCount );
+		_findNeighbors.setArg( 3, _gridCellsX );
+		_findNeighbors.setArg( 4, _gridCellsY );
+		_findNeighbors.setArg( 5, _gridCellsZ );
+		_findNeighbors.setArg( 6, PhysicsConstants.H );
+		_findNeighbors.setArg( 7, PhysicsConstants.HASH_GRID_CELL_SIZE );
+		_findNeighbors.setArg( 8, PhysicsConstants.HASH_GRID_CELL_SIZE_INV );
+		_findNeighbors.setArg( 9, PhysicsConstants.SIMULATION_SCALE );
+		_findNeighbors.setArg( 10, SPHConstants.XMIN_F );
+		_findNeighbors.setArg( 11, SPHConstants.YMIN_F );
+		_findNeighbors.setArg( 12, SPHConstants.ZMIN_F );
+		_findNeighbors.setArg( 13, _neighborMap );
+		_findNeighbors.enqueueNDRange(_queue, new int[] {SPHConstants.PARTICLE_COUNT});
 		return 0;
 	}
 	
-	public int _runHashParticles(){
+	public int runHashParticles(){
 		// Stage HashParticles
-		hashParticles.setArg( 0, position );
-		hashParticles.setArg( 1, gridCellsX );
-		hashParticles.setArg( 2, gridCellsY );
-		hashParticles.setArg( 3, gridCellsZ );
-		hashParticles.setArg( 4, PhysicsConstants.HASH_GRID_CELL_SIZE_INV );
-		hashParticles.setArg( 5, SPHConstants.XMIN_F );
-		hashParticles.setArg( 6, SPHConstants.YMIN_F );
-		hashParticles.setArg( 7, SPHConstants.ZMIN_F );
-		hashParticles.setArg( 8, particleIndex );
-		hashParticles.enqueueNDRange(queue, new int[] {SPHConstants.PARTICLE_COUNT});
+		_hashParticles.setArg( 0, _position );
+		_hashParticles.setArg( 1, _gridCellsX );
+		_hashParticles.setArg( 2, _gridCellsY );
+		_hashParticles.setArg( 3, _gridCellsZ );
+		_hashParticles.setArg( 4, PhysicsConstants.HASH_GRID_CELL_SIZE_INV );
+		_hashParticles.setArg( 5, SPHConstants.XMIN_F );
+		_hashParticles.setArg( 6, SPHConstants.YMIN_F );
+		_hashParticles.setArg( 7, SPHConstants.ZMIN_F );
+		_hashParticles.setArg( 8, _particleIndex );
+		_hashParticles.enqueueNDRange(_queue, new int[] {SPHConstants.PARTICLE_COUNT});
 		return 0;
 	}
 	
-	public int _runIndexPostPass(){
-		indexPostPass.setArg( 0, gridCellIndex );
-		gridCellCount = ((gridCellsX) * (gridCellsY)) * (gridCellsZ);
-		indexPostPass.setArg( 1, gridCellCount );
-		indexPostPass.setArg( 2, gridCellIndexFixedUp );
-		int gridCellCountRoundedUp = ((( gridCellCount - 1 ) / 256 ) + 1 ) * 256;
-		indexPostPass.enqueueNDRange(queue, new int[] {gridCellCountRoundedUp});
+	public int runIndexPostPass(){
+		_indexPostPass.setArg( 0, _gridCellIndex );
+		_gridCellCount = ((_gridCellsX) * (_gridCellsY)) * (_gridCellsZ);
+		_indexPostPass.setArg( 1, _gridCellCount );
+		_indexPostPass.setArg( 2, _gridCellIndexFixedUp );
+		int gridCellCountRoundedUp = ((( _gridCellCount - 1 ) / 256 ) + 1 ) * 256;
+		_indexPostPass.enqueueNDRange(_queue, new int[] {gridCellCountRoundedUp});
 		return 0;
 	}
 	
-	public int _runIndexx(){
+	public int runIndexx(){
 		// Stage Indexx
-		indexx.setArg( 0, particleIndex );
-		gridCellCount = ((gridCellsX) * (gridCellsY)) * (gridCellsZ);
-		indexx.setArg( 1, gridCellCount );
-		indexx.setArg( 2, gridCellIndex );
-		int gridCellCountRoundedUp = ((( gridCellCount - 1 ) / 256 ) + 1 ) * 256;
-		indexx.enqueueNDRange(queue, new int[] {gridCellCountRoundedUp});
+		_indexx.setArg( 0, _particleIndex );
+		_gridCellCount = ((_gridCellsX) * (_gridCellsY)) * (_gridCellsZ);
+		_indexx.setArg( 1, _gridCellCount );
+		_indexx.setArg( 2, _gridCellIndex );
+		int gridCellCountRoundedUp = ((( _gridCellCount - 1 ) / 256 ) + 1 ) * 256;
+		_indexx.enqueueNDRange(_queue, new int[] {gridCellCountRoundedUp});
 		return 0;
 	}
 	
-	public int _runIntegrate(){
+	public int runIntegrate(){
 		// Stage Integrate
-		integrate.setArg( 0, acceleration );
-		integrate.setArg( 1, sortedPosition );
-		integrate.setArg( 2, sortedVelocity );
-		integrate.setArg( 3, PhysicsConstants.GRAVITY_X );
-		integrate.setArg( 4, PhysicsConstants.GRAVITY_Y );
-		integrate.setArg( 5, PhysicsConstants.GRAVITY_Z );
-		integrate.setArg( 6, PhysicsConstants.SIMULATION_SCALE_INV );
-		integrate.setArg( 7, PhysicsConstants.TIME_STEP );
-		integrate.setArg( 8, SPHConstants.XMIN_F );
-		integrate.setArg( 9, SPHConstants.XMAX_F );
-		integrate.setArg( 10, SPHConstants.YMIN_F );
-		integrate.setArg( 11, SPHConstants.YMAX_F );
-		integrate.setArg( 12, SPHConstants.ZMIN_F );
-		integrate.setArg( 13, SPHConstants.ZMAX_F );
-		integrate.setArg( 14, PhysicsConstants.DAMPING );
-		integrate.setArg( 15, position );
-		integrate.setArg( 16, velocity );
-		integrate.enqueueNDRange(queue, new int[] {SPHConstants.PARTICLE_COUNT});
+		_integrate.setArg( 0, _acceleration );
+		_integrate.setArg( 1, _sortedPosition );
+		_integrate.setArg( 2, _sortedVelocity );
+		_integrate.setArg( 3, PhysicsConstants.GRAVITY_X );
+		_integrate.setArg( 4, PhysicsConstants.GRAVITY_Y );
+		_integrate.setArg( 5, PhysicsConstants.GRAVITY_Z );
+		_integrate.setArg( 6, PhysicsConstants.SIMULATION_SCALE_INV );
+		_integrate.setArg( 7, PhysicsConstants.TIME_STEP );
+		_integrate.setArg( 8, SPHConstants.XMIN_F );
+		_integrate.setArg( 9, SPHConstants.XMAX_F );
+		_integrate.setArg( 10, SPHConstants.YMIN_F );
+		_integrate.setArg( 11, SPHConstants.YMAX_F );
+		_integrate.setArg( 12, SPHConstants.ZMIN_F );
+		_integrate.setArg( 13, SPHConstants.ZMAX_F );
+		_integrate.setArg( 14, PhysicsConstants.DAMPING );
+		_integrate.setArg( 15, _position );
+		_integrate.setArg( 16, _velocity );
+		_integrate.enqueueNDRange(_queue, new int[] {SPHConstants.PARTICLE_COUNT});
 		return 0;
 	}
 	
-	public int _runSortPostPass(){
+	public int runSortPostPass(){
 		// Stage SortPostPass
-		sortPostPass.setArg( 0, particleIndex );
-		sortPostPass.setArg( 1, position );
-		sortPostPass.setArg( 2, velocity );
-		sortPostPass.setArg( 3, sortedPosition );
-		sortPostPass.setArg( 4, sortedVelocity );
-		sortPostPass.enqueueNDRange(queue, new int[] {SPHConstants.PARTICLE_COUNT});
+		_sortPostPass.setArg( 0, _particleIndex );
+		_sortPostPass.setArg( 1, _position );
+		_sortPostPass.setArg( 2, _velocity );
+		_sortPostPass.setArg( 3, _sortedPosition );
+		_sortPostPass.setArg( 4, _sortedVelocity );
+		_sortPostPass.enqueueNDRange(_queue, new int[] {SPHConstants.PARTICLE_COUNT});
 		return 0;
 	}
 	
-	public int _runSort(){
+	public int runSort(){
 		//this version work with qsort
 		int index = 0;
-		List<int[]> _particleIndex = new ArrayList<int[]>();
-		Pointer<Integer> particleInd = particleIndex.read(queue);
-		queue.finish();
+		List<int[]> particleIndex = new ArrayList<int[]>();
+		Pointer<Integer> particleInd = _particleIndex.read(_queue);
+		_queue.finish();
 		for(int i = 0; i < SPHConstants.PARTICLE_COUNT * 2;i+=2){
 			int[] element = {particleInd.get(i), particleInd.get(i+1)};
-			_particleIndex.add(element);
+			particleIndex.add(element);
 		}
-		Collections.sort(_particleIndex, new MyCompare());
-		for(int i = 0; i< _particleIndex.size();i++){
+		Collections.sort(particleIndex, new MyCompare());
+		for(int i = 0; i< particleIndex.size();i++){
 			for(int j=0;j<2;j++){
-				particleInd.set(index,_particleIndex.get(i)[j]);
+				particleInd.set(index,particleIndex.get(i)[j]);
 				index++;
 			}
 		}
-		particleIndex.write(queue, particleInd, false);
-		queue.finish();
+		_particleIndex.write(_queue, particleInd, false);
+		_queue.finish();
 		return 0;
 	}
 	
@@ -417,22 +417,22 @@ public class SPHSolverService implements ISolver {
 	}
 	
 	private void step(){
-		_runClearBuffers();
-		_runHashParticles();
-		_runSort();
-		_runSortPostPass();
-		_runIndexx();
-		_runIndexPostPass();
-		_runFindNeighbors();
-		_runComputeDensityPressure();
-		_runComputeAcceleration();
-		_runIntegrate();
-		positionPtr = position.read(queue);
-		queue.finish();
+		runClearBuffers();
+		runHashParticles();
+		runSort();
+		runSortPostPass();
+		runIndexx();
+		runIndexPostPass();
+		runFindNeighbors();
+		runComputeDensityPressure();
+		runComputeAcceleration();
+		runIntegrate();
+		_positionPtr = _position.read(_queue);
+		_queue.finish();
 	}
 	
 	public void finishQueue() {
-		queue.finish();
+		_queue.finish();
 	}
 }
 ;
