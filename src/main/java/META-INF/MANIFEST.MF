@@ -1,24 +1,25 @@
 Manifest-Version: 1.0
-Export-Package: org.openworm.simulationengine.samplesolver;
-  uses:="org.openworm.simulationengine.core.model,
-   org.openworm.simulationengine.core.solver,
-   org.springframework.stereotype,
-   org.springframework.transaction.annotation"
-Bundle-Vendor: OpenWorm
-Bundle-Version: 1.0.0
-Tool: Bundlor 1.0.0.RELEASE
-Bundle-Name: SPH Solver Provider
+Bnd-LastModified: 1350575552261
+Build-Jdk: 1.6.0_35
+Built-By: matteocantarelli
 Bundle-ManifestVersion: 2
+Bundle-Name: OpenWorm Simulation Engine SPH Solver Bundle
 Bundle-SymbolicName: org.openworm.simulationengine.solver.sph
-Import-Package: org.apache.commons.logging,
- org.openworm.simulationengine.core,
- org.openworm.simulationengine.core.constants,
- org.openworm.simulationengine.core.model,
- org.openworm.simulationengine.core.simulation,
- org.openworm.simulationengine.core.simulator,
- org.openworm.simulationengine.core.solver,
- org.openworm.simulationengine.model.sph,
- org.springframework.stereotype;version="[3.0.0.RELEASE,3.0.0.RELEASE]",
- org.springframework.transaction.annotation;version="[3.0.0.RELEASE,3.0.0.RELEASE]"
-
-
+Bundle-Version: 1.0.0
+Created-By: Apache Maven Bundle Plugin
+Export-Package: org.openworm.simulationengine.solver.sph;uses:="com.nati
+ velibs4java.opencl,org.openworm.simulationengine.core.simulation,org.br
+ idj,org.openworm.simulationengine.model.sph.x,org.openworm.simulationen
+ gine.core.constants,com.nativelibs4java.util,org.openworm.simulationeng
+ ine.core.model,org.openworm.simulationengine.core.solver,org.openworm.s
+ imulationengine.model.sph,org.springframework.stereotype";version="1.0.
+ 0"
+Import-Package: com.nativelibs4java.opencl;version="[1.0,2)",com.nativel
+ ibs4java.util;version="[1.0,2)",org.bridj;version="[1.0,2)",org.openwor
+ m.simulationengine.core.constants;version="[1.0,2)",org.openworm.simula
+ tionengine.core.model;version="[1.0,2)",org.openworm.simulationengine.c
+ ore.simulation;version="[1.0,2)",org.openworm.simulationengine.core.sol
+ ver;version="[1.0,2)",org.openworm.simulationengine.model.sph;version="
+ [1.0,2)",org.openworm.simulationengine.model.sph.x;version="[1.0,2)",or
+ g.springframework.stereotype;version="[3.0,4)"
+Tool: Bnd-1.50.0

@@ -2,37 +2,19 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>org.openworm.simulationengine.solve.sphr</groupId>
-	<artifactId>org.openworm.simulationengine.solver.sph</artifactId>
-	<name>SPH Solver Provider</name>
-	<packaging>jar</packaging>
-	<version>1.0.0-SNAPSHOT</version>
+	<groupId>org.openworm</groupId>
+	<artifactId>simulationengine.solver.sph</artifactId>
+	<name>OpenWorm Simulation Engine SPH Solver Bundle</name>
+	<packaging>bundle</packaging>
+	<version>1.0.0</version>
 	<properties>
-		<spring.version>2.5.6.A</spring.version>
+		<spring.version>3.0.0.RELEASE</spring.version>
 	</properties>
 	<dependencies>
-		<!-- compile and runtime dependencies -->
-		<dependency>
-			<groupId>javax.transaction</groupId>
-			<artifactId>com.springsource.javax.transaction</artifactId>
-			<version>1.1.0</version>
-			<scope>runtime</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.aopalliance</groupId>
-			<artifactId>com.springsource.org.aopalliance</artifactId>
-			<version>1.0.0</version>
-			<scope>runtime</scope>
-		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>com.springsource.org.apache.commons.logging</artifactId>
 			<version>1.1.1</version>
-		</dependency>
-		<dependency>
-			<groupId>org.hibernate</groupId>
-			<artifactId>com.springsource.org.hibernate</artifactId>
-			<version>3.2.6.ga</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework</groupId>
@@ -46,35 +28,13 @@
 		</dependency>
 		<dependency>
 			<groupId>org.springframework</groupId>
-			<artifactId>org.springframework.aop</artifactId>
-			<version>${spring.version}</version>
-			<scope>runtime</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework</groupId>
 			<artifactId>org.springframework.context</artifactId>
 			<version>${spring.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework</groupId>
-			<artifactId>org.springframework.jdbc</artifactId>
-			<version>${spring.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>org.springframework.orm</artifactId>
-			<version>${spring.version}</version>
-			<scope>runtime</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework</groupId>
 			<artifactId>org.springframework.transaction</artifactId>
 			<version>${spring.version}</version>
-		</dependency>
-		 <dependency>
-			<groupId>com.nativelibs4java</groupId>
-			<artifactId>javacl</artifactId>
-			<version>1.0-SNAPSHOT</version>
 		</dependency>
 		<!-- test dependencies -->
 		<dependency>
@@ -90,10 +50,21 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.hsqldb</groupId>
-			<artifactId>com.springsource.org.hsqldb</artifactId>
-			<version>1.8.0.9</version>
+			<groupId>org.junit</groupId>
+			<artifactId>com.springsource.org.junit</artifactId>
+			<version>4.4.0</version>
 			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>org.springframework.test</artifactId>
+			<version>${spring.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.nativelibs4java</groupId>
+			<artifactId>javacl-osgi</artifactId>
+			<version>1.0-SNAPSHOT</version>
 		</dependency>
 		<!-- dm Server library definitions -->
 		<dependency>
@@ -103,28 +74,14 @@
 			<version>${spring.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>org.openworm.simulationengine.core</groupId>
-			<artifactId>org.openworm.simulationengine.core</artifactId>
-			<version>1.0.0-SNAPSHOT</version>
+			<groupId>org.openworm</groupId>
+			<artifactId>simulationengine.core</artifactId>
+			<version>1.0.0</version>
 		</dependency>
 		<dependency>
-			<groupId>org.junit</groupId>
-			<artifactId>com.springsource.org.junit</artifactId>
-			<version>4.4.0</version>
-			<type>pom</type>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>org.springframework.test</artifactId>
-			<version>2.5.6.A</version>
-			<type>pom</type>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.openworm.simulationengine.model.sph</groupId>
-			<artifactId>org.openworm.simulationengine.model.sph</artifactId>
-			<version>1.0.0-SNAPSHOT</version>
+			<groupId>org.openworm</groupId>
+			<artifactId>simulationengine.model.sph</artifactId>
+			<version>1.0.0</version>
 		</dependency>
 	</dependencies>
 	<repositories>
@@ -153,6 +110,7 @@
 			<name>Sonatype OSS Snapshots Repository</name>
 			<url>http://oss.sonatype.org/content/groups/public</url>
 		</repository>
+
 	</repositories>
 	<build>
 		<plugins>
@@ -160,19 +118,47 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<configuration>
-					<source>1.5</source>
-					<target>1.5</target>
+					<source>1.6</source>
+					<target>1.6</target>
 				</configuration>
 			</plugin>
 			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-jar-plugin</artifactId>
+				<groupId>org.apache.felix</groupId>
+				<artifactId>maven-bundle-plugin</artifactId>
+				<version>2.3.7</version>
+				<extensions>true</extensions>
 				<configuration>
-					<archive>
-						<manifestFile>src/main/java/META-INF/MANIFEST.MF</manifestFile>
-					</archive>
+					<manifestLocation>src/main/java/META-INF</manifestLocation>
+					<supportedProjectTypes>
+						<supportedProjectType>jar</supportedProjectType>
+						<supportedProjectType>bundle</supportedProjectType>
+					</supportedProjectTypes>
+					<instructions>
+						<Bundle-SymbolicName>${project.groupId}.${project.artifactId}</Bundle-SymbolicName>
+						<Bundle-Version>${project.version}</Bundle-Version>
+					</instructions>
 				</configuration>
 			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<configuration>
+					<outputDirectory>${project.build.outputDirectory}/lib</outputDirectory>
+					<includeScope>runtime</includeScope>
+					<excludeScope>provided</excludeScope>
+				</configuration>
+				<executions>
+					<execution>
+						<id>copy-dependencies</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>copy-dependencies</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-dependency-plugin</artifactId>
@@ -186,6 +172,38 @@
 					</execution>
 				</executions>
 			</plugin>
+
+
 		</plugins>
+
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.eclipse.m2e</groupId>
+					<artifactId>lifecycle-mapping</artifactId>
+					<version>1.0.0</version>
+					<configuration>
+						<lifecycleMappingMetadata>
+							<pluginExecutions>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>org.apache.maven.plugins</groupId>
+										<artifactId>maven-dependency-plugin</artifactId>
+										<versionRange>[2.0,)</versionRange>
+										<goals>
+											<goal>copy-dependencies</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore />
+									</action>
+								</pluginExecution>
+							</pluginExecutions>
+						</lifecycleMappingMetadata>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+
 	</build>
 </project>
