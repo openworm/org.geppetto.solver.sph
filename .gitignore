@@ -1,2 +1,3 @@
 /target
-*.DS_Storesrc/main/java/META-INF/MANIFEST.MF
+src/main/java/META-INF/MANIFEST.MF
+*.DS_Store
