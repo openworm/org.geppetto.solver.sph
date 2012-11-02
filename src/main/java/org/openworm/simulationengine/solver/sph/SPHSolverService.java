@@ -175,6 +175,8 @@ public class SPHSolverService implements ISolver {
 			this.allocateBuffers();
 			
 			int index = 0;
+			
+			//FIXME Number of particles can't be hardcoded!
 			for(int i = 0;i<SPHConstants.PARTICLE_COUNT;i++){
 				if(i != 0)
 				{
