@@ -230,6 +230,7 @@ public class SPHSolverService implements ISolver {
 			velocityVector.setP(_velocityPtr.get(index + 3));
 			
 			SPHParticle particle = new SPHParticleX(positionVector, velocityVector, 1);
+			((SPHParticleX)particle).setId(mod.getId()+i);
 			mod.getParticles().add(particle);
 		}
 		
