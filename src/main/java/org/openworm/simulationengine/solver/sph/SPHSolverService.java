@@ -9,6 +9,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.bridj.Pointer;
 import org.openworm.simulationengine.core.constants.PhysicsConstants;
 import org.openworm.simulationengine.core.model.IModel;
@@ -34,6 +36,9 @@ import com.nativelibs4java.util.IOUtils;
 
 @Service
 public class SPHSolverService implements ISolver {
+	
+	
+	private static Log logger = LogFactory.getLog(SPHSolverService.class);
 	
 	private CLContext _context;
 	public CLQueue _queue;
@@ -242,16 +247,17 @@ public class SPHSolverService implements ISolver {
 	public List<List<IModel>> solve(List<IModel> models, ITimeConfiguration timeConfiguration)
 	{
 		// TODO: extend this to use time configuration to do multiple steps in one go
-		
+		logger.info("SPH solver start");
 		// 1. populate buffers from list of models
-		this.setModels(models);
+		setModels(models);
 		
 		// 2. call this.step();
-		this.step();
+		step();
 		
 		// 3. retrieve values from buffers and populate returned models
 		List<List<IModel>> modelsList = new ArrayList<List<IModel>> ();
 		modelsList.add(this.getModels());
+		logger.info("SPH solver end");
 		return modelsList;
 	}
 	
@@ -420,18 +426,34 @@ public class SPHSolverService implements ISolver {
 	}
 	
 	private void step(){
+		logger.info("-SPH run clear buffer");
 		runClearBuffers();
+		logger.info("-SPH run hash particles");
 		runHashParticles();
+		logger.info("-SPH run sort");
 		runSort();
+		logger.info("-SPH run sort post pass");
 		runSortPostPass();
+		logger.info("-SPH run index");
 		runIndexx();
+		logger.info("-SPH run index post pass");
 		runIndexPostPass();
+		logger.info("-SPH run find neighbors");
 		runFindNeighbors();
+		logger.info("-SPH runComputeDensityPressur");
 		runComputeDensityPressure();
+		logger.info("-SPH runComputeAcceleration");
 		runComputeAcceleration();
+		logger.info("-SPH runIntegrate");
 		runIntegrate();
+		logger.info("-SPH position read");
+		logger.info("Position element size"+_position.getElementSize());
+		logger.info("Position element count"+_position.getElementCount());		
+		logger.info("Queue"+_queue);
 		_positionPtr = _position.read(_queue);
+		logger.info("-SPH finish queue");
 		_queue.finish();
+		logger.info("-SPH step done");
 	}
 	
 	public void finishQueue() {
