@@ -251,6 +251,29 @@ public class SPHSolverTests {
 		// TODO: check that the result of integration is correct (same as test integrate)
 	}
 	
+	@Test
+	public void testSolveManySteps(){
+		// test a full solve step
+		List<List<IModel>> resultModels = solver.solve(generateSampleModel(), null);
+		
+		for(int i = 0; i < 10; i++)
+		{
+			// get out new set of models out of results
+			List<IModel> inputModels = resultModels.get(0);
+			
+			// solve
+			resultModels = solver.solve(inputModels, null);
+		}
+		
+		// check that output is not null and we only got one model back
+		Assert.assertTrue("testSolve: solve output is null", resultModels != null);
+		Assert.assertTrue("testSolve: unexpected number of output models", resultModels.size() == 1);
+		Assert.assertTrue("testSolve: unexpected number of nested output models", resultModels.get(0).size() == 1);
+		// check that number of particles is correct
+		Assert.assertTrue("testSolve: number of particles does not match expected value", ((SPHModelX)resultModels.get(0).get(0)).getNumberOfParticals() == SPHConstants.PARTICLE_COUNT);
+		// TODO: check that the result of integration is correct (same as test integrate)
+	}
+	
 	private boolean testEndClearBuffers(){
 		//test if all ellement of neighborMap is -1
 		boolean result = true;
