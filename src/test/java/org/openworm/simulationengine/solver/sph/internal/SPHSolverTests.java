@@ -17,7 +17,6 @@ import org.openworm.simulationengine.core.constants.PhysicsConstants;
 import org.openworm.simulationengine.core.model.IModel;
 import org.openworm.simulationengine.core.model.MathUtils;
 import org.openworm.simulationengine.model.sph.SPHParticle;
-import org.openworm.simulationengine.model.sph.common.SPHConstants;
 import org.openworm.simulationengine.model.sph.x.SPHModelX;
 import org.openworm.simulationengine.model.sph.x.SPHParticleX;
 import org.openworm.simulationengine.model.sph.x.Vector3DX;
@@ -256,7 +255,7 @@ public class SPHSolverTests {
 		// test a full solve step
 		List<List<IModel>> resultModels = solver.solve(generateSampleModel(), null);
 		
-		for(int i = 0; i < 10; i++)
+		for(int i = 0; i < 100; i++)
 		{
 			// get out new set of models out of results
 			List<IModel> inputModels = resultModels.get(0);
@@ -988,5 +987,25 @@ public class SPHSolverTests {
 		}
 		
 		return new ArrayList<IModel>(Arrays.asList(mod));
+	}
+	
+	public class SPHConstants {
+		public static final int PARTICLE_COUNT = 5539;//( 32 * 1024 );
+		public static final int NEIGHBOR_COUNT = 32;
+		public static final int NK = NEIGHBOR_COUNT * PARTICLE_COUNT;
+		
+		public static final int XMIN = 0;
+		public static final int XMAX = 100;
+		public static final int YMIN = 0;
+		public static final int YMAX = 40;
+		public static final int ZMIN = 0;
+		public static final int ZMAX = 40;
+
+		public static final float XMIN_F = XMIN;
+		public static final float XMAX_F = XMAX;
+		public static final float YMIN_F = YMIN;
+		public static final float YMAX_F = YMAX;
+		public static final float ZMIN_F = ZMIN;
+		public static final float ZMAX_F = ZMAX;
 	}
 }

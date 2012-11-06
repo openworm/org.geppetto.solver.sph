@@ -5,8 +5,6 @@
 // "Particle-based fluid simulation for interactive applications", Muller, Charypar & Gross,
 // Eurographics/SIGGRAPH Symposium on Computer Animation (2003).
 
-
-#define PARTICLE_COUNT ( 32 * 1024 )//( 32 * 1024 )
 #define NEIGHBOR_COUNT 32
 
 #define NO_PARTICLE_ID -1
@@ -389,21 +387,6 @@ int considerParticle(
 }
 
 
-
-
-uint myRandom( 
-			  uint prior,
-			  int maxParticles /*didn't use this variable*/
-			  )
-{
-	unsigned long int m = PARTICLE_COUNT;//generator period, assume power of 2
-	unsigned long int a = 1664525;
-	unsigned long int c = 1013904223;
-	uint result = (uint)(( a * prior + c ) % m );
-	return result;
-}
-
-
 #define radius_segments 30
 #define TEMPORARY_NEIGHBOR_COUNT 500
 
@@ -650,10 +633,12 @@ __kernel void hashParticles(
 							float xmin,
 							float ymin,
 							float zmin,
-							__global uint2 * particleIndex
+							__global uint2 * particleIndex,
+							int PARTICLE_COUNT
 							)
 {
 	int id = get_global_id( 0 );
+	
 	if( id >= PARTICLE_COUNT ){
 		uint2 result;
 		int gridCellCount = gridCellsX * gridCellsY * gridCellsZ;
@@ -704,7 +689,8 @@ __kernel void indexPostPass(
 __kernel void indexx(
 					 __global uint2 * particleIndex,
 					 int gridCellCount,
-					 __global uint * gridCellIndex
+					 __global uint * gridCellIndex,
+					 int PARTICLE_COUNT
 					 )
 {
 	//fill up gridCellIndex

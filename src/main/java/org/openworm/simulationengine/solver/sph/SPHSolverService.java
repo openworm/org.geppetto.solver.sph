@@ -85,6 +85,7 @@ public class SPHSolverService implements ISolver {
 	public int _gridCellsY;
 	public int _gridCellsZ;
 	public int _gridCellCount;
+	public int _particleCount;
 	
 	public static Random RandomGenerator = new Random();
 	
@@ -134,19 +135,19 @@ public class SPHSolverService implements ISolver {
 	
 	private void allocateBuffers(){
 		// input buffers declarations
-		_accelerationPtr = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 4);
+		_accelerationPtr = Pointer.allocateFloats(_particleCount * 4);
 		_gridCellIndexPtr = Pointer.allocateInts((_gridCellCount + 1));
 		_gridCellIndexFixedUpPtr = Pointer.allocateInts((_gridCellCount + 1));
-		_neighborMapPtr = Pointer.allocateFloats(SPHConstants.NK * 2);
-		_particleIndexPtr = Pointer.allocateInts(SPHConstants.PARTICLE_COUNT * 2);
-		_positionPtr = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 4);
-		_pressurePtr = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 1);
-		_rhoPtr = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 1);
-		_rhoInvPtr = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 1);
-		_sortedPositionPtr = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 4);
-		_sortedVelocityPtr = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 4);
-		_velocityPtr = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 4);
-		_positionPtrbuff = Pointer.allocateFloats(SPHConstants.PARTICLE_COUNT * 4);
+		_neighborMapPtr = Pointer.allocateFloats(_particleCount * SPHConstants.NEIGHBOR_COUNT * 2);
+		_particleIndexPtr = Pointer.allocateInts(_particleCount * 2);
+		_positionPtr = Pointer.allocateFloats(_particleCount * 4);
+		_pressurePtr = Pointer.allocateFloats(_particleCount * 1);
+		_rhoPtr = Pointer.allocateFloats(_particleCount * 1);
+		_rhoInvPtr = Pointer.allocateFloats(_particleCount * 1);
+		_sortedPositionPtr = Pointer.allocateFloats(_particleCount * 4);
+		_sortedVelocityPtr = Pointer.allocateFloats(_particleCount * 4);
+		_velocityPtr = Pointer.allocateFloats(_particleCount * 4);
+		_positionPtrbuff = Pointer.allocateFloats(_particleCount * 4);
 		
 		// alternative buffer defining
 		_acceleration = _context.createBuffer(Usage.InputOutput,_accelerationPtr,false);
@@ -170,6 +171,8 @@ public class SPHSolverService implements ISolver {
 		{
 			SPHModelX mod = (SPHModelX) models.get(0);
 			
+			_particleCount = mod.getNumberOfParticals();
+			
 			// set grid dimensions
 			_gridCellsX = mod.getCellX();
 			_gridCellsY = mod.getCellY();
@@ -181,8 +184,7 @@ public class SPHSolverService implements ISolver {
 			
 			int index = 0;
 			
-			//FIXME Number of particles can't be hardcoded!
-			for(int i = 0;i<SPHConstants.PARTICLE_COUNT;i++){
+			for(int i = 0;i< _particleCount;i++){
 				if(i != 0)
 				{
 					index = index + 4;
@@ -214,7 +216,7 @@ public class SPHSolverService implements ISolver {
 		SPHModelX mod = new SPHModelX(_gridCellsX, _gridCellsY, _gridCellsZ);
 		
 		int index = 0;
-		for(int i = 0;i<SPHConstants.PARTICLE_COUNT;i++){
+		for(int i = 0;i< _particleCount;i++){
 			if(i != 0)
 			{
 				index = index + 4;
@@ -267,7 +269,7 @@ public class SPHSolverService implements ISolver {
 	
 	public int runClearBuffers(){
 		_clearBuffers.setArg(0, _neighborMap);
-		_clearBuffers.enqueueNDRange(_queue, new int[] {SPHConstants.PARTICLE_COUNT});
+		_clearBuffers.enqueueNDRange(_queue, new int[] {_particleCount});
 		return 0;
 	}
 	
@@ -286,7 +288,7 @@ public class SPHSolverService implements ISolver {
 		_computeAcceleration.setArg( 11, PhysicsConstants.MU );
 		_computeAcceleration.setArg( 12, PhysicsConstants.SIMULATION_SCALE );
 		_computeAcceleration.setArg( 13, _acceleration );
-		_computeAcceleration.enqueueNDRange(_queue, new int[] {SPHConstants.PARTICLE_COUNT});
+		_computeAcceleration.enqueueNDRange(_queue, new int[] {_particleCount});
 		return 0;
 	}
 	
@@ -301,7 +303,7 @@ public class SPHSolverService implements ISolver {
 		_computeDensityPressure.setArg( 7, _pressure );
 		_computeDensityPressure.setArg( 8, _rho );
 		_computeDensityPressure.setArg( 9, _rhoInv );
-		_computeDensityPressure.enqueueNDRange(_queue, new int[] {SPHConstants.PARTICLE_COUNT});
+		_computeDensityPressure.enqueueNDRange(_queue, new int[] {_particleCount});
 		return 0;
 	}
 	
@@ -321,7 +323,7 @@ public class SPHSolverService implements ISolver {
 		_findNeighbors.setArg( 11, SPHConstants.YMIN_F );
 		_findNeighbors.setArg( 12, SPHConstants.ZMIN_F );
 		_findNeighbors.setArg( 13, _neighborMap );
-		_findNeighbors.enqueueNDRange(_queue, new int[] {SPHConstants.PARTICLE_COUNT});
+		_findNeighbors.enqueueNDRange(_queue, new int[] {_particleCount});
 		return 0;
 	}
 	
@@ -336,7 +338,8 @@ public class SPHSolverService implements ISolver {
 		_hashParticles.setArg( 6, SPHConstants.YMIN_F );
 		_hashParticles.setArg( 7, SPHConstants.ZMIN_F );
 		_hashParticles.setArg( 8, _particleIndex );
-		_hashParticles.enqueueNDRange(_queue, new int[] {SPHConstants.PARTICLE_COUNT});
+		_hashParticles.setArg( 9, _particleCount );
+		_hashParticles.enqueueNDRange(_queue, new int[] {_particleCount});
 		return 0;
 	}
 	
@@ -356,6 +359,7 @@ public class SPHSolverService implements ISolver {
 		_gridCellCount = ((_gridCellsX) * (_gridCellsY)) * (_gridCellsZ);
 		_indexx.setArg( 1, _gridCellCount );
 		_indexx.setArg( 2, _gridCellIndex );
+		_indexx.setArg( 3, _particleCount );
 		int gridCellCountRoundedUp = ((( _gridCellCount - 1 ) / 256 ) + 1 ) * 256;
 		_indexx.enqueueNDRange(_queue, new int[] {gridCellCountRoundedUp});
 		return 0;
@@ -380,7 +384,7 @@ public class SPHSolverService implements ISolver {
 		_integrate.setArg( 14, PhysicsConstants.DAMPING );
 		_integrate.setArg( 15, _position );
 		_integrate.setArg( 16, _velocity );
-		_integrate.enqueueNDRange(_queue, new int[] {SPHConstants.PARTICLE_COUNT});
+		_integrate.enqueueNDRange(_queue, new int[] {_particleCount});
 		return 0;
 	}
 	
@@ -391,7 +395,7 @@ public class SPHSolverService implements ISolver {
 		_sortPostPass.setArg( 2, _velocity );
 		_sortPostPass.setArg( 3, _sortedPosition );
 		_sortPostPass.setArg( 4, _sortedVelocity );
-		_sortPostPass.enqueueNDRange(_queue, new int[] {SPHConstants.PARTICLE_COUNT});
+		_sortPostPass.enqueueNDRange(_queue, new int[] {_particleCount});
 		return 0;
 	}
 	
@@ -401,7 +405,7 @@ public class SPHSolverService implements ISolver {
 		List<int[]> particleIndex = new ArrayList<int[]>();
 		Pointer<Integer> particleInd = _particleIndex.read(_queue);
 		_queue.finish();
-		for(int i = 0; i < SPHConstants.PARTICLE_COUNT * 2;i+=2){
+		for(int i = 0; i < _particleCount * 2;i+=2){
 			int[] element = {particleInd.get(i), particleInd.get(i+1)};
 			particleIndex.add(element);
 		}
@@ -426,34 +430,34 @@ public class SPHSolverService implements ISolver {
 	}
 	
 	private void step(){
-		logger.info("-SPH run clear buffer");
+		logger.info("SPH run clear buffer");
 		runClearBuffers();
-		logger.info("-SPH run hash particles");
+		logger.info("SPH run hash particles");
 		runHashParticles();
-		logger.info("-SPH run sort");
+		logger.info("SPH run sort");
 		runSort();
-		logger.info("-SPH run sort post pass");
+		logger.info("SPH run sort post pass");
 		runSortPostPass();
-		logger.info("-SPH run index");
+		logger.info("SPH run index");
 		runIndexx();
-		logger.info("-SPH run index post pass");
+		logger.info("SPH run index post pass");
 		runIndexPostPass();
-		logger.info("-SPH run find neighbors");
+		logger.info("SPH run find neighbors");
 		runFindNeighbors();
-		logger.info("-SPH runComputeDensityPressur");
+		logger.info("SPH runComputeDensityPressur");
 		runComputeDensityPressure();
-		logger.info("-SPH runComputeAcceleration");
+		logger.info("SPH runComputeAcceleration");
 		runComputeAcceleration();
-		logger.info("-SPH runIntegrate");
+		logger.info("SPH runIntegrate");
 		runIntegrate();
-		logger.info("-SPH position read");
-		logger.info("Position element size"+_position.getElementSize());
-		logger.info("Position element count"+_position.getElementCount());		
-		logger.info("Queue"+_queue);
+		logger.info("SPH position read");
+		logger.info("Position element size: " + _position.getElementSize());
+		logger.info("Position element count: " + _position.getElementCount());		
+		logger.info("Queue: "+ _queue);
 		_positionPtr = _position.read(_queue);
-		logger.info("-SPH finish queue");
+		logger.info("SPH finish queue");
 		_queue.finish();
-		logger.info("-SPH step done");
+		logger.info("SPH step done");
 	}
 	
 	public void finishQueue() {
