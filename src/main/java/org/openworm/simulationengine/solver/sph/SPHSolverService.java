@@ -37,8 +37,9 @@ import com.nativelibs4java.util.IOUtils;
 @Service
 public class SPHSolverService implements ISolver {
 	
-	
 	private static Log logger = LogFactory.getLog(SPHSolverService.class);
+	
+	private boolean PCISPH = true; 
 	
 	private CLContext _context;
 	public CLQueue _queue;
@@ -56,6 +57,7 @@ public class SPHSolverService implements ISolver {
 	public CLBuffer<Float> _sortedPosition;
 	public CLBuffer<Float> _sortedVelocity;
 	public CLBuffer<Float> _velocity;
+	public CLBuffer<Float> _elasticConnectionsData;
 	
 	public Pointer<Float> _accelerationPtr;
 	public Pointer<Integer> _gridCellIndexPtr;
@@ -70,22 +72,34 @@ public class SPHSolverService implements ISolver {
 	public Pointer<Float> _sortedPositionPtr;
 	public Pointer<Float> _sortedVelocityPtr;
 	public Pointer<Float> _velocityPtr;
+	public Pointer<Float> _elasticConnectionsDataPtr;
 	
+	/*
+	 * Kernel declarations
+	 */
 	private CLKernel _clearBuffers;
-	private CLKernel _computeAcceleration;
-	private CLKernel _computeDensityPressure;
 	private CLKernel _findNeighbors;
 	private CLKernel _hashParticles;
 	private CLKernel _indexPostPass;
 	private CLKernel _indexx;
-	private CLKernel _integrate;
 	private CLKernel _sortPostPass;
+	
+	// additional kernels for PCISPH
+	private CLKernel _pcisph_computeDensity;
+	private CLKernel _pcisph_computeForcesAndInitPressure;
+	private CLKernel _pcisph_integrate;
+	private CLKernel _pcisph_predictPositions;
+	private CLKernel _pcisph_predictDensity;
+	private CLKernel _pcisph_correctPressure;
+	private CLKernel _pcisph_computePressureForceAcceleration;
+	private CLKernel _pcisph_computeElasticForces;
 	
 	public int _gridCellsX;
 	public int _gridCellsY;
 	public int _gridCellsZ;
 	public int _gridCellCount;
 	public int _particleCount;
+	public int _elasticConnectionsCount;
 	
 	public static Random RandomGenerator = new Random();
 	
@@ -121,16 +135,24 @@ public class SPHSolverService implements ISolver {
 		String src = IOUtils.readText(SPHSolverService.class.getResourceAsStream("/resource/sphFluidDemo.cl"));
 		_program = _context.createProgram(src);
 		
-		/*kernels*/
+		// kernels
 		_clearBuffers = _program.createKernel("clearBuffers");
-		_computeAcceleration = _program.createKernel("computeAcceleration");
-		_computeDensityPressure = _program.createKernel("computeDensityPressure");
 		_findNeighbors = _program.createKernel("findNeighbors");
 		_hashParticles = _program.createKernel("hashParticles");
+		// PORTING-NOTE: indexPostPass is gone from kernels in the latest version
 		_indexPostPass = _program.createKernel("indexPostPass");
 		_indexx = _program.createKernel("indexx");
-		_integrate = _program.createKernel("integrate");
 		_sortPostPass = _program.createKernel("sortPostPass");
+		
+		// PCI-SPH specific 
+		_pcisph_computeForcesAndInitPressure  = _program.createKernel("pcisph_computeForcesAndInitPressure");
+		_pcisph_integrate  = _program.createKernel("pcisph_integrate");
+		_pcisph_predictPositions  = _program.createKernel("pcisph_predictPositions");
+		_pcisph_predictDensity  = _program.createKernel("pcisph_predictDensity");
+		_pcisph_correctPressure  = _program.createKernel("pcisph_correctPressure");
+		_pcisph_computePressureForceAcceleration  = _program.createKernel("pcisph_computePressureForceAcceleration");
+		_pcisph_computeDensity  = _program.createKernel("pcisph_computeDensity");
+		_pcisph_computeElasticForces  = _program.createKernel("pcisph_computeElasticForces");
 	}
 	
 	private void allocateBuffers(){
@@ -273,40 +295,6 @@ public class SPHSolverService implements ISolver {
 		return 0;
 	}
 	
-	public int runComputeAcceleration(){
-		_computeAcceleration.setArg( 0, _neighborMap );
-		_computeAcceleration.setArg( 1, _pressure );
-		_computeAcceleration.setArg( 2, _rho );
-		_computeAcceleration.setArg( 3, _rhoInv );
-		_computeAcceleration.setArg( 4, _sortedPosition );
-		_computeAcceleration.setArg( 5, _sortedVelocity );
-		_computeAcceleration.setArg( 6, PhysicsConstants.CFLLimit );
-		_computeAcceleration.setArg( 7, PhysicsConstants.DEL_2_W_VISCOSITY_COEFFICIENT );
-		_computeAcceleration.setArg( 8, PhysicsConstants.GRAD_W_SPIKY_COEFFICIENT );
-		_computeAcceleration.setArg( 9, PhysicsConstants.H );
-		_computeAcceleration.setArg( 10, PhysicsConstants.MASS );
-		_computeAcceleration.setArg( 11, PhysicsConstants.MU );
-		_computeAcceleration.setArg( 12, PhysicsConstants.SIMULATION_SCALE );
-		_computeAcceleration.setArg( 13, _acceleration );
-		_computeAcceleration.enqueueNDRange(_queue, new int[] {_particleCount});
-		return 0;
-	}
-	
-	public int runComputeDensityPressure(){
-		_computeDensityPressure.setArg( 0, _neighborMap );
-		_computeDensityPressure.setArg( 1, PhysicsConstants.W_POLY_6_COEFFICIENT );
-		_computeDensityPressure.setArg( 2, PhysicsConstants.H );
-		_computeDensityPressure.setArg( 3, PhysicsConstants.MASS );
-		_computeDensityPressure.setArg( 4, PhysicsConstants.RHO0 );
-		_computeDensityPressure.setArg( 5, PhysicsConstants.SIMULATION_SCALE );
-		_computeDensityPressure.setArg( 6, PhysicsConstants.STIFFNESS );
-		_computeDensityPressure.setArg( 7, _pressure );
-		_computeDensityPressure.setArg( 8, _rho );
-		_computeDensityPressure.setArg( 9, _rhoInv );
-		_computeDensityPressure.enqueueNDRange(_queue, new int[] {_particleCount});
-		return 0;
-	}
-	
 	public int runFindNeighbors(){
 		_findNeighbors.setArg( 0, _gridCellIndexFixedUp );
 		_findNeighbors.setArg( 1, _sortedPosition );
@@ -365,29 +353,6 @@ public class SPHSolverService implements ISolver {
 		return 0;
 	}
 	
-	public int runIntegrate(){
-		// Stage Integrate
-		_integrate.setArg( 0, _acceleration );
-		_integrate.setArg( 1, _sortedPosition );
-		_integrate.setArg( 2, _sortedVelocity );
-		_integrate.setArg( 3, PhysicsConstants.GRAVITY_X );
-		_integrate.setArg( 4, PhysicsConstants.GRAVITY_Y );
-		_integrate.setArg( 5, PhysicsConstants.GRAVITY_Z );
-		_integrate.setArg( 6, PhysicsConstants.SIMULATION_SCALE_INV );
-		_integrate.setArg( 7, PhysicsConstants.TIME_STEP );
-		_integrate.setArg( 8, SPHConstants.XMIN_F );
-		_integrate.setArg( 9, SPHConstants.XMAX_F );
-		_integrate.setArg( 10, SPHConstants.YMIN_F );
-		_integrate.setArg( 11, SPHConstants.YMAX_F );
-		_integrate.setArg( 12, SPHConstants.ZMIN_F );
-		_integrate.setArg( 13, SPHConstants.ZMAX_F );
-		_integrate.setArg( 14, PhysicsConstants.DAMPING );
-		_integrate.setArg( 15, _position );
-		_integrate.setArg( 16, _velocity );
-		_integrate.enqueueNDRange(_queue, new int[] {_particleCount});
-		return 0;
-	}
-	
 	public int runSortPostPass(){
 		// Stage SortPostPass
 		_sortPostPass.setArg( 0, _particleIndex );
@@ -396,6 +361,199 @@ public class SPHSolverService implements ISolver {
 		_sortPostPass.setArg( 3, _sortedPosition );
 		_sortPostPass.setArg( 4, _sortedVelocity );
 		_sortPostPass.enqueueNDRange(_queue, new int[] {_particleCount});
+		return 0;
+	}
+	
+	public int run_pcisph_computeDensity(){
+		// Stage ComputeDensityPressure
+		_pcisph_computeDensity.setArg( 0, _neighborMap );
+		_pcisph_computeDensity.setArg( 1, PhysicsConstants.W_POLY_6_COEFFICIENT );
+		_pcisph_computeDensity.setArg( 2, PhysicsConstants.GRAD_W_SPIKY_COEFFICIENT );
+		_pcisph_computeDensity.setArg( 3, PhysicsConstants.H );
+		_pcisph_computeDensity.setArg( 4, PhysicsConstants.MASS );
+		_pcisph_computeDensity.setArg( 5, PhysicsConstants.RHO0 );
+		_pcisph_computeDensity.setArg( 6, PhysicsConstants.SIMULATION_SCALE );
+		_pcisph_computeDensity.setArg( 7, PhysicsConstants.STIFFNESS );
+		_pcisph_computeDensity.setArg( 8, _sortedPosition );
+		_pcisph_computeDensity.setArg( 9, _pressure );
+		_pcisph_computeDensity.setArg(10, _rho );
+		_pcisph_computeDensity.setArg(11, _rhoInv );
+		// PORTING-TODO: _pcisph_computeDensity.setArg(12, particleIndexBack );
+		// PORTING-TODO: _pcisph_computeDensity.setArg(13, delta ); // calculated from constants
+		_pcisph_computeDensity.enqueueNDRange(_queue, new int[] {_particleCount});
+		
+		return 0;
+	}
+	
+	private int run_pcisph_computeForcesAndInitPressure(){
+		_pcisph_computeForcesAndInitPressure.setArg( 0, _neighborMap );
+		_pcisph_computeForcesAndInitPressure.setArg( 1, _rho );
+		_pcisph_computeForcesAndInitPressure.setArg( 2, _pressure );
+		_pcisph_computeForcesAndInitPressure.setArg( 3, _sortedPosition );
+		_pcisph_computeForcesAndInitPressure.setArg( 4, _sortedVelocity );
+		_pcisph_computeForcesAndInitPressure.setArg( 5, _acceleration );
+		// PORTING-TODO: _pcisph_computeForcesAndInitPressure.setArg( 6, particleIndexBack );
+		_pcisph_computeForcesAndInitPressure.setArg( 7, PhysicsConstants.W_POLY_6_COEFFICIENT );
+		_pcisph_computeForcesAndInitPressure.setArg( 8, PhysicsConstants.DEL_2_W_VISCOSITY_COEFFICIENT );
+		_pcisph_computeForcesAndInitPressure.setArg( 9, PhysicsConstants.H );
+		_pcisph_computeForcesAndInitPressure.setArg(10, PhysicsConstants.MASS );
+		_pcisph_computeForcesAndInitPressure.setArg(11, PhysicsConstants.MU );
+		_pcisph_computeForcesAndInitPressure.setArg(12, PhysicsConstants.SIMULATION_SCALE );
+		_pcisph_computeForcesAndInitPressure.setArg(13, PhysicsConstants.GRAVITY_X );
+		_pcisph_computeForcesAndInitPressure.setArg(14, PhysicsConstants.GRAVITY_Y );
+		_pcisph_computeForcesAndInitPressure.setArg(15, PhysicsConstants.GRAVITY_Z );
+		_pcisph_computeForcesAndInitPressure.setArg(16, _particleCount );
+		_pcisph_computeForcesAndInitPressure.enqueueNDRange(_queue, new int[] {_particleCount});
+		
+		return 0;
+	}
+	
+	private int run_pcisph_computeElasticForces(){
+		_pcisph_computeElasticForces.setArg( 0, _neighborMap );
+		_pcisph_computeElasticForces.setArg( 1, _sortedPosition );
+		_pcisph_computeElasticForces.setArg( 2, _sortedVelocity );
+		_pcisph_computeElasticForces.setArg( 3, _acceleration );
+		// PORTING-TODO: _pcisph_computeElasticForces.setArg( 4, particleIndexBack );
+		_pcisph_computeElasticForces.setArg( 5, PhysicsConstants.H );
+		_pcisph_computeElasticForces.setArg( 6, PhysicsConstants.MASS );
+		_pcisph_computeElasticForces.setArg( 7, PhysicsConstants.SIMULATION_SCALE );
+		// PORTING-TODO: _pcisph_computeElasticForces.setArg( 8, _elasticConnectionsCount);
+		// PORTING-TODO: _pcisph_computeElasticForces.setArg( 9, elasticConnectionsData );
+
+		int elasticConnectionsCountRoundedUp = ((( _elasticConnectionsCount - 1 ) / 256 ) + 1 ) * 256;
+
+		_pcisph_computeElasticForces.enqueueNDRange(_queue, new int[] {elasticConnectionsCountRoundedUp});
+		
+		return 0;
+	}
+	
+	private int run_pcisph_predictPositions(){
+		_pcisph_predictPositions.setArg( 0, _acceleration );
+		_pcisph_predictPositions.setArg( 1, _sortedPosition );
+		_pcisph_predictPositions.setArg( 2, _sortedVelocity );
+		_pcisph_predictPositions.setArg( 3, _particleIndex );
+		// PORTING-TODO: _pcisph_predictPositions.setArg( 4, particleIndexBack );
+		_pcisph_predictPositions.setArg( 5, PhysicsConstants.GRAVITY_X );
+		_pcisph_predictPositions.setArg( 6, PhysicsConstants.GRAVITY_Y );
+		_pcisph_predictPositions.setArg( 7, PhysicsConstants.GRAVITY_Z );
+		_pcisph_predictPositions.setArg( 8, PhysicsConstants.SIMULATION_SCALE_INV );
+		_pcisph_predictPositions.setArg( 9, PhysicsConstants.TIME_STEP );
+		_pcisph_predictPositions.setArg( 10, SPHConstants.XMIN_F );
+		_pcisph_predictPositions.setArg( 11, SPHConstants.XMAX_F );
+		_pcisph_predictPositions.setArg( 12, SPHConstants.YMIN_F );
+		_pcisph_predictPositions.setArg( 13, SPHConstants.YMAX_F );
+		_pcisph_predictPositions.setArg( 14, SPHConstants.ZMIN_F );
+		_pcisph_predictPositions.setArg( 15, SPHConstants.ZMAX_F );
+		_pcisph_predictPositions.setArg( 16, PhysicsConstants.DAMPING );
+		_pcisph_predictPositions.setArg( 17, _position );
+		_pcisph_predictPositions.setArg( 18, _velocity );
+		// PORTING-TODO:_pcisph_predictPositions.setArg( 19, r0 );
+		_pcisph_predictPositions.setArg( 20, _neighborMap );
+		_pcisph_predictPositions.setArg( 21, _particleCount );
+		_pcisph_predictPositions.enqueueNDRange(_queue, new int[] {_particleCount});
+		
+		return 0;
+	}
+	
+	private int run_pcisph_predictDensity(){
+		// Stage predict density
+		_pcisph_predictDensity.setArg( 0, _neighborMap );
+		// PORTING-TODO: _pcisph_predictDensity.setArg( 1, particleIndexBack );
+		_pcisph_predictDensity.setArg( 2, PhysicsConstants.W_POLY_6_COEFFICIENT );
+		_pcisph_predictDensity.setArg( 3, PhysicsConstants.GRAD_W_SPIKY_COEFFICIENT );
+		_pcisph_predictDensity.setArg( 4, PhysicsConstants.H );
+		_pcisph_predictDensity.setArg( 5, PhysicsConstants.MASS );
+		_pcisph_predictDensity.setArg( 6, PhysicsConstants.RHO0 );
+		_pcisph_predictDensity.setArg( 7, PhysicsConstants.SIMULATION_SCALE );
+		_pcisph_predictDensity.setArg( 8, PhysicsConstants.STIFFNESS );
+		_pcisph_predictDensity.setArg( 9, _sortedPosition );
+		_pcisph_predictDensity.setArg(10, _pressure );
+		_pcisph_predictDensity.setArg(11, _rho );
+		_pcisph_predictDensity.setArg(12, _rhoInv );
+		// PORTING-TODO: _pcisph_predictDensity.setArg(13, delta );
+		_pcisph_predictDensity.setArg( 14, _particleCount );
+		_pcisph_predictDensity.enqueueNDRange(_queue, new int[] {_particleCount});
+		
+		return 0;
+	}
+	
+	private int run_pcisph_correctPressure(){
+		// Stage correct pressure
+		_pcisph_correctPressure.setArg( 0, _neighborMap );
+		// PORTING-TODO: _pcisph_correctPressure.setArg( 1, particleIndexBack );
+		_pcisph_correctPressure.setArg( 2, PhysicsConstants.W_POLY_6_COEFFICIENT );
+		_pcisph_correctPressure.setArg( 3, PhysicsConstants.GRAD_W_SPIKY_COEFFICIENT );
+		_pcisph_correctPressure.setArg( 4, PhysicsConstants.H );
+		_pcisph_correctPressure.setArg( 5, PhysicsConstants.MASS );
+		_pcisph_correctPressure.setArg( 6, PhysicsConstants.RHO0 );
+		_pcisph_correctPressure.setArg( 7, PhysicsConstants.SIMULATION_SCALE );
+		_pcisph_correctPressure.setArg( 8, PhysicsConstants.STIFFNESS );
+		_pcisph_correctPressure.setArg( 9, _sortedPosition );
+		_pcisph_correctPressure.setArg(10, _pressure );
+		_pcisph_correctPressure.setArg(11, _rho );
+		_pcisph_correctPressure.setArg(12, _rhoInv );
+		// PORTING-TODO: _pcisph_correctPressure.setArg(13, delta );
+		_pcisph_correctPressure.setArg(14, _position );
+		_pcisph_correctPressure.setArg(15, _particleIndex );
+		_pcisph_correctPressure.setArg( 16, _particleCount );
+		_pcisph_correctPressure.enqueueNDRange(_queue, new int[] {_particleCount});
+		
+		return 0;
+	}
+	
+	private int run_pcisph_computePressureForceAcceleration(){
+		// Stage ComputeAcceleration
+		_pcisph_computePressureForceAcceleration.setArg( 0, _neighborMap );
+		_pcisph_computePressureForceAcceleration.setArg( 1, _pressure );
+		_pcisph_computePressureForceAcceleration.setArg( 2, _rho );
+		_pcisph_computePressureForceAcceleration.setArg( 3, _rhoInv );
+		_pcisph_computePressureForceAcceleration.setArg( 4, _sortedPosition );
+		_pcisph_computePressureForceAcceleration.setArg( 5, _sortedVelocity );
+		// PORTING-TODO: _pcisph_computePressureForceAcceleration.setArg( 6, particleIndexBack );
+		_pcisph_computePressureForceAcceleration.setArg( 7, PhysicsConstants.CFLLimit );
+		_pcisph_computePressureForceAcceleration.setArg( 8, PhysicsConstants.DEL_2_W_VISCOSITY_COEFFICIENT );
+		_pcisph_computePressureForceAcceleration.setArg( 9, PhysicsConstants.GRAD_W_SPIKY_COEFFICIENT );
+		_pcisph_computePressureForceAcceleration.setArg( 10, PhysicsConstants.H );
+		_pcisph_computePressureForceAcceleration.setArg( 11, PhysicsConstants.MASS );
+		_pcisph_computePressureForceAcceleration.setArg( 12, PhysicsConstants.MU );
+		_pcisph_computePressureForceAcceleration.setArg( 13, PhysicsConstants.SIMULATION_SCALE );
+		_pcisph_computePressureForceAcceleration.setArg( 14, _acceleration );
+		_pcisph_computePressureForceAcceleration.setArg( 15, PhysicsConstants.RHO0 );
+		_pcisph_computePressureForceAcceleration.setArg( 16, _position );
+		_pcisph_computePressureForceAcceleration.setArg( 17, _particleIndex );
+		_pcisph_computePressureForceAcceleration.setArg( 18, _particleCount );
+		_pcisph_computePressureForceAcceleration.enqueueNDRange(_queue, new int[] {_particleCount});
+		
+		return 0;
+	}
+	
+	private int run_pcisph_integrate(){
+		// Stage Integrate
+		_pcisph_integrate.setArg( 0, _acceleration );
+		_pcisph_integrate.setArg( 1, _sortedPosition );
+		_pcisph_integrate.setArg( 2, _sortedVelocity );
+		_pcisph_integrate.setArg( 3, _particleIndex );
+		// PORTING-TODO: _pcisph_integrate.setArg( 4, particleIndexBack );
+		_pcisph_integrate.setArg( 5, PhysicsConstants.GRAVITY_X );
+		_pcisph_integrate.setArg( 6, PhysicsConstants.GRAVITY_Y );
+		_pcisph_integrate.setArg( 7, PhysicsConstants.GRAVITY_Z );
+		_pcisph_integrate.setArg( 8, PhysicsConstants.SIMULATION_SCALE_INV );
+		_pcisph_integrate.setArg( 9, PhysicsConstants.TIME_STEP );
+		_pcisph_integrate.setArg( 10, SPHConstants.XMIN_F );
+		_pcisph_integrate.setArg( 11, SPHConstants.XMAX_F );
+		_pcisph_integrate.setArg( 12, SPHConstants.YMIN_F );
+		_pcisph_integrate.setArg( 13, SPHConstants.YMAX_F );
+		_pcisph_integrate.setArg( 14, SPHConstants.ZMIN_F );
+		_pcisph_integrate.setArg( 15, SPHConstants.ZMAX_F );
+		_pcisph_integrate.setArg( 16, PhysicsConstants.DAMPING );
+		_pcisph_integrate.setArg( 17, _position );
+		_pcisph_integrate.setArg( 18, _velocity );
+		_pcisph_integrate.setArg( 19, _rho );
+		// PORTING-TODO: _pcisph_integrate.setArg( 20, r0 );
+		_pcisph_integrate.setArg( 21, _neighborMap );
+		_pcisph_integrate.setArg(22, _particleCount );
+		_pcisph_integrate.enqueueNDRange(_queue, new int[] {_particleCount});
+		
 		return 0;
 	}
 	
@@ -430,26 +588,48 @@ public class SPHSolverService implements ISolver {
 	}
 	
 	private void step(){
-		logger.info("SPH run clear buffer");
+		logger.info("SPH clear buffer");
 		runClearBuffers();
-		logger.info("SPH run hash particles");
+		logger.info("SPH hash particles");
 		runHashParticles();
-		logger.info("SPH run sort");
+		logger.info("SPH sort");
 		runSort();
-		logger.info("SPH run sort post pass");
+		logger.info("SPH sort post pass");
 		runSortPostPass();
-		logger.info("SPH run index");
+		logger.info("SPH index");
 		runIndexx();
-		logger.info("SPH run index post pass");
+		logger.info("SPH index post pass");
 		runIndexPostPass();
-		logger.info("SPH run find neighbors");
+		logger.info("SPH find neighbors");
 		runFindNeighbors();
-		logger.info("SPH runComputeDensityPressur");
-		runComputeDensityPressure();
-		logger.info("SPH runComputeAcceleration");
-		runComputeAcceleration();
-		logger.info("SPH runIntegrate");
-		runIntegrate();
+		
+		// PORTING-NOTE: on the original C++ version preparing elastic matter stuff was done at this point
+		// For this implementation we are moving elastic matter data in the configuration file for the model
+
+		// TODO: PCISPH stuff goes here
+		logger.info("PCI-SPH compute density");
+		run_pcisph_computeDensity();
+		logger.info("PCI-SPH compute forces and init pressure");
+		run_pcisph_computeForcesAndInitPressure();
+		logger.info("PCI-SPH compute elastic forces");
+		run_pcisph_computeElasticForces();
+		
+		logger.info("PCI-SPH predict/correct loop");
+		// LOOP: 3 times or until "error" becomes less than 2%
+		int iter = 0; int maxIterations = 3;
+		do
+		{
+			run_pcisph_predictPositions();
+			run_pcisph_predictDensity();
+			run_pcisph_correctPressure();
+			run_pcisph_computePressureForceAcceleration();
+			
+			iter++;
+		} while ((iter<maxIterations));
+		
+		logger.info("PCI-SPH integrate");
+		run_pcisph_integrate();
+		
 		logger.info("SPH position read");
 		logger.info("Position element size: " + _position.getElementSize());
 		logger.info("Position element count: " + _position.getElementCount());		

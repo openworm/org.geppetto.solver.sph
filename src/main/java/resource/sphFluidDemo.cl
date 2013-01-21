@@ -143,84 +143,6 @@ float4 contributeDel2V(
 	return result;
 }
 
-__kernel void computeAcceleration(
-								  __global float2 * neighborMap,
-								  __global float * pressure,
-								  __global float * rho,
-								  __global float * rhoInv,
-								  __global float4 * sortedPosition,
-								  __global float4 * sortedVelocity,
-								  __global uint * particleIndexBack,
-								  float CFLLimit,
-								  float del2WviscosityCoefficient,
-								  float gradWspikyCoefficient,
-								  float h,
-								  float mass,
-								  float mu,
-								  float simulationScale,
-								  __global float4 * acceleration
-								  )
-{
-	int id = get_global_id( 0 );
-	id = particleIndexBack[id];//track selected particle (indices are not mixed anymore)
-
-	int idk = id * NEIGHBOR_COUNT;
-	float hScaled = h * simulationScale;
-
-	float4 position_i = sortedPosition[ id ];
-	float4 velocity_i = sortedVelocity[ id ];
-
-	float p_i = pressure[ id ]; 
-	float rho_i_inv = rhoInv[ id ];
-	float4 result = (float4)( 0.0f, 0.0f, 0.0f, 0.0f );
-
-	float4 gradP = (float4)( 0.0f, 0.0f, 0.0f, 0.0f );
-	float4 del2V = (float4)( 0.0f, 0.0f, 0.0f, 0.0f );
-	float2 nm;
-
-	NEIGHBOR_MAP_ID( nm ) = id;
-	NEIGHBOR_MAP_DISTANCE( nm ) = 0.0f;
-
-	// basic SPH
-	int j = 0;
-	bool loop;
-	do{
-		nm = neighborMap[ idk + j ];
-		int neighborParticleId = NEIGHBOR_MAP_ID( nm );
-		bool isNeighbor = ( neighborParticleId != NO_PARTICLE_ID );
-		if( isNeighbor ){
-			float p_j = pressure[ neighborParticleId ];
-			float rho_j_inv = rhoInv[ neighborParticleId ];
-			float r = NEIGHBOR_MAP_DISTANCE( nm ); // r is scaled here
-			float4 dgradP = contributeGradP( id, neighborParticleId, p_i, p_j, rho_j_inv,
-				position_i, pressure, rho, sortedPosition, r, mass, hScaled,
-				gradWspikyCoefficient, simulationScale );
-			gradP += dgradP;
-
-			float4 ddel2V = contributeDel2V( id, velocity_i, neighborParticleId,
-				sortedVelocity, rho_j_inv, r, mass, hScaled, del2WviscosityCoefficient );
-			del2V += ddel2V;
-		}
-		loop = ( ++j < NEIGHBOR_COUNT );
-	}while( loop );
-
-	result = rho_i_inv * ( mu * del2V - gradP );
-
-	// Check CFL condition // As far as I know it is not required in case of PCISPH [proof?]
-	float magnitude = result.x * result.x + result.y * result.y + result.z * result.z;
-	bool tooBig = ( magnitude > CFLLimit * CFLLimit );
-	float sqrtMagnitude = SQRT( magnitude );
-
-	if(sqrtMagnitude!=0)
-	{
-		float scale = CFLLimit / sqrtMagnitude;
-		result = SELECT( result, result * scale, (uint4)tooBig );
-	}
-
-	result.w = 0.0f;
-	acceleration[ id ] = result; 
-}
-
 // Mueller et al equation 3.  Scalar result.
 float Wpoly6(
 			 float rSquared,
@@ -249,51 +171,6 @@ float densityContribution(
 	float smoothingKernel = Wpoly6( r*r, hSquared, Wpoly6Coefficient );
 	float result = SELECT( smoothingKernel, 0.0f, ( neighborParticleId == NO_PARTICLE_ID ) );
 	return result;
-}
-
-__kernel void computeDensityPressure(
-									 __global float2 * neighborMap,
-									 float Wpoly6Coefficient,
-									 float gradWspikyCoefficient,
-									 float h,
-									 float mass,
-									 float rho0,
-									 float simulationScale,
-									 float stiffness,
-									 __global float4 * sortedPosition,
-									 __global float * pressure,
-									 __global float * rho,
-									 __global float * rhoInv,
-									 __global uint * particleIndexBack,
-									 float delta									 
-									 )
-{
-	int id = get_global_id( 0 );
-	id = particleIndexBack[id];//track selected particle (indices are not shuffled anymore)
-
-	int idx = id * NEIGHBOR_COUNT;
-	float density = 0.0f;
-	float hScaled = h * simulationScale;
-	float hSquared = hScaled * hScaled;
-
-	int nc=0;//neighbor counter
-
-	while( nc<32 )// gather density contribution from all neighbors (if they exist)
-	{
-		if( NEIGHBOR_MAP_ID( neighborMap[ idx + nc ] ) != NO_PARTICLE_ID )
-		density += densityContribution( idx,  nc, neighborMap, mass, hSquared, Wpoly6Coefficient );
-		nc++;
-	}
-
-	density *= mass; // since all particles are same fluid type, factor this out to here
-
-	rho[ id ] = density; 
-	rhoInv[ id ] = SELECT( 1.0f, DIVIDE( 1.0f, density ), ( density > 0.0f ) );
-
-	float drho = density - rho0; // rho0 is resting density
-	float k = stiffness;// here k=0.75; in Chao Fang code k=2.0 (gas constant)
-	float p = k * drho; // equation 12
-	pressure[ id ] = p; 
 }
 
 int searchCell( 
@@ -565,6 +442,26 @@ __kernel void hashParticles(
 	particleIndex[ id ] = result;
 }
 
+__kernel void indexPostPass(
+							__global uint * gridCellIndex,
+							int gridCellCount,
+							__global uint * gridCellIndexFixedUp
+							)
+{
+
+	int id = get_global_id( 0 );
+	if( id <= gridCellCount ){
+		int idx = id;
+		int cellId = NO_CELL_ID;
+		bool loop;
+		do{
+			cellId = gridCellIndex[ idx++ ];
+			loop = cellId == NO_CELL_ID && idx <= gridCellCount;
+		}while( loop );
+		gridCellIndexFixedUp[ id ] = cellId;
+	}
+}
+
 __kernel void indexx(
 					 __global uint2 * particleIndex,
 					 int gridCellCount,
@@ -705,56 +602,6 @@ void handleBoundaryConditions(
 
 }
 
-__kernel void integrate(
-						__global float4 * acceleration,
-						__global float4 * sortedPosition,
-						__global float4 * sortedVelocity,
-						__global uint2 * particleIndex,
-						__global uint * particleIndexBack,
-						float gravity_x,
-						float gravity_y,
-						float gravity_z,
-						float simulationScaleInv,
-						float timeStep,
-						float xmin,
-						float xmax,
-						float ymin,
-						float ymax,
-						float zmin,
-						float zmax,
-						float damping,
-						__global float4 * position,
-						__global float4 * velocity
-						)
-{
-	// BASIC SPH integration
-	int id = get_global_id( 0 );
-	id = particleIndexBack[id];
-
-	int id_source_particle = PI_SERIAL_ID( particleIndex[id] );
-
-	float4 acceleration_ = acceleration[ id ];
-	float4 position_ = sortedPosition[ id ];
-	float4 velocity_ = sortedVelocity[ id ];
-
-	// apply external forces
-	float4 gravity = (float4)( gravity_x, gravity_y, gravity_z, 0.f );
-	acceleration_ += gravity;
-
-	// Semi-implicit Euler integration 
-	float4 newVelocity_ = velocity_ + timeStep * acceleration_; //newVelocity_.w = 0.f;
-	float posTimeStep = timeStep * simulationScaleInv;			
-	float4 newPosition_ = position_ + posTimeStep * newVelocity_; //newPosition_.w = 0.f;
-
-	handleBoundaryConditions( position_, &newVelocity_, posTimeStep, &newPosition_,
-		xmin, xmax, ymin, ymax, zmin, zmax, damping );
-
-	//newPosition_.w = 0.f; // homogeneous coordinate for rendering
-
-	velocity[ id_source_particle ] = newVelocity_;
-	position[ id_source_particle ] = newPosition_;
-}
-
 __kernel void sortPostPass(
 						   __global uint2 * particleIndex,
 						   __global uint  * particleIndexBack,
@@ -775,25 +622,6 @@ __kernel void sortPostPass(
 	sortedPosition[ id ] = position_;//put position to sortedVelocity for right order according to particleIndex
 
 	particleIndexBack[ serialId ] = id;
-}
-
-__kernel void preElasticMatterPass(
-						   __global uint2 * particleIndex,
-						   __global uint  * particleIndexBack,
-						   __global float4 * position,
-						   __global float4 * velocity,
-						   __global float4 * sortedPosition,
-						   __global float4 * sortedVelocity
-						   )
-{
-	int id = get_global_id( 0 );
-	uint2 spi = particleIndex[ id ];//contains id of cell and id of particle it has sorted 
-	int serialId = PI_SERIAL_ID( spi );//get a particle Index
-
-	float4 position_ = position[ serialId ];//get position by serialId
-
-	sortedPosition[ id ].w = position_.w;//put position to sortedVelocity for right order according to particleIndex
-
 }
 
 //=================================
@@ -1120,67 +948,6 @@ __kernel void pcisph_predictDensity(
 	float hScaled = h * simulationScale;//scaled smoothing radius
 	float hScaled2 = hScaled*hScaled;//squared scaled smoothing radius
 	float hScaled6 = hScaled2*hScaled2*hScaled2;
-	//float2 nm;
-	int jd;
-	int real_nc = 0;
-
-	do// gather density contribution from all neighbors (if they exist)
-	{
-		if( (jd = NEIGHBOR_MAP_ID( neighborMap[ idx + nc ])) != NO_PARTICLE_ID )
-		{
-			r_ij = sortedPosition[PARTICLE_COUNT+id]-sortedPosition[PARTICLE_COUNT+jd];
-			r_ij2 = (r_ij.x*r_ij.x+r_ij.y*r_ij.y+r_ij.z*r_ij.z)*simulationScale*simulationScale;
-
-			if(r_ij2<hScaled2)
-			{
-				density += (hScaled2-r_ij2)*(hScaled2-r_ij2)*(hScaled2-r_ij2);
-				real_nc++;
-			}
-		}
-
-	}while( ++nc < NEIGHBOR_COUNT );
-
-	//if(density==0.f) 
-	if(density<hScaled6)
-	{
-		//density += hScaled6;
-		density = hScaled6;
-	}
-
-
-	density *= mass*Wpoly6Coefficient; // since all particles are same fluid type, factor this out to here
-	rho[ PARTICLE_COUNT+id ] = density; 
-	rhoInv[ id ] = real_nc; 	
-}
-
-__kernel void pcisph_predictDensity(
-									 __global float2 * neighborMap,
-									 __global uint * particleIndexBack,
-									 float Wpoly6Coefficient,
-									 float gradWspikyCoefficient,
-									 float h,
-									 float mass,
-									 float rho0,
-									 float simulationScale,
-									 float stiffness,
-									 __global float4 * sortedPosition,
-									 __global float * pressure,
-									 __global float * rho,
-									 __global float * rhoInv,
-									 float delta,
-									 int PARTICLE_COUNT
-									 )
-{
-	int id = get_global_id( 0 );
-	id = particleIndexBack[id];//track selected particle (indices are not shuffled anymore)
-	int idx = id * NEIGHBOR_COUNT;
-	int nc=0;//neighbor counter
-	float density = 0.0f;
-	float4 r_ij;
-	float r_ij2;//squared r_ij
-	float hScaled = h * simulationScale;//scaled smoothing radius
-	float hScaled2 = hScaled*hScaled;//squared scaled smoothing radius
-	float hScaled6 = hScaled2*hScaled2*hScaled2;
 
 	int jd;
 	int real_nc = 0;
@@ -1203,7 +970,6 @@ __kernel void pcisph_predictDensity(
  
 	if(density<hScaled6)
 	{
-		//density += hScaled6;
 		density = hScaled6;
 	}
 
