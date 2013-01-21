@@ -356,10 +356,11 @@ public class SPHSolverService implements ISolver {
 	public int runSortPostPass(){
 		// Stage SortPostPass
 		_sortPostPass.setArg( 0, _particleIndex );
-		_sortPostPass.setArg( 1, _position );
-		_sortPostPass.setArg( 2, _velocity );
-		_sortPostPass.setArg( 3, _sortedPosition );
-		_sortPostPass.setArg( 4, _sortedVelocity );
+		// PORTING-TODO: _sortPostPass.setArg(1, particleIndexBack );
+		_sortPostPass.setArg( 2, _position );
+		_sortPostPass.setArg( 3, _velocity );
+		_sortPostPass.setArg( 4, _sortedPosition );
+		_sortPostPass.setArg( 5, _sortedVelocity );
 		_sortPostPass.enqueueNDRange(_queue, new int[] {_particleCount});
 		return 0;
 	}
