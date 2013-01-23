@@ -380,7 +380,7 @@ public class SPHSolverService implements ISolver {
 		_pcisph_computeDensity.setArg(10, _rho );
 		_pcisph_computeDensity.setArg(11, _rhoInv );
 		// PORTING-TODO: _pcisph_computeDensity.setArg(12, particleIndexBack );
-		// PORTING-TODO: _pcisph_computeDensity.setArg(13, delta ); // calculated from constants
+		_pcisph_computeDensity.setArg(13, PhysicsConstants.DELTA ); // calculated from constants
 		_pcisph_computeDensity.enqueueNDRange(_queue, new int[] {_particleCount});
 		
 		return 0;
@@ -448,7 +448,7 @@ public class SPHSolverService implements ISolver {
 		_pcisph_predictPositions.setArg( 16, PhysicsConstants.DAMPING );
 		_pcisph_predictPositions.setArg( 17, _position );
 		_pcisph_predictPositions.setArg( 18, _velocity );
-		// PORTING-TODO:_pcisph_predictPositions.setArg( 19, r0 );
+		_pcisph_predictPositions.setArg( 19, PhysicsConstants.R0 );
 		_pcisph_predictPositions.setArg( 20, _neighborMap );
 		_pcisph_predictPositions.setArg( 21, _particleCount );
 		_pcisph_predictPositions.enqueueNDRange(_queue, new int[] {_particleCount});
@@ -471,7 +471,7 @@ public class SPHSolverService implements ISolver {
 		_pcisph_predictDensity.setArg(10, _pressure );
 		_pcisph_predictDensity.setArg(11, _rho );
 		_pcisph_predictDensity.setArg(12, _rhoInv );
-		// PORTING-TODO: _pcisph_predictDensity.setArg(13, delta );
+		_pcisph_predictDensity.setArg(13, PhysicsConstants.DELTA );
 		_pcisph_predictDensity.setArg( 14, _particleCount );
 		_pcisph_predictDensity.enqueueNDRange(_queue, new int[] {_particleCount});
 		
@@ -493,7 +493,7 @@ public class SPHSolverService implements ISolver {
 		_pcisph_correctPressure.setArg(10, _pressure );
 		_pcisph_correctPressure.setArg(11, _rho );
 		_pcisph_correctPressure.setArg(12, _rhoInv );
-		// PORTING-TODO: _pcisph_correctPressure.setArg(13, delta );
+		_pcisph_correctPressure.setArg(13, PhysicsConstants.DELTA );
 		_pcisph_correctPressure.setArg(14, _position );
 		_pcisph_correctPressure.setArg(15, _particleIndex );
 		_pcisph_correctPressure.setArg( 16, _particleCount );
@@ -550,7 +550,7 @@ public class SPHSolverService implements ISolver {
 		_pcisph_integrate.setArg( 17, _position );
 		_pcisph_integrate.setArg( 18, _velocity );
 		_pcisph_integrate.setArg( 19, _rho );
-		// PORTING-TODO: _pcisph_integrate.setArg( 20, r0 );
+		_pcisph_integrate.setArg( 20, PhysicsConstants.R0 );
 		_pcisph_integrate.setArg( 21, _neighborMap );
 		_pcisph_integrate.setArg(22, _particleCount );
 		_pcisph_integrate.enqueueNDRange(_queue, new int[] {_particleCount});
