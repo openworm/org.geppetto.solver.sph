@@ -39,8 +39,6 @@ public class SPHSolverService implements ISolver {
 	
 	private static Log logger = LogFactory.getLog(SPHSolverService.class);
 	
-	private boolean PCISPH = true; 
-	
 	private CLContext _context;
 	public CLQueue _queue;
 	private CLProgram _program;
@@ -67,7 +65,6 @@ public class SPHSolverService implements ISolver {
 	public Pointer<Integer> _particleIndexPtr;
 	public Pointer<Integer> _particleIndexBackPtr;
 	public Pointer<Float> _positionPtr;
-	public Pointer<Float> _positionPtrbuff;
 	public Pointer<Float> _pressurePtr;
 	public Pointer<Float> _rhoPtr;
 	public Pointer<Float> _rhoInvPtr;
@@ -172,7 +169,7 @@ public class SPHSolverService implements ISolver {
 		_sortedPositionPtr = Pointer.allocateFloats(_particleCount * 4);
 		_sortedVelocityPtr = Pointer.allocateFloats(_particleCount * 4);
 		_velocityPtr = Pointer.allocateFloats(_particleCount * 4);
-		_positionPtrbuff = Pointer.allocateFloats(_particleCount * 4);
+		_elasticConnectionsDataPtr = Pointer.allocateFloats(_elasticConnectionsCount * 4);
 		
 		// alternative buffer defining
 		_acceleration = _context.createBuffer(Usage.InputOutput,_accelerationPtr,false);
@@ -188,6 +185,7 @@ public class SPHSolverService implements ISolver {
 		_sortedPosition = _context.createBuffer(Usage.InputOutput,_sortedPositionPtr,false);
 		_sortedVelocity = _context.createBuffer(Usage.InputOutput, _sortedVelocityPtr,false);
 		_velocity = _context.createBuffer(Usage.InputOutput,_velocityPtr,false);
+		_elasticConnectionsData = _context.createBuffer(Usage.InputOutput,_elasticConnectionsDataPtr,false);
 		_queue.finish();
 	}
 	
@@ -198,6 +196,8 @@ public class SPHSolverService implements ISolver {
 			SPHModelX mod = (SPHModelX) models.get(0);
 			
 			_particleCount = mod.getNumberOfParticals();
+			// PORTING-TODO: populate elastic connection buffers
+			_elasticConnectionsCount = 0;
 			
 			// set grid dimensions
 			_gridCellsX = mod.getCellX();
@@ -390,7 +390,7 @@ public class SPHSolverService implements ISolver {
 		return 0;
 	}
 	
-	private int run_pcisph_computeForcesAndInitPressure(){
+	public int run_pcisph_computeForcesAndInitPressure(){
 		_pcisph_computeForcesAndInitPressure.setArg( 0, _neighborMap );
 		_pcisph_computeForcesAndInitPressure.setArg( 1, _rho );
 		_pcisph_computeForcesAndInitPressure.setArg( 2, _pressure );
@@ -413,7 +413,7 @@ public class SPHSolverService implements ISolver {
 		return 0;
 	}
 	
-	private int run_pcisph_computeElasticForces(){
+	public int run_pcisph_computeElasticForces(){
 		_pcisph_computeElasticForces.setArg( 0, _neighborMap );
 		_pcisph_computeElasticForces.setArg( 1, _sortedPosition );
 		_pcisph_computeElasticForces.setArg( 2, _sortedVelocity );
@@ -422,8 +422,8 @@ public class SPHSolverService implements ISolver {
 		_pcisph_computeElasticForces.setArg( 5, PhysicsConstants.H );
 		_pcisph_computeElasticForces.setArg( 6, PhysicsConstants.MASS );
 		_pcisph_computeElasticForces.setArg( 7, PhysicsConstants.SIMULATION_SCALE );
-		// PORTING-TODO: _pcisph_computeElasticForces.setArg( 8, _elasticConnectionsCount);
-		// PORTING-TODO: _pcisph_computeElasticForces.setArg( 9, elasticConnectionsData );
+		_pcisph_computeElasticForces.setArg( 8, _elasticConnectionsCount);
+		_pcisph_computeElasticForces.setArg( 9, _elasticConnectionsData );
 
 		int elasticConnectionsCountRoundedUp = ((( _elasticConnectionsCount - 1 ) / 256 ) + 1 ) * 256;
 
@@ -432,7 +432,7 @@ public class SPHSolverService implements ISolver {
 		return 0;
 	}
 	
-	private int run_pcisph_predictPositions(){
+	public int run_pcisph_predictPositions(){
 		_pcisph_predictPositions.setArg( 0, _acceleration );
 		_pcisph_predictPositions.setArg( 1, _sortedPosition );
 		_pcisph_predictPositions.setArg( 2, _sortedVelocity );
@@ -460,7 +460,7 @@ public class SPHSolverService implements ISolver {
 		return 0;
 	}
 	
-	private int run_pcisph_predictDensity(){
+	public int run_pcisph_predictDensity(){
 		// Stage predict density
 		_pcisph_predictDensity.setArg( 0, _neighborMap );
 		_pcisph_predictDensity.setArg( 1, _particleIndexBack );
@@ -482,7 +482,7 @@ public class SPHSolverService implements ISolver {
 		return 0;
 	}
 	
-	private int run_pcisph_correctPressure(){
+	public int run_pcisph_correctPressure(){
 		// Stage correct pressure
 		_pcisph_correctPressure.setArg( 0, _neighborMap );
 		_pcisph_correctPressure.setArg( 1, _particleIndexBack );
@@ -506,7 +506,7 @@ public class SPHSolverService implements ISolver {
 		return 0;
 	}
 	
-	private int run_pcisph_computePressureForceAcceleration(){
+	public int run_pcisph_computePressureForceAcceleration(){
 		// Stage ComputeAcceleration
 		_pcisph_computePressureForceAcceleration.setArg( 0, _neighborMap );
 		_pcisph_computePressureForceAcceleration.setArg( 1, _pressure );
@@ -532,7 +532,7 @@ public class SPHSolverService implements ISolver {
 		return 0;
 	}
 	
-	private int run_pcisph_integrate(){
+	public int run_pcisph_integrate(){
 		// Stage Integrate
 		_pcisph_integrate.setArg( 0, _acceleration );
 		_pcisph_integrate.setArg( 1, _sortedPosition );

@@ -186,29 +186,12 @@ public class SPHSolverTests {
 	}
 	
 	@Test
-	public void testComputeDensityPressure(){
-		// Invoke stage ComputeDensityPressure
-		solver._queue.finish();
-		boolean thisTestPassed = true;
-		out.println("Testing stage ComputeDensityPressure:");
-		solver.runComputeDensityPressure();
-		solver._queue.finish();
-		thisTestPassed = testEndComputeDensityPressure();
-		if( !thisTestPassed ){
-			out.println("Test FAILED in stage ComputeDensityPressure");
-			Assert.fail();
-		}else{
-			out.println("Test SUCCEEDED in stage ComputeDensityPressure");
-		}
-	}
-	
-	@Test
 	public void testComputeAcceleration(){
 		// Invoke stage ComputeAcceleration
 		solver._queue.finish();
 		boolean thisTestPassed = true;
 		out.println("Testing stage ComputeAcceleration:");
-		solver.runComputeAcceleration();
+		solver.run_pcisph_computePressureForceAcceleration();
 		solver._queue.finish();
 		thisTestPassed = testEndComputeAcceleration();
 		if( !thisTestPassed ){
@@ -225,7 +208,7 @@ public class SPHSolverTests {
 		solver._queue.finish();
 		boolean thisTestPassed = true;
 		out.println("Testing stage Integrate:");
-		solver.runIntegrate();
+		solver.run_pcisph_integrate();
 		solver._queue.finish();
 		thisTestPassed = testEndIntegrate();
 		if( !thisTestPassed ){
