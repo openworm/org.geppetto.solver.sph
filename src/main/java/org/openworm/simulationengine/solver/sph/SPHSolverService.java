@@ -156,17 +156,17 @@ public class SPHSolverService implements ISolver {
 	
 	private void allocateBuffers(){
 		// input buffers declarations
-		_accelerationPtr = Pointer.allocateFloats(_particleCount * 4);
+		_accelerationPtr = Pointer.allocateFloats(_particleCount * 4 * 2);
 		_gridCellIndexPtr = Pointer.allocateInts((_gridCellCount + 1));
 		_gridCellIndexFixedUpPtr = Pointer.allocateInts((_gridCellCount + 1));
 		_neighborMapPtr = Pointer.allocateFloats(_particleCount * SPHConstants.NEIGHBOR_COUNT * 2);
 		_particleIndexPtr = Pointer.allocateInts(_particleCount * 2);
 		_particleIndexBackPtr = Pointer.allocateInts(_particleCount);
 		_positionPtr = Pointer.allocateFloats(_particleCount * 4);
-		_pressurePtr = Pointer.allocateFloats(_particleCount * 1);
-		_rhoPtr = Pointer.allocateFloats(_particleCount * 1);
-		_rhoInvPtr = Pointer.allocateFloats(_particleCount * 1);
-		_sortedPositionPtr = Pointer.allocateFloats(_particleCount * 4);
+		_pressurePtr = Pointer.allocateFloats(_particleCount);
+		_rhoPtr = Pointer.allocateFloats(_particleCount * 2);
+		_rhoInvPtr = Pointer.allocateFloats(_particleCount);
+		_sortedPositionPtr = Pointer.allocateFloats(_particleCount * 4 * 2);
 		_sortedVelocityPtr = Pointer.allocateFloats(_particleCount * 4);
 		_velocityPtr = Pointer.allocateFloats(_particleCount * 4);
 		
