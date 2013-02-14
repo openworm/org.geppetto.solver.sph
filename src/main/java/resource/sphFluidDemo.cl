@@ -27,6 +27,7 @@
 #endif
 
 //#pragma OPENCL EXTENSION cl_amd_printf : enable
+//#pragma OPENCL EXTENSION cl_intel_printf : enable
 
 __kernel void clearBuffers(
 						   __global float2 * neighborMap

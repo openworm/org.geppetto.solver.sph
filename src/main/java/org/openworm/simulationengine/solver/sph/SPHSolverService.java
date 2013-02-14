@@ -169,7 +169,6 @@ public class SPHSolverService implements ISolver {
 		_sortedPositionPtr = Pointer.allocateFloats(_particleCount * 4);
 		_sortedVelocityPtr = Pointer.allocateFloats(_particleCount * 4);
 		_velocityPtr = Pointer.allocateFloats(_particleCount * 4);
-		_elasticConnectionsDataPtr = Pointer.allocateFloats(_elasticConnectionsCount * 4);
 		
 		// alternative buffer defining
 		_acceleration = _context.createBuffer(Usage.InputOutput,_accelerationPtr,false);
@@ -185,7 +184,13 @@ public class SPHSolverService implements ISolver {
 		_sortedPosition = _context.createBuffer(Usage.InputOutput,_sortedPositionPtr,false);
 		_sortedVelocity = _context.createBuffer(Usage.InputOutput, _sortedVelocityPtr,false);
 		_velocity = _context.createBuffer(Usage.InputOutput,_velocityPtr,false);
-		_elasticConnectionsData = _context.createBuffer(Usage.InputOutput,_elasticConnectionsDataPtr,false);
+		
+		// init elastic connections buffer if we have any
+		if(_elasticConnectionsCount > 0){
+			_elasticConnectionsDataPtr = Pointer.allocateFloats(_elasticConnectionsCount * 4);
+			_elasticConnectionsData = _context.createBuffer(Usage.InputOutput,_elasticConnectionsDataPtr,false);
+		}
+		
 		_queue.finish();
 	}
 	
@@ -616,8 +621,11 @@ public class SPHSolverService implements ISolver {
 		run_pcisph_computeDensity();
 		logger.info("PCI-SPH compute forces and init pressure");
 		run_pcisph_computeForcesAndInitPressure();
-		logger.info("PCI-SPH compute elastic forces");
-		run_pcisph_computeElasticForces();
+		
+		if(_elasticConnectionsCount > 0){
+			logger.info("PCI-SPH compute elastic forces");
+			run_pcisph_computeElasticForces();
+		}
 		
 		logger.info("PCI-SPH predict/correct loop");
 		// LOOP: 3 times or until "error" becomes less than 2%
