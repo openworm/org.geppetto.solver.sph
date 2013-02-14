@@ -215,19 +215,19 @@ int searchForNeighbors(
 	int particleCountThisCell = nextParticleId - baseParticleId;
 	int potentialNeighbors = particleCountThisCell;
 	int foundCount = 0;
-	bool loop = true;
-	int i = 0,j;
-	float _distance,_distanceSquared;
+	int i = 0;
+	int j = 0;
+	float _distance;
+	float _distanceSquared;
 	float r_thr_Squared = r_thr*r_thr;
 	float2 neighbor_data;
 	int neighborParticleId;
 	int myOffset;
-	if(spaceLeft>0)
+	
+	if(spaceLeft>0){
 		while( i < particleCountThisCell ){
 
 			neighborParticleId = baseParticleId + i;
-
-			//if(myParticleId == neighborParticleId) continue;
 
 			if(myParticleId != neighborParticleId)
 			{
@@ -252,12 +252,12 @@ int searchForNeighbors(
 						foundCount++;
 					}
 				}
-
 			}
 
 			i++;
 
 		}//while
+	}
 
 	return foundCount;
 }
@@ -395,7 +395,6 @@ __kernel void findNeighbors(
 
 		mode++;
 	}
-
 }
 
 int cellId( 
@@ -405,8 +404,7 @@ int cellId(
 		   int gridCellsZ//don't use
 		   )
 {
-	int cellId_ = cellFactors_.x + cellFactors_.y * gridCellsX
-		+ cellFactors_.z * gridCellsX * gridCellsY;
+	int cellId_ = cellFactors_.x + cellFactors_.y * gridCellsX + cellFactors_.z * gridCellsX * gridCellsY;
 	return cellId_;
 }
 
@@ -448,7 +446,6 @@ __kernel void indexPostPass(
 							__global uint * gridCellIndexFixedUp
 							)
 {
-
 	int id = get_global_id( 0 );
 	if( id <= gridCellCount ){
 		int idx = id;
@@ -511,8 +508,8 @@ __kernel void indexx(
 		uint2 sampleMinus1;
 		int sampleM1CellId = 0;
 		bool zeroCase = ( idx == 0 && isMiddle ); //it means that we in middle or 
-		sampleMinus1 = SELECT( (uint2)particleIndex[ idx - 1 ], zero2, (uint2)zeroCase );//if we in middle this return zero2 else (uint2)particleIndex[ idx - 1 ]
-		sampleM1CellId = SELECT( PI_CELL_ID( sampleMinus1 ), (uint)(-1), zeroCase );//if we in middle this return (uint)(-1) else sampleMinus1.x (index of cell)
+		sampleMinus1 = SELECT( (uint2)particleIndex[ idx - 1 ], zero2, (uint2)zeroCase ); //if we in middle this return zero2 else (uint2)particleIndex[ idx - 1 ]
+		sampleM1CellId = SELECT( PI_CELL_ID( sampleMinus1 ), (uint)(-1), zeroCase ); //if we in middle this return (uint)(-1) else sampleMinus1.x (index of cell)
 		bool convergedCondition = isMiddle && ( zeroCase || sampleM1CellId < sampleCellId );
 		converged = convergedCondition;
 		cellIndex = SELECT( cellIndex, idx, convergedCondition );
@@ -521,7 +518,6 @@ __kernel void indexx(
 
 	gridCellIndex[ id ] = cellIndex;
 }
-
 
 void handleBoundaryConditions(
 							  float4 position,
@@ -599,7 +595,6 @@ void handleBoundaryConditions(
 		*newVelocity = reflection;
 		*newPosition = intersection + remaining * damping * reflection;
 	}
-
 }
 
 __kernel void sortPostPass(
@@ -673,7 +668,7 @@ __kernel void pcisph_computeDensity(
 
 	density *= mass*Wpoly6Coefficient; // since all particles are same fluid type, factor this out to here
 	rho[ id ] = density; 		
-	rhoInv[ id ] = real_nc; 		
+	rhoInv[ id ] = real_nc;
 }
 
 __kernel void pcisph_computeForcesAndInitPressure(
@@ -697,20 +692,23 @@ __kernel void pcisph_computeForcesAndInitPressure(
 								  )
 {
 	int id = get_global_id( 0 );
-	id = particleIndexBack[id];//track selected particle (indices are not shuffled anymore)
+	//track selected particle (indices are not shuffled anymore)
+	id = particleIndexBack[id];
 
 	int idx = id * NEIGHBOR_COUNT;
 	float hScaled = h * simulationScale;
-	float hScaled2 = hScaled*hScaled;//29aug_A.Palyanov
+	float hScaled2 = hScaled*hScaled;
 
-	float4 acceleration_i;// = (float4)( 0.0f, 0.0f, 0.0f, 0.0f );
+	float4 acceleration_i;
 	float2 nm;
 	float r_ij;
 	int nc = 0;//neighbor counter
 	int jd;
 	float4 sum = (float4)( 0.0f, 0.0f, 0.0f, 0.0f );
-	float4 vi,vj;
-	float rho_i,rho_j;
+	float4 vi;
+	float4 vj;
+	float rho_i;
+	float rho_j;
 	float4 accel_surfTensForce = (float4)( 0.0f, 0.0f, 0.0f, 0.0f );
 
 	do{
@@ -720,21 +718,20 @@ __kernel void pcisph_computeForcesAndInitPressure(
 
 			if(r_ij<hScaled)
 			{
-				//neighbor_cnt++;
 				rho_i = rho[id];
 				rho_j = rho[jd];
 				vi = sortedVelocity[id];
 				vj = sortedVelocity[jd];
 				sum += (sortedVelocity[jd]-sortedVelocity[id])*(hScaled-r_ij)/rho[jd];
 
-				accel_surfTensForce += -0.0013*Wpoly6Coefficient*pow(hScaled2/2/*-r_ij*r_ij*/,3)*(sortedPosition[id]-sortedPosition[jd])*simulationScale;
+				accel_surfTensForce += -0.0013f*Wpoly6Coefficient*pow(hScaled2/2,3)*(sortedPosition[id]-sortedPosition[jd])*simulationScale;
 			}
 		}
 	}while(  ++nc < NEIGHBOR_COUNT );
 
 	accel_surfTensForce.w = 0.f;
 
-	float viscosity = 0.3;//0.5f;//0.1f
+	float viscosity = 0.3;
 
 	sum *= mass*viscosity*del2WviscosityCoefficient/rho[id];
 
@@ -743,15 +740,15 @@ __kernel void pcisph_computeForcesAndInitPressure(
 
 	acceleration_i += (float4)( gravity_x, gravity_y, gravity_z, 0.0f );
 
-	acceleration_i +=  accel_surfTensForce; //29aug_A.Palyanov
+	acceleration_i +=  accel_surfTensForce;
 
 	acceleration[ id ] = acceleration_i; 
 
-	// 1st half of 'acceleration' array is used to store acceleration corresponding to gravity, visc. force etc.
+	// 1st half of acceleration array is used to store acceleration corresponding to gravity, visc. force etc.
 	acceleration[ PARTICLE_COUNT+id ] = (float4)(0.0f, 0.0f, 0.0f, 0.0f );
-	// 2nd half of 'acceleration' array is used to store pressure force
-
-	pressure[id] = 0.f;//initialize pressure with 0
+	
+	// 2nd half of acceleration array is used to store pressure force
+	pressure[id] = 0.f;
 }
 
 __kernel void pcisph_computeElasticForces(
@@ -795,7 +792,7 @@ __kernel void pcisph_computeElasticForces(
 	if((v_i_cm_length!=0)&&(r_ij!=0))
 	{
 		float damping_coeff = 0.5f;
-		velocity_i_cm.w = 0;
+		velocity_i_cm.w = 0.0f;
 		float4 proj_v_i_cm_on_r_ij = vect_r_ij * DOT(velocity_i_cm,vect_r_ij)/(v_i_cm_length*r_ij);
 		float check = DOT(velocity_i_cm,vect_r_ij)/(v_i_cm_length*r_ij);
 
@@ -829,16 +826,21 @@ void calculateBoundaryParticleAffect(
 {
 	//track selected particle (indices are not shuffled anymore)
 	int idx = id * NEIGHBOR_COUNT;
-	int id_source_particle, nc = 0;
+	int id_source_particle = 0;
+	int nc = 0;
 	float4 n_ci = (float4)(0.f,0.f,0.f,0.f); 
 	float4 n_b;
-	float w_icb_summ = 0.f, w_icb_second_summ = 0.f,w_icb_current;
+	float w_icb_summ = 0.f;
+	float w_icb_second_summ = 0.f;
+	float w_icb_current;
 	float x_ib_norm;
 	float4 dist;
-	float val,x_ib_norma;
+	float val;
+	float x_ib_norma;
 	int jd;
-	//float8 returnedValue;
-	do// gather density contribution from all neighbors (if they exist)
+
+	// gather density contribution from all neighbors (if they exist)
+	do
 	{
 		if( (jd = NEIGHBOR_MAP_ID( neighborMap[ idx + nc ])) != NO_PARTICLE_ID )
 		{
@@ -856,15 +858,17 @@ void calculateBoundaryParticleAffect(
 			}
 		}
 	}while( ++nc < NEIGHBOR_COUNT );
+	
 	val = DOT(n_ci,n_ci);
+	
 	if(val != 0){
-		val = sqrt(val);
-		dist = n_ci/val * w_icb_second_summ * 1/w_icb_summ;
+		val = SQRT(val);
+		dist = n_ci/val * w_icb_second_summ * 1.0f/w_icb_summ;
 		(*pos_).x += dist.x;
 		(*pos_).y += dist.y;
 		(*pos_).z += dist.z;
 		if(tangVel){
-			float eps = 0.99f;//eps <= 1.0
+			float eps = 0.99f;
 			float vel_n_len = n_ci.x * (*vel).x + n_ci.y * (*vel).y + n_ci.z * (*vel).z; 
 			if(vel_n_len < 0){
 				(*vel).x -= n_ci.x * vel_n_len;
@@ -904,8 +908,10 @@ __kernel void pcisph_predictPositions(
 	int id = get_global_id( 0 );
 	id = particleIndexBack[id];
 	int id_source_particle = PI_SERIAL_ID( particleIndex[id] );
-	if((int)(position[ id_source_particle ].w) == 3)
+	if((int)(position[ id_source_particle ].w) == 3){
 		return;
+	}
+	
 	float4 acceleration_ = acceleration[ id ] + acceleration[ PARTICLE_COUNT+id ];
 	float4 position_ = sortedPosition[ id ];
 	float4 velocity_ = sortedVelocity[ id ];
@@ -917,7 +923,6 @@ __kernel void pcisph_predictPositions(
 
 	calculateBoundaryParticleAffect(id,r0,neighborMap,particleIndexBack,particleIndex,position,velocity,&newPosition_,false, &newVelocity_);
 	sortedPosition[PARTICLE_COUNT+id] = newPosition_;// in current version sortedPosition array has double size, 
-	// PARTICLE_COUNT*2, to store both x(t) and x*(t+1)
 }
 
 __kernel void pcisph_predictDensity(
@@ -952,7 +957,8 @@ __kernel void pcisph_predictDensity(
 	int jd;
 	int real_nc = 0;
 
-	do// gather density contribution from all neighbors (if they exist)
+	// gather density contribution from all neighbors (if they exist)
+	do
 	{
 		if( (jd = NEIGHBOR_MAP_ID( neighborMap[ idx + nc ])) != NO_PARTICLE_ID )
 		{
@@ -973,9 +979,10 @@ __kernel void pcisph_predictDensity(
 		density = hScaled6;
 	}
 
-	density *= mass*Wpoly6Coefficient; // since all particles are same fluid type, factor this out to here
+	// since all particles are same fluid type, factor this out to here
+	density *= mass*Wpoly6Coefficient;
 	rho[ PARTICLE_COUNT+id ] = density; 
-	rhoInv[ id ] = real_nc; 	
+	rhoInv[ id ] = real_nc;	
 }
 
 __kernel void pcisph_correctPressure(
@@ -998,12 +1005,13 @@ __kernel void pcisph_correctPressure(
 									 int PARTICLE_COUNT
 									 )
 {
-
 	int id = get_global_id( 0 );
-	id = particleIndexBack[id];//track selected particle (indices are not shuffled anymore)
+	//track selected particle (indices are not shuffled anymore)
+	id = particleIndexBack[id];
 
 	int idx = id * NEIGHBOR_COUNT;
-	int nc = 0;// neigbor counter
+	// neighbor counter
+	int nc = 0;
 	float rho_err;
 	float p_corr;
 
@@ -1038,8 +1046,11 @@ __kernel void pcisph_computePressureForceAcceleration(
 	int id = get_global_id( 0 );
 	id = particleIndexBack[id];//track selected particle (indices are not mixed anymore)
 	int id_source_particle = PI_SERIAL_ID( particleIndex[id] );
-	if((int)(position[ id_source_particle ].w) == 3)
+	
+	if((int)(position[ id_source_particle ].w) == 3){
 		return;
+	}
+	
 	int idx = id * NEIGHBOR_COUNT;
 	float hScaled = h * simulationScale;
 
@@ -1050,7 +1061,8 @@ __kernel void pcisph_computePressureForceAcceleration(
 
 	int nc=0;
 	float4 gradW_ij;
-	float r_ij,rho_err;
+	float r_ij;
+	float rho_err;
 	float4 vr_ij;
 	int jd;
 	float value;
@@ -1066,10 +1078,11 @@ __kernel void pcisph_computePressureForceAcceleration(
 			if(r_ij<hScaled)
 			{
 				value = -(hScaled-r_ij)*(hScaled-r_ij)*0.5f*(pressure[id]+pressure[jd])/rho[PARTICLE_COUNT+jd];
-				
-				vr_ij = (sortedPosition[id]-sortedPosition[jd])*simulationScale; vr_ij.w = 0;
+
+				vr_ij = (sortedPosition[id]-sortedPosition[jd])*simulationScale; 
+				vr_ij.w = 0.0f;
 				result += value*vr_ij/r_ij;
-				
+
 				real_neighbors++;
 			}
 
@@ -1077,8 +1090,9 @@ __kernel void pcisph_computePressureForceAcceleration(
 		}
 
 	}while( ++nc < NEIGHBOR_COUNT );
-
-	acceleration[ PARTICLE_COUNT+id ] = result; // pressureForceAcceleration "=" or "+=" ???
+	
+	// pressureForceAcceleration "=" or "+=" ???
+	acceleration[ PARTICLE_COUNT+id ] = result;
 }
 
 __kernel void pcisph_integrate(
@@ -1107,11 +1121,15 @@ __kernel void pcisph_integrate(
 							   int PARTICLE_COUNT
 							   )
 {
-	int id = get_global_id( 0 ); if(id>=PARTICLE_COUNT) return;
-	id = particleIndexBack[id]; if(id>=PARTICLE_COUNT) return;
+	int id = get_global_id( 0 ); 
+	if(id>=PARTICLE_COUNT) return;
+	
+	id = particleIndexBack[id]; 
+	if(id>=PARTICLE_COUNT) return;
+	
 	int id_source_particle = PI_SERIAL_ID( particleIndex[id] );
-	if((int)(position[ id_source_particle ].w) == 3)
-		return;
+	if((int)(position[ id_source_particle ].w) == 3) return;
+	
 	float4  accelOld = acceleration[ id ];
 	float4  accelT = acceleration[ PARTICLE_COUNT+id ];
 	float4 acceleration_ = acceleration[ id ] + acceleration[ PARTICLE_COUNT+id ]; acceleration_.w = 0.f;
@@ -1124,17 +1142,17 @@ __kernel void pcisph_integrate(
 	float posTimeStep = timeStep * simulationScaleInv;			
 	float4 newPosition_ = position_ + posTimeStep * newVelocity_; //newPosition_.w = 0.f;
 
-	if(newPosition_.x<xmin) newPosition_.x = xmin;//A.Palyanov 30.08.2012
-	if(newPosition_.y<ymin) newPosition_.y = ymin;//A.Palyanov 30.08.2012
-	if(newPosition_.z<zmin) newPosition_.z = zmin;//A.Palyanov 30.08.2012
-	if(newPosition_.x>xmax-0.000001f) newPosition_.x = xmax-0.000001f;//A.Palyanov 30.08.2012
-	if(newPosition_.y>ymax-0.000001f) newPosition_.y = ymax-0.000001f;//A.Palyanov 30.08.2012
-	if(newPosition_.z>zmax-0.000001f) newPosition_.z = zmax-0.000001f;//A.Palyanov 30.08.2012
+	if(newPosition_.x<xmin) newPosition_.x = xmin;
+	if(newPosition_.y<ymin) newPosition_.y = ymin;
+	if(newPosition_.z<zmin) newPosition_.z = zmin;
+	if(newPosition_.x>xmax-0.000001f) newPosition_.x = xmax-0.000001f;
+	if(newPosition_.y>ymax-0.000001f) newPosition_.y = ymax-0.000001f;
+	if(newPosition_.z>zmax-0.000001f) newPosition_.z = zmax-0.000001f;
 	// better replace 0.0000001 with smoothingRadius*0.001 or smth like this to keep this
 
 	float particleType = position[ id_source_particle ].w;
 	calculateBoundaryParticleAffect(id,r0,neighborMap,particleIndexBack,particleIndex,position,velocity,&newPosition_, true, &newVelocity_);
-	velocity[ id_source_particle ] = newVelocity_;//newVelocity_;
+	velocity[ id_source_particle ] = newVelocity_;
 	position[ id_source_particle ] = newPosition_;
 	position[ id_source_particle ].w = particleType;
 }
