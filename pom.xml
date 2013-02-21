@@ -64,8 +64,8 @@
 		<dependency>
 			<groupId>com.nativelibs4java</groupId>
 			<artifactId>javacl</artifactId>
- 			<version>1.0.0-RC3</version>
- 		</dependency>
+			<version>1.0.0-RC3</version>
+		</dependency>
 		<!-- dm Server library definitions -->
 		<dependency>
 			<groupId>org.springframework</groupId>
