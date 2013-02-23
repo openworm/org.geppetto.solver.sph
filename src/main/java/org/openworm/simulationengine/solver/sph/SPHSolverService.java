@@ -225,14 +225,14 @@ public class SPHSolverService implements ISolver {
 				Vector3DX velocityVector = (Vector3DX) mod.getParticles().get(i).getVelocityVector();
 				
 				// buffer population
-				_positionPtr.set(index,positionVector.getX());
-				_positionPtr.set(index + 1,positionVector.getY());
-				_positionPtr.set(index + 2,positionVector.getZ());
-				_positionPtr.set(index + 3,positionVector.getP());
-				_velocityPtr.set(index,velocityVector.getX());
-				_velocityPtr.set(index + 1,velocityVector.getY());
-				_velocityPtr.set(index + 2,velocityVector.getZ());
-				_velocityPtr.set(index + 3,velocityVector.getP());
+				_positionPtr.set(index, round(positionVector.getX(), SPHConstants.DECIMAL_ROUNDING_FACTOR));
+				_positionPtr.set(index + 1, round(positionVector.getY(), SPHConstants.DECIMAL_ROUNDING_FACTOR));
+				_positionPtr.set(index + 2, round(positionVector.getZ(), SPHConstants.DECIMAL_ROUNDING_FACTOR));
+				_positionPtr.set(index + 3, round(positionVector.getP(), SPHConstants.DECIMAL_ROUNDING_FACTOR));
+				_velocityPtr.set(index, round(velocityVector.getX(), SPHConstants.DECIMAL_ROUNDING_FACTOR));
+				_velocityPtr.set(index + 1, round(velocityVector.getY(), SPHConstants.DECIMAL_ROUNDING_FACTOR));
+				_velocityPtr.set(index + 2, round(velocityVector.getZ(), SPHConstants.DECIMAL_ROUNDING_FACTOR));
+				_velocityPtr.set(index + 3, round(velocityVector.getP(), SPHConstants.DECIMAL_ROUNDING_FACTOR));
 			}
 		}
 		else
@@ -656,5 +656,8 @@ public class SPHSolverService implements ISolver {
 	public void finishQueue() {
 		_queue.finish();
 	}
-}
-;
+	
+	public Float round(Float val, int roundingFactor){
+		return (float) Math.round(val * roundingFactor) / roundingFactor;
+	}
+};

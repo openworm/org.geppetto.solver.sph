@@ -34,34 +34,54 @@ public class SPHSolverTests {
 
 	@BeforeClass 
 	public static void InitSover() {
-		try {
+		/*try {
 			solver = new SPHSolverService();
 			solver.setModels(generateSampleModel());
 		} catch (Exception e) {
 			e.printStackTrace();
-		}
+		}*/
 	}
 	
 	@AfterClass 
 	public static void ReleaseSolver(){
-		solver.cleanContext();
+		// solver.cleanContext();
 	}
 	
-	//@Test
-	// NOTE: 1. DON'T COMMIT THIS IF UNCOMMENTED FOR LOCAL TEST - KEEP TESTS INDEPENDENT IF POSSIBLE. 
-	// NOTE: 1. we can also run all the tests at once by right clicking class name > run as > junit test
-	// public void _runStep(){
-	//		testClearBuffers();
-	//		testHashParticles();
-	//		testSort();
-	//		testSortPostPass();		
-	//		testIndexx();
-	//		testIndexPostPass();
-	//		testFindNeighbors();
-	//		testComputeDensityPressure();
-	//		testComputeAcceleration();
-	//		testIntegrate();
-	// }
+	@Test 
+	public void testRoundFloat()
+	{
+		Float val = (float) Math.round(-5.123456789f *  1000) /  1000;
+		String str = val.toString();
+		String[] parts = null;
+		if(str.contains(".")){
+			parts = str.split("\\.");
+		}
+		Assert.assertTrue(parts != null && parts[1].length() == 3);
+		
+		val = (float) Math.round(5.123456789f *  10000) /  10000;
+		str = val.toString();
+		parts = null;
+		if(str.contains(".")){
+			parts = str.split("\\.");
+		}
+		Assert.assertTrue(parts != null && parts[1].length() == 4);
+		
+		val = (float) Math.round(2.123456f *  100000) /  100000;
+		str = val.toString();
+		parts = null;
+		if(str.contains(".")){
+			parts = str.split("\\.");
+		}
+		Assert.assertTrue(parts != null && parts[1].length() == 5);
+		
+		val = (float) Math.round(2.123f *  1000000) /  1000000;
+		str = val.toString();
+		parts = null;
+		if(str.contains(".")){
+			parts = str.split("\\.");
+		}
+		Assert.assertTrue(parts != null && parts[1].length() == 3);
+	}
 	
 	@Test
 	public void testClearBuffers(){
@@ -229,7 +249,7 @@ public class SPHSolverTests {
 		Assert.assertTrue("testSolve: unexpected number of output models", models.size() == 1);
 		Assert.assertTrue("testSolve: unexpected number of nested output models", models.get(0).size() == 1);
 		// check that number of particles is correct
-		Assert.assertTrue("testSolve: number of particles does not match expected value", ((SPHModelX)models.get(0).get(0)).getNumberOfParticals() == SPHConstants.PARTICLE_COUNT);
+		Assert.assertTrue("testSolve: number of particles does not match expected value", ((SPHModelX)models.get(0).get(0)).getNumberOfParticals() == SPHTestConstants.PARTICLE_COUNT);
 		// TODO: check that the result of integration is correct (same as test integrate)
 	}
 	
@@ -252,7 +272,7 @@ public class SPHSolverTests {
 		Assert.assertTrue("testSolve: unexpected number of output models", resultModels.size() == 1);
 		Assert.assertTrue("testSolve: unexpected number of nested output models", resultModels.get(0).size() == 1);
 		// check that number of particles is correct
-		Assert.assertTrue("testSolve: number of particles does not match expected value", ((SPHModelX)resultModels.get(0).get(0)).getNumberOfParticals() == SPHConstants.PARTICLE_COUNT);
+		Assert.assertTrue("testSolve: number of particles does not match expected value", ((SPHModelX)resultModels.get(0).get(0)).getNumberOfParticals() == SPHTestConstants.PARTICLE_COUNT);
 		// TODO: check that the result of integration is correct (same as test integrate)
 	}
 	
@@ -262,7 +282,7 @@ public class SPHSolverTests {
 		int messageCount = 0;
 		solver._neighborMapPtr = solver._neighborMap.read(solver._queue);
 		solver._queue.finish();
-		for( int i = 0; i < SPHConstants.PARTICLE_COUNT; ++i ){
+		for( int i = 0; i < SPHTestConstants.PARTICLE_COUNT; ++i ){
 			float neighborId = solver._neighborMapPtr.get(i*2);//[ i * 2 ];
 			if( !( neighborId == -1 )){
 				System.out.println("Error: failed to initialize neighborMap at location " + i);
@@ -283,7 +303,7 @@ public class SPHSolverTests {
 		solver._queue.finish();
 		solver._particleIndex.read(solver._queue, solver._particleIndexPtr, true);
 		solver._queue.finish();
-		for( int i = 0; i < SPHConstants.PARTICLE_COUNT; ++i ){
+		for( int i = 0; i < SPHTestConstants.PARTICLE_COUNT; ++i ){
 			int cellId = (int)solver._particleIndexPtr.get(i * 2);
 			int particleId = (int)solver._particleIndexPtr.get(i * 2 + 1);
 			if ( cellId < 0 || cellId >= solver._gridCellCount ){
@@ -291,9 +311,9 @@ public class SPHSolverTests {
 				result = false;
 				messageCount++;
 			}
-			int ix = (int)(( solver._positionPtr.get(4 * particleId) - SPHConstants.XMIN_F ) / PhysicsConstants.HASH_GRID_CELL_SIZE ) % solver._gridCellsX;
-			int iy = (int)(( solver._positionPtr.get(4 * particleId + 1) - SPHConstants.YMIN_F ) / PhysicsConstants.HASH_GRID_CELL_SIZE ) % solver._gridCellsY;
-			int iz = (int)(( solver._positionPtr.get(4 * particleId + 2) - SPHConstants.ZMIN_F ) / PhysicsConstants.HASH_GRID_CELL_SIZE ) % solver._gridCellsZ;
+			int ix = (int)(( solver._positionPtr.get(4 * particleId) - SPHTestConstants.XMIN_F ) / PhysicsConstants.HASH_GRID_CELL_SIZE ) % solver._gridCellsX;
+			int iy = (int)(( solver._positionPtr.get(4 * particleId + 1) - SPHTestConstants.YMIN_F ) / PhysicsConstants.HASH_GRID_CELL_SIZE ) % solver._gridCellsY;
+			int iz = (int)(( solver._positionPtr.get(4 * particleId + 2) - SPHTestConstants.ZMIN_F ) / PhysicsConstants.HASH_GRID_CELL_SIZE ) % solver._gridCellsZ;
 			if( ix < 0 ) ix += solver._gridCellsX;
 			if( iy < 0 ) iy += solver._gridCellsY;
 			if( iz < 0 ) iz += solver._gridCellsZ;
@@ -316,7 +336,7 @@ public class SPHSolverTests {
 
 		solver._particleIndex.read(solver._queue, solver._particleIndexPtr, true);
 		solver._queue.finish();
-		for( int i = 0; i < SPHConstants.PARTICLE_COUNT; ++i ){
+		for( int i = 0; i < SPHTestConstants.PARTICLE_COUNT; ++i ){
 			int cellId = solver._particleIndexPtr.get(i * 2);
 			int particleId = solver._particleIndexPtr.get(i * 2 + 1);
 			if( cellId < 0 || cellId > solver._gridCellCount ){
@@ -342,12 +362,12 @@ public class SPHSolverTests {
 
 		solver._particleIndex.read(solver._queue, solver._particleIndexPtr, true);
 		solver._queue.finish();
-		int[] test = new int[SPHConstants.PARTICLE_COUNT * 2];
-		for(int i=0;i < SPHConstants.PARTICLE_COUNT *2;i++){
+		int[] test = new int[SPHTestConstants.PARTICLE_COUNT * 2];
+		for(int i=0;i < SPHTestConstants.PARTICLE_COUNT *2;i++){
 			test[i] = solver._particleIndexPtr.get(i);
 		}
 		int lastCellId = 0;
-		for( int i = 0; i < SPHConstants.PARTICLE_COUNT; ++i ){
+		for( int i = 0; i < SPHTestConstants.PARTICLE_COUNT; ++i ){
 			int cellId = solver._particleIndexPtr.get(i * 2);
 			int particleId = solver._particleIndexPtr.get(i * 2 + 1);
 			if ( cellId < lastCellId || cellId < 0 ){
@@ -378,11 +398,11 @@ public class SPHSolverTests {
 		solver._sortedVelocity.read(solver._queue, solver._sortedVelocityPtr, true);
 		solver._queue.finish();
 
-		for( int i = 0; i < SPHConstants.PARTICLE_COUNT; ++i ){
+		for( int i = 0; i < SPHTestConstants.PARTICLE_COUNT; ++i ){
 			int cellId = solver._particleIndexPtr.get(2*i);
 			int serialId = solver._particleIndexPtr.get(2*i + 1);
 			if( cellId < 0 || cellId > solver._gridCellCount
-				|| serialId < 0 || serialId > SPHConstants.PARTICLE_COUNT ){
+				|| serialId < 0 || serialId > SPHTestConstants.PARTICLE_COUNT ){
 					out.println("Error: impossible results from sort, particle "+i 
 						+" cell "+cellId+" serialId "+serialId);
 					result = false;
@@ -439,7 +459,7 @@ public class SPHSolverTests {
 		float totalMagnitude = 0.0f;
 		float hScaled = PhysicsConstants.H * PhysicsConstants.SIMULATION_SCALE;
 		
-		for( int particleId = 0; particleId < SPHConstants.PARTICLE_COUNT; ++particleId ){
+		for( int particleId = 0; particleId < SPHTestConstants.PARTICLE_COUNT; ++particleId ){
 			float rho_i = solver._rhoPtr.get(particleId);
 			float rho_i_inv = 1.0f / rho_i;
 			float p_i = solver._pressurePtr.get(particleId);
@@ -452,7 +472,7 @@ public class SPHSolverTests {
 		
 		// integrate the gradP and del^2 V terms over all particles
 		
-			for( int neighborNum = 0 /* -1 */; neighborNum < SPHConstants.NEIGHBOR_COUNT; ++neighborNum ){
+			for( int neighborNum = 0 /* -1 */; neighborNum < SPHTestConstants.NEIGHBOR_COUNT; ++neighborNum ){
 				int neighborParticleId;
 				float r;
 				float rho_j_inv;
@@ -460,10 +480,10 @@ public class SPHSolverTests {
 				float[] neighborPosition;
 				float[] d = new float[3];
 				float[] v_j;
-				float t = solver._neighborMapPtr.get(particleId * SPHConstants.NEIGHBOR_COUNT * 2 + neighborNum * 2);
+				float t = solver._neighborMapPtr.get(particleId * SPHTestConstants.NEIGHBOR_COUNT * 2 + neighborNum * 2);
 				neighborParticleId = (int)t;
 				if( neighborParticleId == NO_PARTICLE_ID ) continue;
-				r = solver._neighborMapPtr.get(particleId * SPHConstants.NEIGHBOR_COUNT * 2 + neighborNum * 2 + 1);
+				r = solver._neighborMapPtr.get(particleId * SPHTestConstants.NEIGHBOR_COUNT * 2 + neighborNum * 2 + 1);
 				float rhoP_j = solver._rhoPtr.get(neighborParticleId);
 				rho_j_inv = 1.0f / rhoP_j;
 				p_j = solver._pressurePtr.get(neighborParticleId);
@@ -535,7 +555,7 @@ public class SPHSolverTests {
 		
 		float[] totalAcceleration = { 0.0f, 0.0f, 0.0f };
 		
-		for( int i = 0; i < SPHConstants.PARTICLE_COUNT; ++i ){
+		for( int i = 0; i < SPHTestConstants.PARTICLE_COUNT; ++i ){
 			float[] a = readField(i*4, solver._accelerationPtr);
 			totalAcceleration[ 0 ] += a[ 0 ];
 			totalAcceleration[ 1 ] += a[ 1 ];
@@ -544,14 +564,14 @@ public class SPHSolverTests {
 		
 		float[] meanAcceleration = new float[ 3 ];
 		for( int j = 0; j < 3; ++j ){
-			meanAcceleration[ j ] = totalAcceleration[ j ] / SPHConstants.PARTICLE_COUNT;
+			meanAcceleration[ j ] = totalAcceleration[ j ] / SPHTestConstants.PARTICLE_COUNT;
 		}//for
 		float magnitude = (float)Math.sqrt( 
 				meanAcceleration[ 0 ] * meanAcceleration[ 0 ] +
 				meanAcceleration[ 1 ] * meanAcceleration[ 1 ] +
 				meanAcceleration[ 2 ] * meanAcceleration[ 2 ]
 				);
-		float meanMagnitude = totalMagnitude / SPHConstants.PARTICLE_COUNT;
+		float meanMagnitude = totalMagnitude / SPHTestConstants.PARTICLE_COUNT;
 		System.err.println("mean acceleration ("+meanAcceleration[ 0 ]+","+ meanAcceleration[ 1 ]+","+meanAcceleration[ 2 ]+") mean magnitude "+ meanMagnitude);
 		return result;
 	}
@@ -574,15 +594,15 @@ public class SPHSolverTests {
 
 		float hScaled = PhysicsConstants.H * PhysicsConstants.SIMULATION_SCALE;
 
-		for( int particleId = 0; particleId < SPHConstants.PARTICLE_COUNT; ++particleId ){
+		for( int particleId = 0; particleId < SPHTestConstants.PARTICLE_COUNT; ++particleId ){
 			//float[] nm = readField(particleId * SPHSolverService.NEIGHBOR_COUNT * 2, solver.neighborMap) ;
 			float computedDensity = 0.0f;
 
-			for( int neighborNum = 0; neighborNum < SPHConstants.NEIGHBOR_COUNT; ++neighborNum ){
+			for( int neighborNum = 0; neighborNum < SPHTestConstants.NEIGHBOR_COUNT; ++neighborNum ){
 				float r = 0.0f;
-				float neighborParticleId = solver._neighborMapPtr.get(particleId * SPHConstants.NEIGHBOR_COUNT * 2 + neighborNum * 2);//nm[0];
+				float neighborParticleId = solver._neighborMapPtr.get(particleId * SPHTestConstants.NEIGHBOR_COUNT * 2 + neighborNum * 2);//nm[0];
 				if( neighborParticleId == NO_PARTICLE_ID ) continue;
-				float distance = solver._neighborMapPtr.get(particleId * SPHConstants.NEIGHBOR_COUNT * 2 + neighborNum * 2 + 1);
+				float distance = solver._neighborMapPtr.get(particleId * SPHTestConstants.NEIGHBOR_COUNT * 2 + neighborNum * 2 + 1);
 				r = distance;
 				float x = hScaled * hScaled - r * r;
 				float Wpoly6 = x * x * x * PhysicsConstants.W_POLY_6_COEFFICIENT;
@@ -619,13 +639,13 @@ public class SPHSolverTests {
 		float totalRho = 0.0f;
 		float totalP = 0.0f;
 
-		for( int i = 0; i < SPHConstants.PARTICLE_COUNT; ++i ){
+		for( int i = 0; i < SPHTestConstants.PARTICLE_COUNT; ++i ){
 			totalRho += solver._rhoPtr.get(i);
 			totalP += solver._pressurePtr.get(i);
 		}//for
 
-		float meanRho = totalRho / SPHConstants.PARTICLE_COUNT;
-		float meanP = totalP / SPHConstants.PARTICLE_COUNT;
+		float meanRho = totalRho / SPHTestConstants.PARTICLE_COUNT;
+		float meanP = totalP / SPHTestConstants.PARTICLE_COUNT;
 		out.println("mean rho "+meanRho+" mean pressure "+meanP);
 		return result;
 	}
@@ -642,17 +662,17 @@ public class SPHSolverTests {
 
 		// make sure neighbors are symmetric and agree with distance
 
-		for( int particleId = 0; particleId < SPHConstants.PARTICLE_COUNT; ++particleId ){
-			float[] nm = readField(particleId * SPHConstants.NEIGHBOR_COUNT * 2, solver._neighborMapPtr);
+		for( int particleId = 0; particleId < SPHTestConstants.PARTICLE_COUNT; ++particleId ){
+			float[] nm = readField(particleId * SPHTestConstants.NEIGHBOR_COUNT * 2, solver._neighborMapPtr);
 			float[] myPosition = readField( 4*particleId, solver._sortedPositionPtr );
 
-			for( int neighborNum = 0; neighborNum < SPHConstants.NEIGHBOR_COUNT; ++neighborNum ){
-				float neighborParticleId = solver._neighborMapPtr.get(particleId * SPHConstants.NEIGHBOR_COUNT * 2 + neighborNum * 2);
+			for( int neighborNum = 0; neighborNum < SPHTestConstants.NEIGHBOR_COUNT; ++neighborNum ){
+				float neighborParticleId = solver._neighborMapPtr.get(particleId * SPHTestConstants.NEIGHBOR_COUNT * 2 + neighborNum * 2);
 				if( (int)neighborParticleId == NO_PARTICLE_ID ) continue;
 
 				// make sure this particle is listed in the neighbors neighbor map
 				boolean isNeighbor = false;
-				for( int j = 0; j < SPHConstants.NEIGHBOR_COUNT; ++j ){
+				for( int j = 0; j < SPHTestConstants.NEIGHBOR_COUNT; ++j ){
 					int nnNum = (int)((float)solver._neighborMapPtr.get(j * 2 ));
 					isNeighbor |= nnNum == particleId;
 				}//for
@@ -688,28 +708,28 @@ public class SPHSolverTests {
 		}//for
 
 		float totalNeighbors = 0.0f;
-		for( int particleId = 0; particleId < SPHConstants.PARTICLE_COUNT; ++particleId ){
+		for( int particleId = 0; particleId < SPHTestConstants.PARTICLE_COUNT; ++particleId ){
 			float[] myPosition = readField(4 * particleId, solver._sortedPositionPtr );
 
-			for( int neighborNum = 0; neighborNum < SPHConstants.NEIGHBOR_COUNT; ++neighborNum ){
+			for( int neighborNum = 0; neighborNum < SPHTestConstants.NEIGHBOR_COUNT; ++neighborNum ){
 				float neighborParticleId = solver._neighborMapPtr.get(neighborNum * 2);
 				if( (int)neighborParticleId == NO_PARTICLE_ID ) continue;
 				totalNeighbors += 1.0f;
 			}//for
 		}//for
-		float meanNeighbors = totalNeighbors / SPHConstants.PARTICLE_COUNT;
-		if( meanNeighbors < 0.7f * SPHConstants.NEIGHBOR_COUNT ){
+		float meanNeighbors = totalNeighbors / SPHTestConstants.PARTICLE_COUNT;
+		if( meanNeighbors < 0.7f * SPHTestConstants.NEIGHBOR_COUNT ){
 			out.println("Error: unexpectedly low meanNeighbors "+meanNeighbors);
 			result = false;
 		}else{
-			out.println("mean neighbors "+meanNeighbors+" NEIGHBOR_COUNT="+SPHConstants.NEIGHBOR_COUNT);
+			out.println("mean neighbors "+meanNeighbors+" NEIGHBOR_COUNT="+SPHTestConstants.NEIGHBOR_COUNT);
 		}
 
 		// truly randomize sampling, assume data is same from run to run
-		for( int i = 0; i < SPHConstants.PARTICLE_COUNT; ++i ){
+		for( int i = 0; i < SPHTestConstants.PARTICLE_COUNT; ++i ){
 			int particleId = i;
 			float[] myPosition = readField( 4 * particleId, solver._sortedPositionPtr );
-			for( int neighborParticleId = 0; neighborParticleId < SPHConstants.PARTICLE_COUNT; ++neighborParticleId ){
+			for( int neighborParticleId = 0; neighborParticleId < SPHTestConstants.PARTICLE_COUNT; ++neighborParticleId ){
 				if( neighborParticleId == particleId ) continue;
 				float[] neighborPosition = readField( 4 * neighborParticleId, solver._sortedPositionPtr );
 				float dx = myPosition[ 0 ] - neighborPosition[ 0 ];
@@ -718,8 +738,8 @@ public class SPHSolverTests {
 				float distance = (float)Math.sqrt( dx * dx + dy * dy + dz * dz );
 				if( distance < PhysicsConstants.H - EPSILON ){
 					boolean found = false;
-					for(int k = 0; k < SPHConstants.NEIGHBOR_COUNT; ++k ){
-						float npid = solver._neighborMapPtr.get(particleId * SPHConstants.NEIGHBOR_COUNT * 2 + k * 2 );
+					for(int k = 0; k < SPHTestConstants.NEIGHBOR_COUNT; ++k ){
+						float npid = solver._neighborMapPtr.get(particleId * SPHTestConstants.NEIGHBOR_COUNT * 2 + k * 2 );
 						if( (int)npid == neighborParticleId ) found = true;
 					}//for
 					if( !found ){
@@ -769,11 +789,11 @@ public class SPHSolverTests {
 
 		// compute the expected result and compare
 		int lastCellId = -1;
-		for( int i = 0; i < SPHConstants.PARTICLE_COUNT; ++i ){
+		for( int i = 0; i < SPHTestConstants.PARTICLE_COUNT; ++i ){
 			int cellId = solver._particleIndexPtr.get(i * 2);
 			int particleId = solver._particleIndexPtr.get(i * 2 + 1);
 			if( cellId < 0 || cellId > solver._gridCellCount 
-				|| particleId < 0 || particleId > SPHConstants.PARTICLE_COUNT ){
+				|| particleId < 0 || particleId > SPHTestConstants.PARTICLE_COUNT ){
 					out.println("Error: impossible particle index values, particle "+i
 						+" cell "+cellId+" particleId "+particleId);
 					result = false;
@@ -796,9 +816,9 @@ public class SPHSolverTests {
 		}//for
 
 		// verify the last+1 grid cell index
-		if( solver._gridCellIndexPtr.get(solver._gridCellCount) != SPHConstants.PARTICLE_COUNT ){
+		if( solver._gridCellIndexPtr.get(solver._gridCellCount) != SPHTestConstants.PARTICLE_COUNT ){
 			out.println("Error: last+1 grid cell index is wrong " 
-				+solver._gridCellIndexPtr.get(solver._gridCellCount - 1)+ " should be "+ SPHConstants.PARTICLE_COUNT);
+				+solver._gridCellIndexPtr.get(solver._gridCellCount - 1)+ " should be "+ SPHTestConstants.PARTICLE_COUNT);
 			result = false;
 		}
 		return result;
@@ -845,7 +865,7 @@ public class SPHSolverTests {
 
 		out.println("Particles per cell, mean " + meanParticlesPerCell + " standard deviation " + stdDev);
 
-		float expectedParticlesPerCell = (float)SPHConstants.PARTICLE_COUNT / (float)solver._gridCellCount;
+		float expectedParticlesPerCell = (float)SPHTestConstants.PARTICLE_COUNT / (float)solver._gridCellCount;
 		if( meanParticlesPerCell != expectedParticlesPerCell ){
 			out.println("Error: wrong mean particles per cell " + meanParticlesPerCell 
 				+ " should be " + expectedParticlesPerCell);
@@ -863,7 +883,7 @@ public class SPHSolverTests {
 		solver._particleIndex.read(solver._queue, solver._particleIndexPtr, true);
 		solver._queue.finish();
 		int lastCellId = -1;
-		for( int i = 0; i < SPHConstants.PARTICLE_COUNT; ++i ){
+		for( int i = 0; i < SPHTestConstants.PARTICLE_COUNT; ++i ){
 			int cellId = solver._particleIndexPtr.get(i * 2);
 			int particleId = solver._particleIndexPtr.get(i * 2 + 1);
 			if( cellId > lastCellId ){
@@ -881,9 +901,9 @@ public class SPHSolverTests {
 		}//for
 
 		// verify the last+1 grid cell index
-		if( solver._gridCellIndexPtr.get(solver._gridCellCount) != SPHConstants.PARTICLE_COUNT ){
+		if( solver._gridCellIndexPtr.get(solver._gridCellCount) != SPHTestConstants.PARTICLE_COUNT ){
 			out.println("Error: last+1 grid cell index is wrong "+ solver._gridCellIndexPtr.get(solver._gridCellCount - 1)  
-			+ " should be "+ SPHConstants.PARTICLE_COUNT );
+			+ " should be "+ SPHTestConstants.PARTICLE_COUNT );
 			result = false;
 		}
 		return result;
@@ -904,13 +924,13 @@ public class SPHSolverTests {
 		solver._velocity.read(solver._queue, solver._velocityPtr, true);
 		solver._queue.finish();
 
-		for( int i = 0; i < SPHConstants.PARTICLE_COUNT; ++i ){
+		for( int i = 0; i < SPHTestConstants.PARTICLE_COUNT; ++i ){
 			float[] sortedPosition_ = readField( 4 * i, solver._sortedPositionPtr );
 			float[] position_ = readField( 4 * i, solver._positionPtr );
 			for( int j = 0; j < 3; ++j ){
-				if( position_[ 0 ] < SPHConstants.XMIN_F || position_[ 0 ] > SPHConstants.XMAX_F ||
-					position_[ 1 ] < SPHConstants.YMIN_F || position_[ 1 ] > SPHConstants.YMAX_F ||
-					position_[ 2 ] < SPHConstants.ZMIN_F || position_[ 2 ] > SPHConstants.ZMAX_F ){
+				if( position_[ 0 ] < SPHTestConstants.XMIN_F || position_[ 0 ] > SPHTestConstants.XMAX_F ||
+					position_[ 1 ] < SPHTestConstants.YMIN_F || position_[ 1 ] > SPHTestConstants.YMAX_F ||
+					position_[ 2 ] < SPHTestConstants.ZMIN_F || position_[ 2 ] > SPHTestConstants.ZMAX_F ){
 						out.println("Error: particle " + i + " escaped the environment at ("
 							+ position_[ 0 ] + "," + position_[ 1 ]
 						+ "," + position_[ 2 ] + ")");
@@ -932,13 +952,13 @@ public class SPHSolverTests {
 	
 	private static List<IModel> generateSampleModel(){
 
-		int gridCellsX = (int)( ( SPHConstants.XMAX - SPHConstants.XMIN ) / PhysicsConstants.H ) + 1;
-		int gridCellsY = (int)( ( SPHConstants.YMAX - SPHConstants.YMIN ) / PhysicsConstants.H ) + 1;
-		int gridCellsZ = (int)( ( SPHConstants.ZMAX - SPHConstants.ZMIN ) / PhysicsConstants.H ) + 1;
+		int gridCellsX = (int)( ( SPHTestConstants.XMAX - SPHTestConstants.XMIN ) / PhysicsConstants.H ) + 1;
+		int gridCellsY = (int)( ( SPHTestConstants.YMAX - SPHTestConstants.YMIN ) / PhysicsConstants.H ) + 1;
+		int gridCellsZ = (int)( ( SPHTestConstants.ZMAX - SPHTestConstants.ZMIN ) / PhysicsConstants.H ) + 1;
         SPHModelX mod = new SPHModelX(gridCellsX, gridCellsY, gridCellsZ);	
 		
 		int index = 0;
-		for(int i = 0;i<SPHConstants.PARTICLE_COUNT;i++){
+		for(int i = 0;i<SPHTestConstants.PARTICLE_COUNT;i++){
 			if(i != 0)
 			{
 				index = index + 4;
@@ -950,11 +970,11 @@ public class SPHSolverTests {
 			Vector3DX velocityVector = new Vector3DX();
 			
 			// populate position vector
-			positionVector.setX(MathUtils.scale(SPHConstants.XMIN, SPHConstants.XMAX/10 , r)); 
+			positionVector.setX(MathUtils.scale(SPHTestConstants.XMIN, SPHTestConstants.XMAX/10 , r)); 
 			r = ((float)randomGenerator.nextInt(PhysicsConstants.RAND_MAX) / (float)PhysicsConstants.RAND_MAX );
-			positionVector.setY(MathUtils.scale(SPHConstants.YMIN, SPHConstants.YMAX , r)); 
+			positionVector.setY(MathUtils.scale(SPHTestConstants.YMIN, SPHTestConstants.YMAX , r)); 
 			r = ((float)randomGenerator.nextInt(PhysicsConstants.RAND_MAX) / (float)PhysicsConstants.RAND_MAX );
-			positionVector.setZ(MathUtils.scale(SPHConstants.ZMIN, SPHConstants.ZMAX , r));
+			positionVector.setZ(MathUtils.scale(SPHTestConstants.ZMIN, SPHTestConstants.ZMAX , r));
 			positionVector.setP(0f);
 			// populate velocity vector
 			r = ((float)randomGenerator.nextInt(PhysicsConstants.RAND_MAX) / (float)PhysicsConstants.RAND_MAX );
@@ -972,7 +992,7 @@ public class SPHSolverTests {
 		return new ArrayList<IModel>(Arrays.asList(mod));
 	}
 	
-	public class SPHConstants {
+	public class SPHTestConstants {
 		public static final int PARTICLE_COUNT = 5539;//( 32 * 1024 );
 		public static final int NEIGHBOR_COUNT = 32;
 		public static final int NK = NEIGHBOR_COUNT * PARTICLE_COUNT;
@@ -990,5 +1010,7 @@ public class SPHSolverTests {
 		public static final float YMAX_F = YMAX;
 		public static final float ZMIN_F = ZMIN;
 		public static final float ZMAX_F = ZMAX;
+		
+		public static final int DECIMAL_ROUNDING_FACTOR = 1000000;
 	}
 }
