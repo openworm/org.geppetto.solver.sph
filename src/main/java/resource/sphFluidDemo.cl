@@ -247,6 +247,8 @@ int searchForNeighbors(
 					if(mode)
 					{
 						myOffset = NEIGHBOR_COUNT - spaceLeft + foundCount;
+						// New line fixing the bug with indeterminism. A. Palyanov 22.02.2013
+						if(myOffset>=NEIGHBOR_COUNT) break;
 						neighbor_data.x = neighborParticleId;
 						neighbor_data.y = _distance * simulationScale; // scaled, OK
 						neighborMap[ myParticleId*NEIGHBOR_COUNT + myOffset ] = neighbor_data;
