@@ -446,8 +446,6 @@ public class SPHSolverTests {
 		solver._queue.finish();
 		solver._rho.read(solver._queue, solver._rhoPtr, true);
 		solver._queue.finish();
-		solver._rhoInv.read(solver._queue, solver._rhoInvPtr, true);
-		solver._queue.finish();
 		solver._sortedPosition.read(solver._queue, solver._sortedPositionPtr, true);
 		solver._queue.finish();
 		solver._sortedVelocity.read(solver._queue, solver._sortedVelocityPtr, true);
@@ -587,8 +585,6 @@ public class SPHSolverTests {
 		solver._pressure.read(solver._queue, solver._pressurePtr, true);
 		solver._queue.finish();
 		solver._rho.read(solver._queue, solver._rhoPtr, true);
-		solver._queue.finish();
-		solver._rhoInv.read(solver._queue, solver._rhoInvPtr, true);
 		solver._queue.finish();
 
 
