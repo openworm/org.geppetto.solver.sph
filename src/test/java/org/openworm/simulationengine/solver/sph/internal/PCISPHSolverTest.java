@@ -10,8 +10,6 @@ import java.util.List;
 
 import org.junit.Test;
 import org.openworm.simulationengine.core.model.IModel;
-import org.openworm.simulationengine.core.simulation.ITimeConfiguration;
-import org.openworm.simulationengine.core.simulation.TimeConfiguration;
 import org.openworm.simulationengine.model.sph.services.SPHModelInterpreterService;
 import org.openworm.simulationengine.solver.sph.SPHSolverService;
 
@@ -35,6 +33,27 @@ public class PCISPHSolverTest
 			URL url = new URL("https://www.dropbox.com/s/8869zlz971ogyra/sphModel_small.xml?dl=1");
 			List<IModel> models = modelInterpreter.readModel(url);
 			for (int cycles = 0; cycles < 10; cycles++)
+			{
+				models=solver.solve(models, null).get(0);
+			}
+		}
+		catch (Exception e)
+		{
+			fail(e.getMessage());
+		}
+
+	}
+	
+	@Test
+	public void testSolve15()
+	{
+		try
+		{
+			SPHSolverService solver = new SPHSolverService();
+			SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
+			URL url = new URL("https://www.dropbox.com/s/9kx2p8qspdgphd4/sphModel_15.xml?dl=1");
+			List<IModel> models = modelInterpreter.readModel(url);
+			for (int cycles = 0; cycles < 209; cycles++)
 			{
 				models=solver.solve(models, null).get(0);
 			}
