@@ -129,7 +129,7 @@ public class SPHSolverService implements ISolver {
 		_queue = _context.createDefaultQueue();//device.createCommandQueue();
 		
 		// load sources, create and build program
-		String src = IOUtils.readText(SPHSolverService.class.getResourceAsStream("/resource/sphFluidDemo.cl"));
+		String src = IOUtils.readText(SPHSolverService.class.getResourceAsStream("/resource/sphFluid.cl"));
 		_program = _context.createProgram(src);
 		
 		// kernels
