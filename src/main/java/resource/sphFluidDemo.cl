@@ -27,7 +27,7 @@
 #endif
 
 //#pragma OPENCL EXTENSION cl_amd_printf : enable
-//#pragma OPENCL EXTENSION cl_intel_printf : enable
+#pragma OPENCL EXTENSION cl_intel_printf : enable
 
 __kernel void clearBuffers(
 						   __global float2 * neighborMap
@@ -300,6 +300,7 @@ __kernel void findNeighbors(
 {
 	__global uint * gridCellIndex = gridCellIndexFixedUp;
 	int id = get_global_id( 0 );
+    printf("ID: %d\n",id);
 	float4 position_ = sortedPosition[ id ];
 	int myCellId = (int)POSITION_CELL_ID( position_ ) & 0xffff;// truncate to low 16 bits
 	int searchCell_;
