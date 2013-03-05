@@ -3,6 +3,9 @@
 // Eurographics/SIGGRAPH Symposium on Computer Animation (2003).
 
 #define NEIGHBOR_COUNT 32
+#define LIQUID_PARTICLE 1
+#define ELASTIC_PARTICLE 2
+#define BOUNDARY_PARTICLE 3
 
 #define NO_PARTICLE_ID -1
 #define NO_CELL_ID -1
@@ -606,7 +609,8 @@ __kernel void sortPostPass(
 						   __global float4 * position,
 						   __global float4 * velocity,
 						   __global float4 * sortedPosition,
-						   __global float4 * sortedVelocity
+						   __global float4 * sortedVelocity,
+						   int PARTICLE_COUNT
 						   )
 {
 	int id = get_global_id( 0 );
@@ -618,7 +622,7 @@ __kernel void sortPostPass(
 	float4 velocity_ = velocity[ serialId ];
 	sortedVelocity[ id ] = velocity_;//put velocity to sortedVelocity for right order according to particleIndex
 	sortedPosition[ id ] = position_;//put position to sortedVelocity for right order according to particleIndex
-
+	sortedVelocity[ id  + PARTICLE_COUNT ] = velocity_;
 	particleIndexBack[ serialId ] = id;
 }
 
@@ -689,29 +693,38 @@ __kernel void pcisph_computeForcesAndInitPressure(
 								  float gravity_x,
 								  float gravity_y,
 								  float gravity_z,
+								  __global float4 * position,
+								  __global uint2 * particleIndex,
 								  int PARTICLE_COUNT
 								  )
 {
 	int id = get_global_id( 0 );
-	//track selected particle (indices are not shuffled anymore)
+	//track selected particle - indices are not shuffled anymore
 	id = particleIndexBack[id];
-
+	int id_source_particle = PI_SERIAL_ID( particleIndex[id] );
+	if((int)(position[ id_source_particle ].w) == BOUNDARY_PARTICLE){
+		//FOR BOUNDARY PARTICLE WE SHOULDN'T COMPUTE ACCELERATION BECAUSE THEY DON'T MOVE
+		acceleration[ id ] = (float4)(0.0f, 0.0f, 0.0f, 0.0f );
+		acceleration[ PARTICLE_COUNT+id ] = (float4)(0.0f, 0.0f, 0.0f, 0.0f );
+		//initialize pressure with 0
+		pressure[id] = 0.f;
+		return;
+	}
+	
 	int idx = id * NEIGHBOR_COUNT;
 	float hScaled = h * simulationScale;
 	float hScaled2 = hScaled*hScaled;
-
+	
 	float4 acceleration_i;
 	float2 nm;
 	float r_ij;
 	int nc = 0;//neighbor counter
 	int jd;
 	float4 sum = (float4)( 0.0f, 0.0f, 0.0f, 0.0f );
-	float4 vi;
-	float4 vj;
-	float rho_i;
-	float rho_j;
+	float4 vi,vj;
+	float rho_i,rho_j;
 	float4 accel_surfTensForce = (float4)( 0.0f, 0.0f, 0.0f, 0.0f );
-
+	
 	do{
 		if( (jd = NEIGHBOR_MAP_ID(neighborMap[ idx + nc])) != NO_PARTICLE_ID )
 		{
@@ -719,6 +732,7 @@ __kernel void pcisph_computeForcesAndInitPressure(
 
 			if(r_ij<hScaled)
 			{
+				//neighbor_cnt++;
 				rho_i = rho[id];
 				rho_j = rho[jd];
 				vi = sortedVelocity[id];
@@ -728,23 +742,19 @@ __kernel void pcisph_computeForcesAndInitPressure(
 				accel_surfTensForce += -0.0013f*Wpoly6Coefficient*pow(hScaled2/2,3)*(sortedPosition[id]-sortedPosition[jd])*simulationScale;
 			}
 		}
+
 	}while(  ++nc < NEIGHBOR_COUNT );
-
+	
 	accel_surfTensForce.w = 0.f;
-
-	float viscosity = 0.3;
-
+	float viscosity = 0.3f;
 	sum *= mass*viscosity*del2WviscosityCoefficient/rho[id];
 
 	// apply external forces
 	acceleration_i = sum;
-
 	acceleration_i += (float4)( gravity_x, gravity_y, gravity_z, 0.0f );
-
 	acceleration_i +=  accel_surfTensForce;
-
-	acceleration[ id ] = acceleration_i; 
-
+	acceleration[ id ] = acceleration_i;
+	
 	// 1st half of acceleration array is used to store acceleration corresponding to gravity, visc. force etc.
 	acceleration[ PARTICLE_COUNT+id ] = (float4)(0.0f, 0.0f, 0.0f, 0.0f );
 	

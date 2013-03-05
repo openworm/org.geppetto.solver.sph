@@ -386,6 +386,7 @@ public class SPHSolverService implements ISolver {
 		_sortPostPass.setArg( 3, _velocity );
 		_sortPostPass.setArg( 4, _sortedPosition );
 		_sortPostPass.setArg( 5, _sortedVelocity );
+		_sortPostPass.setArg( 6, _particleCount );
 		_sortPostPass.enqueueNDRange(_queue, new int[] {_particleCount});
 		return 0;
 	}
