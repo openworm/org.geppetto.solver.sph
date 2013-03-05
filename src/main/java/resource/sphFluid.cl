@@ -949,12 +949,14 @@ __kernel void pcisph_predictPositions(
 	int id = get_global_id( 0 );
 	id = particleIndexBack[id];
 	int id_source_particle = PI_SERIAL_ID( particleIndex[id] );
+	float4 position_ = sortedPosition[ id ];
 	if((int)(position[ id_source_particle ].w) == 3){
+		//this line was missing (absent) and caused serions errors int further program behavior
+		sortedPosition[PARTICLE_COUNT+id] = position_;
 		return;
 	}
 	
 	float4 acceleration_ = acceleration[ id ] + acceleration[ PARTICLE_COUNT+id ];
-	float4 position_ = sortedPosition[ id ];
 	float4 velocity_ = sortedVelocity[ id ];
 
 	// Semi-implicit Euler integration 
@@ -963,7 +965,8 @@ __kernel void pcisph_predictPositions(
 	float4 newPosition_ = position_ + posTimeStep * newVelocity_; //newPosition_.w = 0.f;
 
 	calculateBoundaryParticleAffect(id,r0,neighborMap,particleIndexBack,particleIndex,position,velocity,&newPosition_,false, &newVelocity_);
-	sortedPosition[PARTICLE_COUNT+id] = newPosition_;// in current version sortedPosition array has double size, 
+	// in current version sortedPosition array has double size, PARTICLE_COUNT*2, to store both x(t) and x*(t+1)
+	sortedPosition[PARTICLE_COUNT+id] = newPosition_;
 }
 
 __kernel void pcisph_predictDensity(
