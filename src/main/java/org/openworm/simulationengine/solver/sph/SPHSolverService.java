@@ -91,6 +91,13 @@ public class SPHSolverService implements ISolver {
 	private CLKernel _pcisph_computePressureForceAcceleration;
 	private CLKernel _pcisph_computeElasticForces;
 	
+	public float _xMax;
+	public float _xMin;
+	public float _yMax;
+	public float _yMin;
+	public float _zMax;
+	public float _zMin;
+	
 	public int _gridCellsX;
 	public int _gridCellsY;
 	public int _gridCellsZ;
@@ -204,10 +211,12 @@ public class SPHSolverService implements ISolver {
 			_numOfLiquidP = 0;
 			_numOfBoundaryP = 0;
 			
+			// TODO: make sure that dividing by H is correct
+			_gridCellsX = (int)( ( mod.getXMax() - mod.getXMin() ) / PhysicsConstants.H ) + 1;
+			_gridCellsY = (int)( ( mod.getYMax() - mod.getYMin() ) / PhysicsConstants.H ) + 1;
+			_gridCellsZ = (int)( ( mod.getZMax() - mod.getZMin() ) / PhysicsConstants.H ) + 1;
+			
 			// set grid dimensions
-			_gridCellsX = mod.getCellX();
-			_gridCellsY = mod.getCellY();
-			_gridCellsZ = mod.getCellZ();
 			_gridCellCount = _gridCellsX * _gridCellsY * _gridCellsZ;
 			
 			// allocate buffers - requires global dimensions of the grid
@@ -260,7 +269,7 @@ public class SPHSolverService implements ISolver {
 	public List<IModel> getModels(){
 		List<IModel> models = new ArrayList<IModel>();
 		
-		SPHModelX mod = new SPHModelX(_gridCellsX, _gridCellsY, _gridCellsZ);
+		SPHModelX mod = new SPHModelX(_xMax, _xMin, _yMax, _yMin, _zMax, _zMin);
 		
 		int index = 0;
 		for(int i = 0;i< _particleCount;i++){
@@ -332,9 +341,9 @@ public class SPHSolverService implements ISolver {
 		_findNeighbors.setArg( 7, PhysicsConstants.HASH_GRID_CELL_SIZE );
 		_findNeighbors.setArg( 8, PhysicsConstants.HASH_GRID_CELL_SIZE_INV );
 		_findNeighbors.setArg( 9, PhysicsConstants.SIMULATION_SCALE );
-		_findNeighbors.setArg( 10, SPHConstants.XMIN );
-		_findNeighbors.setArg( 11, SPHConstants.YMIN );
-		_findNeighbors.setArg( 12, SPHConstants.ZMIN );
+		_findNeighbors.setArg( 10, _xMin );
+		_findNeighbors.setArg( 11, _yMin );
+		_findNeighbors.setArg( 12, _zMin );
 		_findNeighbors.setArg( 13, _neighborMap );
 		_findNeighbors.enqueueNDRange(_queue, new int[] {_particleCount});
 		return 0;
@@ -347,9 +356,9 @@ public class SPHSolverService implements ISolver {
 		_hashParticles.setArg( 2, _gridCellsY );
 		_hashParticles.setArg( 3, _gridCellsZ );
 		_hashParticles.setArg( 4, PhysicsConstants.HASH_GRID_CELL_SIZE_INV );
-		_hashParticles.setArg( 5, SPHConstants.XMIN );
-		_hashParticles.setArg( 6, SPHConstants.YMIN );
-		_hashParticles.setArg( 7, SPHConstants.ZMIN );
+		_hashParticles.setArg( 5, _xMin );
+		_hashParticles.setArg( 6, _yMin );
+		_hashParticles.setArg( 7, _zMin );
 		_hashParticles.setArg( 8, _particleIndex );
 		_hashParticles.setArg( 9, _particleCount );
 		_hashParticles.enqueueNDRange(_queue, new int[] {_particleCount});
@@ -468,12 +477,12 @@ public class SPHSolverService implements ISolver {
 		_pcisph_predictPositions.setArg( 7, PhysicsConstants.GRAVITY_Z );
 		_pcisph_predictPositions.setArg( 8, PhysicsConstants.SIMULATION_SCALE_INV );
 		_pcisph_predictPositions.setArg( 9, PhysicsConstants.TIME_STEP );
-		_pcisph_predictPositions.setArg( 10, SPHConstants.XMIN );
-		_pcisph_predictPositions.setArg( 11, SPHConstants.XMAX );
-		_pcisph_predictPositions.setArg( 12, SPHConstants.YMIN );
-		_pcisph_predictPositions.setArg( 13, SPHConstants.YMAX );
-		_pcisph_predictPositions.setArg( 14, SPHConstants.ZMIN );
-		_pcisph_predictPositions.setArg( 15, SPHConstants.ZMAX );
+		_pcisph_predictPositions.setArg( 10, _xMin );
+		_pcisph_predictPositions.setArg( 11, _xMax );
+		_pcisph_predictPositions.setArg( 12, _yMin );
+		_pcisph_predictPositions.setArg( 13, _yMax );
+		_pcisph_predictPositions.setArg( 14, _zMin );
+		_pcisph_predictPositions.setArg( 15, _zMax );
 		_pcisph_predictPositions.setArg( 16, PhysicsConstants.DAMPING );
 		_pcisph_predictPositions.setArg( 17, _position );
 		_pcisph_predictPositions.setArg( 18, _velocity );
@@ -566,12 +575,12 @@ public class SPHSolverService implements ISolver {
 		_pcisph_integrate.setArg( 7, PhysicsConstants.GRAVITY_Z );
 		_pcisph_integrate.setArg( 8, PhysicsConstants.SIMULATION_SCALE_INV );
 		_pcisph_integrate.setArg( 9, PhysicsConstants.TIME_STEP );
-		_pcisph_integrate.setArg( 10, SPHConstants.XMIN );
-		_pcisph_integrate.setArg( 11, SPHConstants.XMAX );
-		_pcisph_integrate.setArg( 12, SPHConstants.YMIN );
-		_pcisph_integrate.setArg( 13, SPHConstants.YMAX );
-		_pcisph_integrate.setArg( 14, SPHConstants.ZMIN );
-		_pcisph_integrate.setArg( 15, SPHConstants.ZMAX );
+		_pcisph_integrate.setArg( 10, _xMin );
+		_pcisph_integrate.setArg( 11, _xMax );
+		_pcisph_integrate.setArg( 12, _yMin );
+		_pcisph_integrate.setArg( 13, _yMax );
+		_pcisph_integrate.setArg( 14, _zMin );
+		_pcisph_integrate.setArg( 15, _zMax );
 		_pcisph_integrate.setArg( 16, PhysicsConstants.DAMPING );
 		_pcisph_integrate.setArg( 17, _position );
 		_pcisph_integrate.setArg( 18, _velocity );
