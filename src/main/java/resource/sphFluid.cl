@@ -771,46 +771,76 @@ __kernel void pcisph_computeElasticForces(
 										  float h,
 										  float mass,
 										  float simulationScale,
-										  int ELASTIC_CONNECTIONS_COUNT,
-										  __global float4 * elasticConnectionsData
+										  int numOfElasticParticle,
+										  __global float4 * elasticConnectionsData, 
+										  int offset,
+										  int PARTICLE_COUNT
 								  		  )
 {
+	// index of elastic particle among all elastic particles but this is not the real particle id
 	int index = get_global_id( 0 );
-
-	if(index>=ELASTIC_CONNECTIONS_COUNT) return;
-
-	int id = (int)elasticConnectionsData[index].x;
-	int jd = (int)elasticConnectionsData[index].y;
-
-	id = particleIndexBack[id];
-	jd = particleIndexBack[jd];
-
-	float r_ij_equilibrium = elasticConnectionsData[index].z;
-
-	float4 vect_r_ij = (sortedPosition[id] - sortedPosition[jd])*simulationScale;
-	vect_r_ij.w = 0;
-	float r_ij = SQRT(vect_r_ij.x*vect_r_ij.x+vect_r_ij.y*vect_r_ij.y+vect_r_ij.z*vect_r_ij.z);
-	float delta_r_ij = r_ij - r_ij_equilibrium;
-
-	float k = 90000.f;// k - coefficient of elasticity
-
-	if(r_ij!=0.f) acceleration[ id ] += -(vect_r_ij/r_ij)*delta_r_ij*k;
-
-	float4 centerOfMassVelocity = (sortedVelocity[id]+sortedVelocity[jd])/2.f;
-	float4 velocity_i_cm = sortedVelocity[id] - centerOfMassVelocity;
-	float v_i_cm_length = sqrt(velocity_i_cm.x*velocity_i_cm.x+velocity_i_cm.y*velocity_i_cm.y+velocity_i_cm.z*velocity_i_cm.z);
-
-	if((v_i_cm_length!=0)&&(r_ij!=0))
-	{
-		float damping_coeff = 0.5f;
-		velocity_i_cm.w = 0.0f;
-		float4 proj_v_i_cm_on_r_ij = vect_r_ij * DOT(velocity_i_cm,vect_r_ij)/(v_i_cm_length*r_ij);
-		float check = DOT(velocity_i_cm,vect_r_ij)/(v_i_cm_length*r_ij);
-
-		sortedVelocity[id] -= proj_v_i_cm_on_r_ij * damping_coeff;
-		sortedVelocity[jd] += proj_v_i_cm_on_r_ij * damping_coeff;
+	
+	if(index>=numOfElasticParticle) {
+		return;
 	}
+	
+	int nc = 0;
+	int id = particleIndexBack[index + offset];
+	int idx = index * NEIGHBOR_COUNT;
+	float r_ij_equilibrium, r_ij, delta_r_ij, v_i_cm_length;
+	float k = 90000.f;// k - coefficient of elasticity
+	float4 vect_r_ij;
+	float4 centerOfMassVelocity;
+	float4 velocity_i_cm;
+	float damping_coeff = 0.5f;
+	float check;
+	float4 proj_v_i_cm_on_r_ij;
+	int jd;
+	
+	do
+	{
+		if( (jd = (int)elasticConnectionsData[ idx + nc ].x) != NO_PARTICLE_ID )
+		{
+			jd = particleIndexBack[jd];
+			r_ij_equilibrium = elasticConnectionsData[ idx + nc ].y;//rij0
+			vect_r_ij = (sortedPosition[id] - sortedPosition[jd]) * simulationScale;
+			vect_r_ij.w = 0;
+			r_ij = SQRT(vect_r_ij.x*vect_r_ij.x+vect_r_ij.y*vect_r_ij.y+vect_r_ij.z*vect_r_ij.z);
+			delta_r_ij = r_ij - r_ij_equilibrium;
+			
+			if(r_ij!=0.f){
+				//In this Place can be simultaneously writing to one place in memory
+				//Because id can appear more that one time
+				//elasticConnectionsData can have more that one cells with 
+				//id jd1 rij0 0
+				//id jd2 rij1 0
+				acceleration[ id ] += -(vect_r_ij/r_ij) * delta_r_ij * k;
+			}
+			
+			centerOfMassVelocity = (sortedVelocity[id]+sortedVelocity[jd])/2.f;
+			velocity_i_cm = sortedVelocity[id] - centerOfMassVelocity;
+			v_i_cm_length = sqrt(velocity_i_cm.x*velocity_i_cm.x+velocity_i_cm.y*velocity_i_cm.y+velocity_i_cm.z*velocity_i_cm.z);
+			
+			if((v_i_cm_length!=0)&&(r_ij!=0))
+			{
+				velocity_i_cm.w = 0.f;
+				//vect_r_ij.w = 0;
+				proj_v_i_cm_on_r_ij = vect_r_ij * DOT(velocity_i_cm,vect_r_ij)/(v_i_cm_length*r_ij);
 
+				//In this Place can be simultaneously writing to one place in memory
+				//Because id and jd can appear more that one time
+				//id jd1 rij0 0
+				//id1 jd1 rij1 0
+				sortedVelocity[ id + PARTICLE_COUNT ] -= proj_v_i_cm_on_r_ij * damping_coeff;
+			}
+		}
+		else
+		{
+			//Litle Optimization
+			break;
+		}
+	}while( ++nc < NEIGHBOR_COUNT );
+	
 	return;
 }
 

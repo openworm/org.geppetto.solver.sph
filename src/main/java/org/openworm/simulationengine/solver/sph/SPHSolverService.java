@@ -448,6 +448,7 @@ public class SPHSolverService implements ISolver {
 		_pcisph_computeElasticForces.setArg( 8, _numOfElasticP);
 		_pcisph_computeElasticForces.setArg( 9, _elasticConnectionsData );
 		_pcisph_computeElasticForces.setArg( 10, _numOfBoundaryP );
+		_pcisph_computeElasticForces.setArg( 11, _particleCount );
 
 		int numOfElasticPRoundedUp = ((( _numOfElasticP - 1 ) / 256 ) + 1 ) * 256;
 
