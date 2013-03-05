@@ -1087,7 +1087,7 @@ __kernel void pcisph_computePressureForceAcceleration(
 	id = particleIndexBack[id];//track selected particle (indices are not mixed anymore)
 	int id_source_particle = PI_SERIAL_ID( particleIndex[id] );
 	
-	if((int)(position[ id_source_particle ].w) == 3){
+	if((int)(position[ id_source_particle ].w) == BOUNDARY_PARTICLE){
 		return;
 	}
 	
@@ -1131,7 +1131,8 @@ __kernel void pcisph_computePressureForceAcceleration(
 
 	}while( ++nc < NEIGHBOR_COUNT );
 	
-	// pressureForceAcceleration "=" or "+=" ???
+	result *= mass*gradWspikyCoefficient/rho[PARTICLE_COUNT+id];
+	
 	acceleration[ PARTICLE_COUNT+id ] = result;
 }
 
@@ -1161,19 +1162,23 @@ __kernel void pcisph_integrate(
 							   int PARTICLE_COUNT
 							   )
 {
-	int id = get_global_id( 0 ); 
-	if(id>=PARTICLE_COUNT) return;
-	
-	id = particleIndexBack[id]; 
-	if(id>=PARTICLE_COUNT) return;
-	
+	int id = get_global_id( 0 ); if(id>=PARTICLE_COUNT) return;
+	id = particleIndexBack[id]; if(id>=PARTICLE_COUNT) return;
 	int id_source_particle = PI_SERIAL_ID( particleIndex[id] );
-	if((int)(position[ id_source_particle ].w) == 3) return;
+	
+	float4 position_ = sortedPosition[ id ];
+	if((int)(position[ id_source_particle ].w) == BOUNDARY_PARTICLE){
+		return;
+	}
+	
+	//We Calculate For elastic particle new velocity and save it in sortedVelocity[ id + PARTICLE_COUNT ]
+	if((int)(position[ id_source_particle ].w) == ELASTIC_PARTICLE){
+		sortedVelocity[ id ] = sortedVelocity[ id + PARTICLE_COUNT ];
+	}
 	
 	float4  accelOld = acceleration[ id ];
 	float4  accelT = acceleration[ PARTICLE_COUNT+id ];
 	float4 acceleration_ = acceleration[ id ] + acceleration[ PARTICLE_COUNT+id ]; acceleration_.w = 0.f;
-	float4 position_ = sortedPosition[ id ];
 	float4 velocity_ = sortedVelocity[ id ];
 
 	// Semi-implicit Euler integration 
@@ -1191,8 +1196,10 @@ __kernel void pcisph_integrate(
 	// better replace 0.0000001 with smoothingRadius*0.001 or smth like this to keep this
 
 	float particleType = position[ id_source_particle ].w;
+	newVelocity_ = (velocity_ + newVelocity_) * 0.5f ;
 	calculateBoundaryParticleAffect(id,r0,neighborMap,particleIndexBack,particleIndex,position,velocity,&newPosition_, true, &newVelocity_);
 	velocity[ id_source_particle ] = newVelocity_;
 	position[ id_source_particle ] = newPosition_;
 	position[ id_source_particle ].w = particleType;
+	// position[0..2] stores x,y,z; position[3] - for particle type
 }
