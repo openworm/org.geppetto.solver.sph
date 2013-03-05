@@ -82,6 +82,34 @@ public class PCISPHSolverTest
 
 	}
 	
+	@Test
+	public void testSolve216()
+	{
+		try
+		{
+			SPHSolverService solver = new SPHSolverService();
+			SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
+			URL url = new URL("https://www.dropbox.com/s/lerz4rkx75nq0bk/sphModel_216.xml?dl=1");
+			List<IModel> models = modelInterpreter.readModel(url);
+			for (int cycles = 0; cycles < 1; cycles++)
+			{
+				models=solver.solve(models, null).get(0);
+				
+				/*if(cycles == 0){
+					for(SPHParticle p : ((SPHModel) models.get(0)).getParticles()){
+						if(p.getPositionVector().getP() == SPHConstants.LIQUID_TYPE)
+						System.out.println(p.getPositionVector().getX() + " / " + p.getPositionVector().getY() + " / " + p.getPositionVector().getZ());
+					}
+				}*/
+			}
+		}
+		catch (Exception e)
+		{
+			fail(e.getMessage());
+		}
+
+	}
+	
 	/**
 	 * Test method for {@link org.openworm.simulationengine.solver.sph.SPHSolverService#solve(java.util.List, org.openworm.simulationengine.core.simulation.ITimeConfiguration)}.
 	 */
