@@ -35,11 +35,11 @@ public class PCISPHSolverTest
 			SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
 			URL url = new URL("https://www.dropbox.com/s/8869zlz971ogyra/sphModel_small.xml?dl=1");
 			List<IModel> models = modelInterpreter.readModel(url);
-			for (int cycles = 0; cycles < 1; cycles++)
+			for (int cycles = 0; cycles < 10; cycles++)
 			{
 				models=solver.solve(models, null).get(0);
 				
-				/*if(cycles == 0){
+				/*if(cycles == 9){
 					for(SPHParticle p : ((SPHModel) models.get(0)).getParticles()){
 						if(p.getPositionVector().getP() == SPHConstants.LIQUID_TYPE)
 						System.out.println(p.getPositionVector().getX() + " / " + p.getPositionVector().getY() + " / " + p.getPositionVector().getZ());
@@ -63,11 +63,11 @@ public class PCISPHSolverTest
 			SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
 			URL url = new URL("https://www.dropbox.com/s/9kx2p8qspdgphd4/sphModel_15.xml?dl=1");
 			List<IModel> models = modelInterpreter.readModel(url);
-			for (int cycles = 0; cycles < 1; cycles++)
+			for (int cycles = 0; cycles < 24; cycles++)
 			{
 				models=solver.solve(models, null).get(0);
 				
-				/*if(cycles == 0){
+				/*if(cycles == 23){
 					for(SPHParticle p : ((SPHModel) models.get(0)).getParticles()){
 						if(p.getPositionVector().getP() == SPHConstants.LIQUID_TYPE)
 						System.out.println(p.getPositionVector().getX() + " / " + p.getPositionVector().getY() + " / " + p.getPositionVector().getZ());

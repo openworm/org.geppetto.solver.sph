@@ -205,6 +205,14 @@ public class SPHSolverService implements ISolver {
 		{
 			SPHModelX mod = (SPHModelX) models.get(0);
 			
+			// set dimensions
+			_xMax = mod.getXMax();
+			_xMin = mod.getXMin();
+			_yMax = mod.getYMax();
+			_yMin = mod.getYMin();
+			_zMax = mod.getZMax();
+			_zMin = mod.getZMin();
+			
 			_particleCount = mod.getNumberOfParticals();
 			// PORTING-TODO: populate elastic connection buffers
 			_numOfElasticP = 0;
