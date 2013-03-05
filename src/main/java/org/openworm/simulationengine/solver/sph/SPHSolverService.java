@@ -96,7 +96,9 @@ public class SPHSolverService implements ISolver {
 	public int _gridCellsZ;
 	public int _gridCellCount;
 	public int _particleCount;
-	public int _elasticConnectionsCount;
+	public int _numOfLiquidP;
+	public int _numOfElasticP;
+	public int _numOfBoundaryP;
 	
 	public static Random RandomGenerator = new Random();
 	
@@ -164,7 +166,7 @@ public class SPHSolverService implements ISolver {
 		_pressurePtr = Pointer.allocateFloats(_particleCount);
 		_rhoPtr = Pointer.allocateFloats(_particleCount * 2);
 		_sortedPositionPtr = Pointer.allocateFloats(_particleCount * 4 * 2);
-		_sortedVelocityPtr = Pointer.allocateFloats(_particleCount * 4);
+		_sortedVelocityPtr = Pointer.allocateFloats(_particleCount * 4 * 2);
 		_velocityPtr = Pointer.allocateFloats(_particleCount * 4);
 		
 		// alternative buffer defining
@@ -182,15 +184,15 @@ public class SPHSolverService implements ISolver {
 		_velocity = _context.createBuffer(Usage.InputOutput,_velocityPtr,false);
 		
 		// init elastic connections buffer if we have any
-		if(_elasticConnectionsCount > 0){
-			_elasticConnectionsDataPtr = Pointer.allocateFloats(_elasticConnectionsCount * 4);
+		if(_numOfElasticP > 0){
+			_elasticConnectionsDataPtr = Pointer.allocateFloats(_numOfElasticP * SPHConstants.NEIGHBOR_COUNT * 4);
 			_elasticConnectionsData = _context.createBuffer(Usage.InputOutput,_elasticConnectionsDataPtr,false);
 		}
 		
 		_queue.finish();
 	}
 	
-	public void setModels(List<IModel> models){
+	public void setModels(List<IModel> models) {
 		// TODO: generalize this for an arbitrary number of models instead of just one
 		if(!(models == null || models.size() ==0))
 		{
@@ -198,7 +200,9 @@ public class SPHSolverService implements ISolver {
 			
 			_particleCount = mod.getNumberOfParticals();
 			// PORTING-TODO: populate elastic connection buffers
-			_elasticConnectionsCount = 0;
+			_numOfElasticP = 0;
+			_numOfLiquidP = 0;
+			_numOfBoundaryP = 0;
 			
 			// set grid dimensions
 			_gridCellsX = mod.getCellX();
@@ -229,6 +233,22 @@ public class SPHSolverService implements ISolver {
 				_velocityPtr.set(index + 1, round(velocityVector.getY(), SPHConstants.DECIMAL_ROUNDING_FACTOR));
 				_velocityPtr.set(index + 2, round(velocityVector.getZ(), SPHConstants.DECIMAL_ROUNDING_FACTOR));
 				_velocityPtr.set(index + 3, round(velocityVector.getP(), SPHConstants.DECIMAL_ROUNDING_FACTOR));
+				
+				// particle counts
+				if (positionVector.getP() == SPHConstants.BOUNDARY_TYPE) {
+					_numOfBoundaryP++;
+				}
+				else if (positionVector.getP() == SPHConstants.ELASTIC_TYPE) {
+					_numOfElasticP++;
+				}
+				else if (positionVector.getP() == SPHConstants.LIQUID_TYPE) {
+					_numOfLiquidP++;
+				}
+			}
+			
+			// check that counts are fine
+			if(_particleCount != (_numOfBoundaryP + _numOfElasticP + _numOfLiquidP)){
+				throw new IllegalArgumentException("SPHSolverService:setModels - particle counts do not add up");
 			}
 		}
 		else
@@ -407,7 +427,9 @@ public class SPHSolverService implements ISolver {
 		_pcisph_computeForcesAndInitPressure.setArg(13, PhysicsConstants.GRAVITY_X );
 		_pcisph_computeForcesAndInitPressure.setArg(14, PhysicsConstants.GRAVITY_Y );
 		_pcisph_computeForcesAndInitPressure.setArg(15, PhysicsConstants.GRAVITY_Z );
-		_pcisph_computeForcesAndInitPressure.setArg(16, _particleCount );
+		_pcisph_computeForcesAndInitPressure.setArg(16, _position );
+		_pcisph_computeForcesAndInitPressure.setArg(17, _particleIndex );
+		_pcisph_computeForcesAndInitPressure.setArg(18, _particleCount );
 		_pcisph_computeForcesAndInitPressure.enqueueNDRange(_queue, new int[] {_particleCount});
 		
 		return 0;
@@ -422,12 +444,13 @@ public class SPHSolverService implements ISolver {
 		_pcisph_computeElasticForces.setArg( 5, PhysicsConstants.H );
 		_pcisph_computeElasticForces.setArg( 6, PhysicsConstants.MASS );
 		_pcisph_computeElasticForces.setArg( 7, PhysicsConstants.SIMULATION_SCALE );
-		_pcisph_computeElasticForces.setArg( 8, _elasticConnectionsCount);
+		_pcisph_computeElasticForces.setArg( 8, _numOfElasticP);
 		_pcisph_computeElasticForces.setArg( 9, _elasticConnectionsData );
+		_pcisph_computeElasticForces.setArg( 10, _numOfBoundaryP );
 
-		int elasticConnectionsCountRoundedUp = ((( _elasticConnectionsCount - 1 ) / 256 ) + 1 ) * 256;
+		int numOfElasticPRoundedUp = ((( _numOfElasticP - 1 ) / 256 ) + 1 ) * 256;
 
-		_pcisph_computeElasticForces.enqueueNDRange(_queue, new int[] {elasticConnectionsCountRoundedUp});
+		_pcisph_computeElasticForces.enqueueNDRange(_queue, new int[] {numOfElasticPRoundedUp});
 		
 		return 0;
 	}
@@ -614,7 +637,7 @@ public class SPHSolverService implements ISolver {
 		logger.info("PCI-SPH compute forces and init pressure");
 		run_pcisph_computeForcesAndInitPressure();
 		
-		if(_elasticConnectionsCount > 0){
+		if(_numOfElasticP > 0){
 			logger.info("PCI-SPH compute elastic forces");
 			run_pcisph_computeElasticForces();
 		}
