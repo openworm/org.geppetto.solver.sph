@@ -33,10 +33,13 @@
 //#pragma OPENCL EXTENSION cl_intel_printf : enable
 
 __kernel void clearBuffers(
-						   __global float2 * neighborMap
+						   __global float2 * neighborMap,
+						   int PARTICLE_COUNT
 						   )
 {
 	int id = get_global_id( 0 );
+	if( id >= PARTICLE_COUNT )return;
+	
 	__global float4 * nm = (__global float4 *)neighborMap;
 	int outIdx = ( id * NEIGHBOR_COUNT ) >> 1;//int4 versus int2 addressing
 	float4 fdata = (float4)( -1, -1, -1, -1 );
@@ -298,11 +301,14 @@ __kernel void findNeighbors(
 							float xmin,
 							float ymin,
 							float zmin,
-							__global float2 * neighborMap
+							__global float2 * neighborMap,
+							int PARTICLE_COUNT
 							)
 {
-	__global uint * gridCellIndex = gridCellIndexFixedUp;
 	int id = get_global_id( 0 );
+	if( id >= PARTICLE_COUNT )return;
+	
+	__global uint * gridCellIndex = gridCellIndexFixedUp;
 	float4 position_ = sortedPosition[ id ];
 	int myCellId = (int)POSITION_CELL_ID( position_ ) & 0xffff;// truncate to low 16 bits
 	int searchCell_;
@@ -428,14 +434,7 @@ __kernel void hashParticles(
 							)
 {
 	int id = get_global_id( 0 );
-	if( id >= PARTICLE_COUNT ){
-		uint2 result;
-		int gridCellCount = gridCellsX * gridCellsY * gridCellsZ;
-		PI_CELL_ID( result ) = gridCellCount + 1;
-		PI_SERIAL_ID( result ) = id;
-		particleIndex[ id ] = result;
-		return;
-	}
+	if( id >= PARTICLE_COUNT ) return;
 
 	float4 _position = position[ id ];
 	int4 cellFactors_ = cellFactors( _position, xmin, ymin, zmin, hashGridCellSizeInv );
@@ -614,6 +613,8 @@ __kernel void sortPostPass(
 						   )
 {
 	int id = get_global_id( 0 );
+	if( id >= PARTICLE_COUNT ) return;
+	
 	uint2 spi = particleIndex[ id ];//contains id of cell and id of particle it has sorted 
 	int serialId = PI_SERIAL_ID( spi );//get a particle Index
 	int cellId = PI_CELL_ID( spi );//get a cell Index
@@ -643,9 +644,12 @@ __kernel void pcisph_computeDensity(
 									 __global float * pressure,
 									 __global float * rho,
 									 __global uint * particleIndexBack,
-									 float delta									 )
+									 float delta,
+									 int PARTICLE_COUNT									 )
 {
 	int id = get_global_id( 0 );
+	if( id >= PARTICLE_COUNT ) return;
+	
 	id = particleIndexBack[id];//track selected particle (indices are not shuffled anymore)
 	int idx = id * NEIGHBOR_COUNT;
 	int nc=0;//neighbor counter
@@ -699,6 +703,8 @@ __kernel void pcisph_computeForcesAndInitPressure(
 								  )
 {
 	int id = get_global_id( 0 );
+	if( id >= PARTICLE_COUNT ) return;
+	
 	//track selected particle - indices are not shuffled anymore
 	id = particleIndexBack[id];
 	int id_source_particle = PI_SERIAL_ID( particleIndex[id] );
@@ -941,6 +947,8 @@ __kernel void pcisph_predictPositions(
 									  )
 {
 	int id = get_global_id( 0 );
+	if( id >= PARTICLE_COUNT ) return;
+	
 	id = particleIndexBack[id];
 	int id_source_particle = PI_SERIAL_ID( particleIndex[id] );
 	float4 position_ = sortedPosition[ id ];
@@ -981,6 +989,8 @@ __kernel void pcisph_predictDensity(
 									 )
 {
 	int id = get_global_id( 0 );
+	if( id >= PARTICLE_COUNT ) return;
+	
 	id = particleIndexBack[id];//track selected particle (indices are not shuffled anymore)
 	int idx = id * NEIGHBOR_COUNT;
 	int nc=0;//neighbor counter
@@ -1041,6 +1051,8 @@ __kernel void pcisph_correctPressure(
 									 )
 {
 	int id = get_global_id( 0 );
+	if( id >= PARTICLE_COUNT ) return;
+	
 	//track selected particle (indices are not shuffled anymore)
 	id = particleIndexBack[id];
 
@@ -1078,6 +1090,8 @@ __kernel void pcisph_computePressureForceAcceleration(
 													  )
 {
 	int id = get_global_id( 0 );
+	if( id >= PARTICLE_COUNT ) return;
+	
 	id = particleIndexBack[id];//track selected particle (indices are not mixed anymore)
 	int id_source_particle = PI_SERIAL_ID( particleIndex[id] );
 	
@@ -1156,8 +1170,10 @@ __kernel void pcisph_integrate(
 							   int PARTICLE_COUNT
 							   )
 {
-	int id = get_global_id( 0 ); if(id>=PARTICLE_COUNT) return;
-	id = particleIndexBack[id]; if(id>=PARTICLE_COUNT) return;
+	int id = get_global_id( 0 ); 
+	if(id>=PARTICLE_COUNT) return;
+	
+	id = particleIndexBack[id]; 
 	int id_source_particle = PI_SERIAL_ID( particleIndex[id] );
 	
 	float4 position_ = sortedPosition[ id ];
