@@ -445,25 +445,6 @@ __kernel void hashParticles(
 	particleIndex[ id ] = result;
 }
 
-__kernel void indexPostPass(
-							__global uint * gridCellIndex,
-							int gridCellCount,
-							__global uint * gridCellIndexFixedUp
-							)
-{
-	int id = get_global_id( 0 );
-	if( id <= gridCellCount ){
-		int idx = id;
-		int cellId = NO_CELL_ID;
-		bool loop;
-		do{
-			cellId = gridCellIndex[ idx++ ];
-			loop = cellId == NO_CELL_ID && idx <= gridCellCount;
-		}while( loop );
-		gridCellIndexFixedUp[ id ] = cellId;
-	}
-}
-
 __kernel void indexx(
 					 __global uint2 * particleIndex,
 					 int gridCellCount,

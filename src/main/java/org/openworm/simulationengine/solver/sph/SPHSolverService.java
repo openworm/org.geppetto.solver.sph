@@ -71,13 +71,14 @@ public class SPHSolverService implements ISolver {
 	public Pointer<Float> _velocityPtr;
 	public Pointer<Float> _elasticConnectionsDataPtr;
 	
+	private int[] _gridNextNonEmptyCellBuffer;
+	
 	/*
 	 * Kernel declarations
 	 */
 	private CLKernel _clearBuffers;
 	private CLKernel _findNeighbors;
 	private CLKernel _hashParticles;
-	private CLKernel _indexPostPass;
 	private CLKernel _indexx;
 	private CLKernel _sortPostPass;
 	
@@ -146,7 +147,6 @@ public class SPHSolverService implements ISolver {
 		_findNeighbors = _program.createKernel("findNeighbors");
 		_hashParticles = _program.createKernel("hashParticles");
 		// PORTING-NOTE: indexPostPass is gone from kernels in the latest version,logic moved from opencl to host code (this class)
-		_indexPostPass = _program.createKernel("indexPostPass");
 		_indexx = _program.createKernel("indexx");
 		_sortPostPass = _program.createKernel("sortPostPass");
 		
@@ -375,13 +375,26 @@ public class SPHSolverService implements ISolver {
 		return 0;
 	}
 	
-	public int runIndexPostPass(){
-		_indexPostPass.setArg( 0, _gridCellIndex );
-		_gridCellCount = ((_gridCellsX) * (_gridCellsY)) * (_gridCellsZ);
-		_indexPostPass.setArg( 1, _gridCellCount );
-		_indexPostPass.setArg( 2, _gridCellIndexFixedUp );
-		int gridCellCountRoundedUp = ((( _gridCellCount - 1 ) / 256 ) + 1 ) * 256;
-		_indexPostPass.enqueueNDRange(_queue, new int[] {gridCellCountRoundedUp});
+	public int runIndexPostPass(){		
+		// get values out of buffer
+		Pointer<Integer> gridNextNonEmptyCellBuffer = _gridCellIndex.read(_queue);
+		_queue.finish();
+		
+		int recentNonEmptyCell = _gridCellCount;
+		for(int i= _gridCellCount; i>=0; i--)
+		{
+			if(gridNextNonEmptyCellBuffer.get(i) == SPHConstants.NO_CELL_ID) {
+				gridNextNonEmptyCellBuffer.set(i, recentNonEmptyCell); 
+			}
+			else {
+				recentNonEmptyCell = gridNextNonEmptyCellBuffer.get(i);
+			}
+		}
+		
+		// put results back
+		_gridCellIndexFixedUp.write(_queue, gridNextNonEmptyCellBuffer, true);
+		_queue.finish();
+		
 		return 0;
 	}
 	
@@ -609,8 +622,11 @@ public class SPHSolverService implements ISolver {
 		//this version work with qsort
 		int index = 0;
 		List<int[]> particleIndex = new ArrayList<int[]>();
+		
+		// get values out of buffer
 		Pointer<Integer> particleInd = _particleIndex.read(_queue);
 		_queue.finish();
+		
 		for(int i = 0; i < _particleCount * 2;i+=2){
 			int[] element = {particleInd.get(i), particleInd.get(i+1)};
 			particleIndex.add(element);
@@ -622,8 +638,11 @@ public class SPHSolverService implements ISolver {
 				index++;
 			}
 		}
-		_particleIndex.write(_queue, particleInd, false);
+		
+		// put results back
+		_particleIndex.write(_queue, particleInd, true);
 		_queue.finish();
+		
 		return 0;
 	}
 	
@@ -636,6 +655,7 @@ public class SPHSolverService implements ISolver {
 	}
 	
 	private void step(){
+		// search for neighbors stuff
 		logger.info("SPH clear buffer");
 		runClearBuffers();
 		logger.info("SPH hash particles");
@@ -650,16 +670,14 @@ public class SPHSolverService implements ISolver {
 		runIndexPostPass();
 		logger.info("SPH find neighbors");
 		runFindNeighbors();
-		
-		// PORTING-NOTE: on the original C++ version preparing elastic matter stuff was done at this point
-		// For this implementation we are moving elastic matter data in the configuration file for the model
 
-		// TODO: PCISPH stuff goes here
+		// PCISPH stuff
 		logger.info("PCI-SPH compute density");
 		run_pcisph_computeDensity();
 		logger.info("PCI-SPH compute forces and init pressure");
 		run_pcisph_computeForcesAndInitPressure();
 		
+		// Do elastic stuff only if we have elastic particles
 		if(_numOfElasticP > 0){
 			logger.info("PCI-SPH compute elastic forces");
 			run_pcisph_computeElasticForces();
@@ -681,14 +699,17 @@ public class SPHSolverService implements ISolver {
 		logger.info("PCI-SPH integrate");
 		run_pcisph_integrate();
 		
+		// read positions out
 		logger.info("SPH position read");
 		logger.info("Position element size: " + _position.getElementSize());
 		logger.info("Position element count: " + _position.getElementCount());		
 		_positionPtr = _position.read(_queue);
 		
+		// read velocities out
 		logger.info("Position element size: " + _velocity.getElementSize());
 		logger.info("Position element count: " + _velocity.getElementCount());
 		_velocityPtr = _velocity.read(_queue);
+		
 		logger.info("SPH finish queue");
 		_queue.finish();
 		logger.info("SPH step done");
