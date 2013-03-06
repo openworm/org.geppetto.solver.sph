@@ -22,6 +22,9 @@ import org.openworm.simulationengine.solver.sph.SPHSolverService;
  */
 public class PCISPHSolverTest
 {
+	/*
+	 * 296 boundary particles + 14 liquid particles - Use the configuration from step 17 of the testSolve14 scene, crashes immediately
+	 */
 	@Test
 	public void testSolve14_ImmediateCrash()
 	{
@@ -42,7 +45,10 @@ public class PCISPHSolverTest
 		}
 
 	}
-		
+	
+	/*
+	 * 296 boundary particles + 14 liquid particles - this runs fine for 18 steps then crashes
+	 */
 	@Test
 	public void testSolve14()
 	{
@@ -72,6 +78,10 @@ public class PCISPHSolverTest
 
 	}
 	
+	/*
+	 * Same scene as testSolve14 but with 1 more particle - runs 254 steps then crashes?
+	 * NOTE: Why adding 1 particle to the same scene makes it run longer?
+	 */
 	@Test
 	public void testSolve15()
 	{
@@ -100,6 +110,9 @@ public class PCISPHSolverTest
 
 	}
 	
+	/*
+	 * 296 boundary particles + 216 liquid particles (total of 512 particles) with random position and velocity - runs 1 step and then crashes
+	 */
 	@Test
 	public void testSolve216()
 	{
