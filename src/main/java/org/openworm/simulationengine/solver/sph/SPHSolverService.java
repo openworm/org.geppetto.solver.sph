@@ -173,7 +173,7 @@ public class SPHSolverService implements ISolver {
 		_pressurePtr = Pointer.allocateFloats(_particleCount);
 		_rhoPtr = Pointer.allocateFloats(_particleCount * 2);
 		_sortedPositionPtr = Pointer.allocateFloats(_particleCount * 4 * 2);
-		_sortedVelocityPtr = Pointer.allocateFloats(_particleCount * 4 * 2);
+		_sortedVelocityPtr = Pointer.allocateFloats(_particleCount * 4);
 		_velocityPtr = Pointer.allocateFloats(_particleCount * 4);
 		
 		// alternative buffer defining
@@ -459,13 +459,14 @@ public class SPHSolverService implements ISolver {
 		_pcisph_computeElasticForces.setArg( 2, _sortedVelocity );
 		_pcisph_computeElasticForces.setArg( 3, _acceleration );
 		_pcisph_computeElasticForces.setArg( 4, _particleIndexBack );
-		_pcisph_computeElasticForces.setArg( 5, PhysicsConstants.H );
-		_pcisph_computeElasticForces.setArg( 6, PhysicsConstants.MASS );
-		_pcisph_computeElasticForces.setArg( 7, PhysicsConstants.SIMULATION_SCALE );
-		_pcisph_computeElasticForces.setArg( 8, _numOfElasticP);
-		_pcisph_computeElasticForces.setArg( 9, _elasticConnectionsData );
-		_pcisph_computeElasticForces.setArg( 10, _numOfBoundaryP );
-		_pcisph_computeElasticForces.setArg( 11, _particleCount );
+		_pcisph_computeElasticForces.setArg( 5, _velocity );
+		_pcisph_computeElasticForces.setArg( 6, PhysicsConstants.H );
+		_pcisph_computeElasticForces.setArg( 7, PhysicsConstants.MASS );
+		_pcisph_computeElasticForces.setArg( 8, PhysicsConstants.SIMULATION_SCALE );
+		_pcisph_computeElasticForces.setArg( 9, _numOfElasticP);
+		_pcisph_computeElasticForces.setArg( 10, _elasticConnectionsData );
+		_pcisph_computeElasticForces.setArg( 11, _numOfBoundaryP );
+		_pcisph_computeElasticForces.setArg( 12, _particleCount );
 
 		int numOfElasticPRoundedUp = ((( _numOfElasticP - 1 ) / 256 ) + 1 ) * 256;
 
