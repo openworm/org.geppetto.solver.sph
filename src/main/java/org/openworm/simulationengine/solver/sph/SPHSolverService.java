@@ -71,8 +71,6 @@ public class SPHSolverService implements ISolver {
 	public Pointer<Float> _velocityPtr;
 	public Pointer<Float> _elasticConnectionsDataPtr;
 	
-	private int[] _gridNextNonEmptyCellBuffer;
-	
 	/*
 	 * Kernel declarations
 	 */
