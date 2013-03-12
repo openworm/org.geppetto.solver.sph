@@ -245,7 +245,7 @@ int searchForNeighbors(
 				{
 					_distance = SQRT( _distanceSquared );
 					j = (int)(_distance*radius_segments/h);
-					if(j<radius_segments) radius_distrib[j]++; 
+					if(j<radius_segments && j > 0) radius_distrib[j]++; 
 
 					// searchForNeighbors runs twice
 					// first time with mode = 0, to build distribution
