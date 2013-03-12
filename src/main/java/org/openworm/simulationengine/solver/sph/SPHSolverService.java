@@ -311,6 +311,7 @@ public class SPHSolverService implements ISolver {
 	public List<List<IModel>> solve(List<IModel> models, ITimeConfiguration timeConfiguration)
 	{
 		// TODO: extend this to use time configuration to do multiple steps in one go
+		long time=System.currentTimeMillis();
 		logger.info("SPH solver start");
 		// 1. populate buffers from list of models
 		setModels(models);
@@ -321,7 +322,7 @@ public class SPHSolverService implements ISolver {
 		// 3. retrieve values from buffers and populate returned models
 		List<List<IModel>> modelsList = new ArrayList<List<IModel>> ();
 		modelsList.add(this.getModels());
-		logger.info("SPH solver end");
+		logger.info("SPH solver end, took: "+(System.currentTimeMillis()-time)+"ms");
 		return modelsList;
 	}
 	
