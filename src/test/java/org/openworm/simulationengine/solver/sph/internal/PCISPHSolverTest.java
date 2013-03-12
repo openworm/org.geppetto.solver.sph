@@ -3,17 +3,18 @@
  */
 package org.openworm.simulationengine.solver.sph.internal;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.fail;
 
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
+
+import junit.framework.Assert;
 
 import org.junit.Test;
 import org.openworm.simulationengine.core.model.IModel;
-import org.openworm.simulationengine.model.sph.SPHModel;
-import org.openworm.simulationengine.model.sph.SPHParticle;
-import org.openworm.simulationengine.model.sph.common.SPHConstants;
 import org.openworm.simulationengine.model.sph.services.SPHModelInterpreterService;
+import org.openworm.simulationengine.model.sph.x.SPHModelX;
 import org.openworm.simulationengine.solver.sph.SPHSolverService;
 
 /**
@@ -26,7 +27,7 @@ public class PCISPHSolverTest
 	 * 296 boundary particles + 14 liquid particles - Use the configuration from step 17 of the testSolve14 scene, crashes immediately
 	 * NOTE: commented out not to break "maven install" build
 	 */
-	/*@Test
+	@Test
 	public void testSolve14_ImmediateCrash()
 	{
 		try
@@ -45,7 +46,7 @@ public class PCISPHSolverTest
 			fail(e.getMessage());
 		}
 
-	}*/
+	}
 	
 	/*
 	 * 296 boundary particles + 14 liquid particles - this runs fine for 18 steps then crashes
@@ -133,6 +134,38 @@ public class PCISPHSolverTest
 						System.out.println(p.getPositionVector().getX() + " / " + p.getPositionVector().getY() + " / " + p.getPositionVector().getZ());
 					}
 				}*/
+			}
+		}
+		catch (Exception e)
+		{
+			fail(e.getMessage());
+		}
+
+	}
+	
+	/*
+	 *  A test built around the original pureLiquid scene used to test the C++ version
+	 */
+	@Test
+	public void testSolvePureLiquidSceneParticlesMove()
+	{
+		try
+		{
+			URL url = this.getClass().getResource("/sphModel_PureLiquid.xml");
+			
+			SPHSolverService solver = new SPHSolverService();
+			SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
+			
+			List<IModel> initial_models = modelInterpreter.readModel(url);
+			List<IModel> models =  new ArrayList<IModel>(initial_models);
+			
+			for (int cycles = 0; cycles < 1; cycles++)
+			{
+				models=solver.solve(models, null).get(0);
+				int pd=((SPHModelX)initial_models.get(0)).compareTo((SPHModelX)(models.get(0)));
+				System.out.println("Particles different at cycle "+cycles+": "+pd);
+				Assert.assertFalse(pd==0);
+				initial_models=models;
 			}
 		}
 		catch (Exception e)
