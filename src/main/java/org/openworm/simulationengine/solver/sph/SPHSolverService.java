@@ -212,12 +212,10 @@ public class SPHSolverService implements ISolver {
 			_zMin = mod.getZMin();
 			
 			_particleCount = mod.getNumberOfParticals();
-			// PORTING-TODO: populate elastic connection buffers
 			_numOfElasticP = 0;
 			_numOfLiquidP = 0;
 			_numOfBoundaryP = 0;
 			
-			// TODO: make sure that dividing by H is correct
 			_gridCellsX = (int)( ( mod.getXMax() - mod.getXMin() ) / PhysicsConstants.H ) + 1;
 			_gridCellsY = (int)( ( mod.getYMax() - mod.getYMin() ) / PhysicsConstants.H ) + 1;
 			_gridCellsZ = (int)( ( mod.getZMax() - mod.getZMin() ) / PhysicsConstants.H ) + 1;
@@ -248,6 +246,8 @@ public class SPHSolverService implements ISolver {
 				_velocityPtr.set(index + 1, velocityVector.getY());
 				_velocityPtr.set(index + 2, velocityVector.getZ());
 				_velocityPtr.set(index + 3, velocityVector.getP());
+				
+				// PORTING-TODO: populate elastic connection buffers
 				
 				// particle counts
 				if (positionVector.getP() == SPHConstants.BOUNDARY_TYPE) {
