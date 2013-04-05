@@ -81,7 +81,7 @@
 		<dependency>
 			<groupId>org.openworm</groupId>
 			<artifactId>simulationengine.model.sph</artifactId>
-			<version>1.0.0</version>
+			<version>1.0.1</version>
 		</dependency>
 	</dependencies>
 	<repositories>
