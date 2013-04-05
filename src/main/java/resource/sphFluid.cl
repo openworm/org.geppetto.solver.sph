@@ -762,6 +762,7 @@ __kernel void pcisph_computeElasticForces(
 										  int numOfElasticParticle,
 										  __global float4 * elasticConnectionsData, 
 										  int offset,
+										  float muscle_activation_signal,
 										  int PARTICLE_COUNT
 								  		  )
 {
@@ -783,41 +784,50 @@ __kernel void pcisph_computeElasticForces(
 	float damping_coeff = 0.5f;
 	float check;
 	float4 proj_v_i_cm_on_r_ij;
-	float4 velocity_i = velocity[ index + offset ];
+	float4 velocity_i = velocity[id];
 	float4 velocity_j;
 	int jd;
 	
 	do
 	{
 		if( (jd = (int)elasticConnectionsData[ idx + nc ].x) != NO_PARTICLE_ID )
-		{
-			velocity_j = velocity[ jd ];
+		{	
 			jd = particleIndexBack[jd];
+			velocity_j = velocity[ jd ];
+			
 			r_ij_equilibrium = elasticConnectionsData[ idx + nc ].y;//rij0
 			vect_r_ij = (sortedPosition[id] - sortedPosition[jd]) * simulationScale;
 			vect_r_ij.w = 0;
-			r_ij = SQRT(vect_r_ij.x*vect_r_ij.x+vect_r_ij.y*vect_r_ij.y+vect_r_ij.z*vect_r_ij.z);
+			
+			r_ij = sqrt(DOT(vect_r_ij,vect_r_ij));
 			delta_r_ij = r_ij - r_ij_equilibrium;
 			
 			if(r_ij!=0.f){
 				acceleration[ id ] += -(vect_r_ij/r_ij) * delta_r_ij * k;
+				
+				//contractible spring = muscle
+				if(muscle_activation_signal>0.f)
+	        		if((int)(elasticConnectionsData[idx+nc].z)==1.f)
+	        		{
+	          			acceleration[ id ] += -(vect_r_ij/r_ij) * muscle_activation_signal * 500.f;
+	        		}
 			}
 			
 			centerOfMassVelocity = (velocity_i + velocity_j)/2.f;
 			velocity_i_cm = velocity_i - centerOfMassVelocity;
-			v_i_cm_length = sqrt(velocity_i_cm.x*velocity_i_cm.x+velocity_i_cm.y*velocity_i_cm.y+velocity_i_cm.z*velocity_i_cm.z);
+			
+			velocity_i_cm.w = 0.f;
+			v_i_cm_length = sqrt( DOT (velocity_i_cm,velocity_i_cm) );
 			
 			if((v_i_cm_length!=0)&&(r_ij!=0))
 			{
-				velocity_i_cm.w = 0.f;
-				proj_v_i_cm_on_r_ij = vect_r_ij * DOT(velocity_i_cm,vect_r_ij)/(v_i_cm_length*r_ij);
-
-				sortedVelocity[ id ] -= proj_v_i_cm_on_r_ij * damping_coeff;
+				proj_v_i_cm_on_r_ij = vect_r_ij * DOT(velocity_i_cm,vect_r_ij)/(r_ij*r_ij);
 			}
 		}
 		else
 		{
-			//Litle Optimization
+			// once we meet NO_PARTICLE_ID in the list of neighbours
+			// it means that all the rest till the end are also NO_PARTICLE_ID
 			break;
 		}
 	}while( ++nc < NEIGHBOR_COUNT );

@@ -96,6 +96,7 @@ public class SPHSolverService implements ISolver {
 	public float _yMin;
 	public float _zMax;
 	public float _zMin;
+	public float _muscle_activation_signal = 0.0f;
 	
 	public int _gridCellsX;
 	public int _gridCellsY;
@@ -481,7 +482,8 @@ public class SPHSolverService implements ISolver {
 		_pcisph_computeElasticForces.setArg( 9, _numOfElasticP);
 		_pcisph_computeElasticForces.setArg( 10, _elasticConnectionsData );
 		_pcisph_computeElasticForces.setArg( 11, _numOfBoundaryP );
-		_pcisph_computeElasticForces.setArg( 12, _particleCount );
+		_pcisph_computeElasticForces.setArg( 12, _muscle_activation_signal );
+		_pcisph_computeElasticForces.setArg( 13, _particleCount );
 
 		int numOfElasticPRoundedUp = ((( _numOfElasticP - 1 ) / 256 ) + 1 ) * 256;
 
