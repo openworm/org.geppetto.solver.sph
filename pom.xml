@@ -6,7 +6,7 @@
 	<artifactId>simulationengine.solver.sph</artifactId>
 	<name>OpenWorm Simulation Engine SPH Solver Bundle</name>
 	<packaging>bundle</packaging>
-	<version>1.0.0</version>
+	<version>1.0.1</version>
 	<properties>
 		<spring.version>3.0.0.RELEASE</spring.version>
 	</properties>
@@ -64,8 +64,8 @@
 		<dependency>
 			<groupId>com.nativelibs4java</groupId>
 			<artifactId>javacl</artifactId>
- 			<version>1.0.0-RC3</version>
- 		</dependency>
+			<version>1.0.0-RC3</version>
+		</dependency>
 		<!-- dm Server library definitions -->
 		<dependency>
 			<groupId>org.springframework</groupId>
