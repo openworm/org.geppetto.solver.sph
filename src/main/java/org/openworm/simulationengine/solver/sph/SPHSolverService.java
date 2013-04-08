@@ -657,31 +657,61 @@ public class SPHSolverService implements ISolver {
 	
 	private void step(){
 		// search for neighbors stuff
+		long end=0;
+		long start=System.currentTimeMillis();
 		logger.info("SPH clear buffer");
 		runClearBuffers();
+		end=System.currentTimeMillis();
+		logger.info("SPH clear buffer end, took "+ (end-start) +"ms");
+		start=end;
 		logger.info("SPH hash particles");
 		runHashParticles();
+		end=System.currentTimeMillis();
+		logger.info("SPH hash particles end, took "+ (end-start) +"ms");
+		start=end;
 		logger.info("SPH sort");
 		runSort();
+		end=System.currentTimeMillis();
+		logger.info("SPH sort end, took "+ (end-start) +"ms");
+		start=end;
 		logger.info("SPH sort post pass");
 		runSortPostPass();
+		end=System.currentTimeMillis();
+		logger.info("SPH sort post pass end, took "+ (end-start) +"ms");
+		start=end;
 		logger.info("SPH index");
 		runIndexx();
+		end=System.currentTimeMillis();
+		logger.info("SPH index end, took "+ (end-start) +"ms");
+		start=end;
 		logger.info("SPH index post pass");
 		runIndexPostPass();
+		end=System.currentTimeMillis();
+		logger.info("SPH index post pass end, took "+ (end-start) +"ms");
+		start=end;
 		logger.info("SPH find neighbors");
 		runFindNeighbors();
-
+		end=System.currentTimeMillis();
+		logger.info("SPH find neighbors end, took "+ (end-start) +"ms");
+		start=end;
 		// PCISPH stuff
 		logger.info("PCI-SPH compute density");
 		run_pcisph_computeDensity();
+		end=System.currentTimeMillis();
+		logger.info("PCI-SPH compute density end, took "+ (end-start) +"ms");
+		start=end;
 		logger.info("PCI-SPH compute forces and init pressure");
 		run_pcisph_computeForcesAndInitPressure();
-		
+		end=System.currentTimeMillis();
+		logger.info("PCI-SPH compute forces and init pressure end, took "+ (end-start) +"ms");
+		start=end;
 		// Do elastic stuff only if we have elastic particles
 		if(_numOfElasticP > 0){
 			logger.info("PCI-SPH compute elastic forces");
 			run_pcisph_computeElasticForces();
+			end=System.currentTimeMillis();
+			logger.info("PCI-SPH compute elastic forces end, took "+ (end-start) +"ms");
+			start=end;
 		}
 		
 		logger.info("PCI-SPH predict/correct loop");
@@ -696,23 +726,34 @@ public class SPHSolverService implements ISolver {
 			
 			iter++;
 		} while ((iter<maxIterations));
-		
+		end=System.currentTimeMillis();
+		logger.info("PCI-SPH predict/correct loop end, took "+ (end-start) +"ms");
+		start=end;
 		logger.info("PCI-SPH integrate");
 		run_pcisph_integrate();
-		
+		end=System.currentTimeMillis();
+		logger.info("PCI-SPH integrate end, took "+ (end-start) +"ms");
+		start=end;
 		// read positions out
 		logger.info("SPH position read");
 		logger.info("Position element size: " + _position.getElementSize());
 		logger.info("Position element count: " + _position.getElementCount());		
 		_positionPtr = _position.read(_queue);
-		
+		end=System.currentTimeMillis();
+		logger.info("SPH position read end, took "+ (end-start) +"ms");
+		start=end;
 		// read velocities out
-		logger.info("Position element size: " + _velocity.getElementSize());
-		logger.info("Position element count: " + _velocity.getElementCount());
+		logger.info("Velocity element size: " + _velocity.getElementSize());
+		logger.info("Velocity element count: " + _velocity.getElementCount());
 		_velocityPtr = _velocity.read(_queue);
-		
+		end=System.currentTimeMillis();
+		logger.info("SPH velocity read end, took "+ (end-start) +"ms");
+		start=end;
 		logger.info("SPH finish queue");
 		_queue.finish();
+		end=System.currentTimeMillis();
+		logger.info("SPH finish queue end, took "+ (end-start) +"ms");
+		start=end;
 		logger.info("SPH step done");
 	}
 	
