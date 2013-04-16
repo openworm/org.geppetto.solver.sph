@@ -16,6 +16,7 @@ import org.openworm.simulationengine.core.constants.PhysicsConstants;
 import org.openworm.simulationengine.core.model.IModel;
 import org.openworm.simulationengine.core.simulation.ITimeConfiguration;
 import org.openworm.simulationengine.core.solver.ISolver;
+import org.openworm.simulationengine.model.sph.Connection;
 import org.openworm.simulationengine.model.sph.SPHParticle;
 import org.openworm.simulationengine.model.sph.common.SPHConstants;
 import org.openworm.simulationengine.model.sph.x.SPHModelX;
@@ -189,12 +190,6 @@ public class SPHSolverService implements ISolver {
 		_sortedVelocity = _context.createBuffer(Usage.InputOutput, _sortedVelocityPtr,false);
 		_velocity = _context.createBuffer(Usage.InputOutput,_velocityPtr,false);
 		
-		// init elastic connections buffer if we have any
-		if(_numOfElasticP > 0){
-			_elasticConnectionsDataPtr = Pointer.allocateFloats(_numOfElasticP * SPHConstants.NEIGHBOR_COUNT * 4);
-			_elasticConnectionsData = _context.createBuffer(Usage.InputOutput,_elasticConnectionsDataPtr,false);
-		}
-		
 		_queue.finish();
 	}
 	
@@ -212,7 +207,7 @@ public class SPHSolverService implements ISolver {
 			_zMax = mod.getZMax();
 			_zMin = mod.getZMin();
 			
-			_particleCount = mod.getNumberOfParticals();
+			_particleCount = mod.getNumberOfParticles();
 			_numOfElasticP = 0;
 			_numOfLiquidP = 0;
 			_numOfBoundaryP = 0;
@@ -248,8 +243,6 @@ public class SPHSolverService implements ISolver {
 				_velocityPtr.set(index + 2, velocityVector.getZ());
 				_velocityPtr.set(index + 3, velocityVector.getP());
 				
-				// PORTING-TODO: populate elastic connection buffers
-				
 				// particle counts
 				if (positionVector.getP() == SPHConstants.BOUNDARY_TYPE) {
 					_numOfBoundaryP++;
@@ -259,6 +252,23 @@ public class SPHSolverService implements ISolver {
 				}
 				else if (positionVector.getP() == SPHConstants.LIQUID_TYPE) {
 					_numOfLiquidP++;
+				}
+			}
+			
+			// populate elastic connection buffers if we have any 
+			if(_numOfElasticP > 0 && mod.getConnections().size() > 0){
+				// init elastic connections buffers
+				// TODO: move this back with the other buffers init stuff
+				_elasticConnectionsDataPtr = Pointer.allocateFloats(_numOfElasticP * SPHConstants.NEIGHBOR_COUNT * 4);
+				_elasticConnectionsData = _context.createBuffer(Usage.InputOutput,_elasticConnectionsDataPtr,false);
+				
+				int connIndex = 0;
+				for (Connection conn : mod.getConnections()){
+					_elasticConnectionsDataPtr.set(connIndex, conn.getP1());
+					_elasticConnectionsDataPtr.set(connIndex + 1, conn.getP2());
+					_elasticConnectionsDataPtr.set(connIndex + 2, conn.getDistance());
+					_elasticConnectionsDataPtr.set(connIndex + 3, 0f); // padding
+					connIndex++;
 				}
 			}
 			

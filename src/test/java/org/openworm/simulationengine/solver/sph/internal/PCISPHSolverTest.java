@@ -150,4 +150,32 @@ public class PCISPHSolverTest
 		}
 
 	}
+	
+	/*
+	 *  A test built around the original pureLiquid scene used to test the C++ version
+	 */
+	@Test
+	public void testSolveElastic_NoCrash()
+	{
+		try
+		{
+			URL url = this.getClass().getResource("/sphModel_Elastic.xml");
+			
+			SPHSolverService solver = new SPHSolverService();
+			SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
+			
+			List<IModel> initial_models = modelInterpreter.readModel(url);
+			List<IModel> models =  new ArrayList<IModel>(initial_models);
+			
+			for (int cycles = 0; cycles < 10; cycles++)
+			{
+				models=solver.solve(models, null).get(0);
+			}
+		}
+		catch (Exception e)
+		{
+			fail(e.getMessage());
+		}
+
+	}
 }
