@@ -136,6 +136,7 @@
 					<instructions>
 						<Bundle-SymbolicName>${project.groupId}.${project.artifactId}</Bundle-SymbolicName>
 						<Bundle-Version>${project.version}</Bundle-Version>
+						<Bundle-ClassPath>.,{maven-dependencies}</Bundle-ClassPath>
 						<Include-Resource>
 							{maven-resources},META-INF/spring=src/main/java/META-INF/spring,
 							resource=src/main/java/resource
