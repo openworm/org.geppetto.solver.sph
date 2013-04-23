@@ -9,6 +9,7 @@
 	<version>1.0.1</version>
 	<properties>
 		<spring.version>3.0.0.RELEASE</spring.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -117,6 +118,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.1</version>
 				<configuration>
 					<source>1.6</source>
 					<target>1.6</target>
@@ -148,11 +150,6 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-dependency-plugin</artifactId>
-				<configuration>
-					<outputDirectory>${project.build.outputDirectory}/lib</outputDirectory>
-					<includeScope>runtime</includeScope>
-					<excludeScope>provided</excludeScope>
-				</configuration>
 				<executions>
 					<execution>
 						<id>copy-dependencies</id>
@@ -160,14 +157,12 @@
 						<goals>
 							<goal>copy-dependencies</goal>
 						</goals>
+						<configuration>
+							<outputDirectory>${project.build.outputDirectory}/lib</outputDirectory>
+							<includeScope>runtime</includeScope>
+							<excludeScope>provided</excludeScope>
+						</configuration>
 					</execution>
-				</executions>
-			</plugin>
-
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-dependency-plugin</artifactId>
-				<executions>
 					<execution>
 						<id>install</id>
 						<phase>install</phase>
@@ -177,7 +172,6 @@
 					</execution>
 				</executions>
 			</plugin>
-
 
 		</plugins>
 
