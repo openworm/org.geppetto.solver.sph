@@ -27,22 +27,15 @@ public class PCISPHSolverTest
 	 * 296 boundary particles + 14 liquid particles
 	 */
 	@Test
-	public void testSolve14_NoCrash1()
+	public void testSolve14_NoCrash1() throws Exception
 	{
-		try
+		SPHSolverService solver = new SPHSolverService();
+		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
+		URL url = new URL("https://www.dropbox.com/s/eshuozw196k3vci/sphModel_14.xml?dl=1");
+		List<IModel> models = modelInterpreter.readModel(url);
+		for (int cycles = 0; cycles < 1; cycles++)
 		{
-			SPHSolverService solver = new SPHSolverService();
-			SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
-			URL url = new URL("https://www.dropbox.com/s/eshuozw196k3vci/sphModel_14.xml?dl=1");
-			List<IModel> models = modelInterpreter.readModel(url);
-			for (int cycles = 0; cycles < 1; cycles++)
-			{
-				models=solver.solve(models, null).get(0);
-			}
-		}
-		catch (Exception e)
-		{
-			fail(e.getMessage());
+			models=solver.solve(models, null).get(0);
 		}
 
 	}
@@ -51,22 +44,15 @@ public class PCISPHSolverTest
 	 * 296 boundary particles + 14 liquid particles
 	 */
 	@Test
-	public void testSolve14_NoCrash2()
+	public void testSolve14_NoCrash2() throws Exception
 	{
-		try
+		SPHSolverService solver = new SPHSolverService();
+		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
+		URL url = new URL("https://www.dropbox.com/s/8869zlz971ogyra/sphModel_small.xml?dl=1");
+		List<IModel> models = modelInterpreter.readModel(url);
+		for (int cycles = 0; cycles < 18; cycles++)
 		{
-			SPHSolverService solver = new SPHSolverService();
-			SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
-			URL url = new URL("https://www.dropbox.com/s/8869zlz971ogyra/sphModel_small.xml?dl=1");
-			List<IModel> models = modelInterpreter.readModel(url);
-			for (int cycles = 0; cycles < 18; cycles++)
-			{
-				models=solver.solve(models, null).get(0);
-			}
-		}
-		catch (Exception e)
-		{
-			fail(e.getMessage());
+			models=solver.solve(models, null).get(0);
 		}
 
 	}
@@ -75,22 +61,15 @@ public class PCISPHSolverTest
 	 * Same scene as testSolve14 but with 1 more particle
 	 */
 	@Test
-	public void testSolve15_NoCrash()
+	public void testSolve15_NoCrash() throws Exception
 	{
-		try
+		SPHSolverService solver = new SPHSolverService();
+		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
+		URL url = new URL("https://www.dropbox.com/s/9kx2p8qspdgphd4/sphModel_15.xml?dl=1");
+		List<IModel> models = modelInterpreter.readModel(url);
+		for (int cycles = 0; cycles < 254; cycles++)
 		{
-			SPHSolverService solver = new SPHSolverService();
-			SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
-			URL url = new URL("https://www.dropbox.com/s/9kx2p8qspdgphd4/sphModel_15.xml?dl=1");
-			List<IModel> models = modelInterpreter.readModel(url);
-			for (int cycles = 0; cycles < 254; cycles++)
-			{
-				models=solver.solve(models, null).get(0);
-			}
-		}
-		catch (Exception e)
-		{
-			fail(e.getMessage());
+			models=solver.solve(models, null).get(0);
 		}
 
 	}
@@ -99,22 +78,15 @@ public class PCISPHSolverTest
 	 * 296 boundary particles + 216 liquid particles (total of 512 particles) with random position and velocity
 	 */
 	@Test
-	public void testSolve216_NoCrash()
+	public void testSolve216_NoCrash() throws Exception
 	{
-		try
+		SPHSolverService solver = new SPHSolverService();
+		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
+		URL url = new URL("https://www.dropbox.com/s/lerz4rkx75nq0bk/sphModel_216.xml?dl=1");
+		List<IModel> models = modelInterpreter.readModel(url);
+		for (int cycles = 0; cycles < 1; cycles++)
 		{
-			SPHSolverService solver = new SPHSolverService();
-			SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
-			URL url = new URL("https://www.dropbox.com/s/lerz4rkx75nq0bk/sphModel_216.xml?dl=1");
-			List<IModel> models = modelInterpreter.readModel(url);
-			for (int cycles = 0; cycles < 1; cycles++)
-			{
-				models=solver.solve(models, null).get(0);
-			}
-		}
-		catch (Exception e)
-		{
-			fail(e.getMessage());
+			models=solver.solve(models, null).get(0);
 		}
 
 	}
@@ -123,30 +95,23 @@ public class PCISPHSolverTest
 	 *  A test built around the original pureLiquid scene used to test the C++ version
 	 */
 	@Test
-	public void testSolvePureLiquidScene_ParticlesMoving()
+	public void testSolvePureLiquidScene_ParticlesMoving() throws Exception
 	{
-		try
+		URL url = this.getClass().getResource("/sphModel_PureLiquid.xml");
+		
+		SPHSolverService solver = new SPHSolverService();
+		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
+		
+		List<IModel> initial_models = modelInterpreter.readModel(url);
+		List<IModel> models =  new ArrayList<IModel>(initial_models);
+		
+		for (int cycles = 0; cycles < 1; cycles++)
 		{
-			URL url = this.getClass().getResource("/sphModel_PureLiquid.xml");
-			
-			SPHSolverService solver = new SPHSolverService();
-			SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
-			
-			List<IModel> initial_models = modelInterpreter.readModel(url);
-			List<IModel> models =  new ArrayList<IModel>(initial_models);
-			
-			for (int cycles = 0; cycles < 1; cycles++)
-			{
-				models=solver.solve(models, null).get(0);
-				int pd=((SPHModelX)initial_models.get(0)).compareTo((SPHModelX)(models.get(0)));
-				System.out.println("Particles different at cycle "+cycles+": "+pd);
-				Assert.assertFalse(pd==0);
-				initial_models=models;
-			}
-		}
-		catch (Exception e)
-		{
-			fail(e.getMessage());
+			models=solver.solve(models, null).get(0);
+			int pd=((SPHModelX)initial_models.get(0)).compareTo((SPHModelX)(models.get(0)));
+			System.out.println("Particles different at cycle "+cycles+": "+pd);
+			Assert.assertFalse(pd==0);
+			initial_models=models;
 		}
 
 	}
@@ -155,26 +120,19 @@ public class PCISPHSolverTest
 	 *  A test built around the original pureLiquid scene used to test the C++ version
 	 */
 	@Test
-	public void testSolveElastic_NoCrash()
+	public void testSolveElastic_NoCrash() throws Exception
 	{
-		try
+		URL url = this.getClass().getResource("/sphModel_Elastic.xml");
+		
+		SPHSolverService solver = new SPHSolverService();
+		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
+		
+		List<IModel> initial_models = modelInterpreter.readModel(url);
+		List<IModel> models =  new ArrayList<IModel>(initial_models);
+		
+		for (int cycles = 0; cycles < 10; cycles++)
 		{
-			URL url = this.getClass().getResource("/sphModel_Elastic.xml");
-			
-			SPHSolverService solver = new SPHSolverService();
-			SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
-			
-			List<IModel> initial_models = modelInterpreter.readModel(url);
-			List<IModel> models =  new ArrayList<IModel>(initial_models);
-			
-			for (int cycles = 0; cycles < 10; cycles++)
-			{
-				models=solver.solve(models, null).get(0);
-			}
-		}
-		catch (Exception e)
-		{
-			fail(e.getMessage());
+			models=solver.solve(models, null).get(0);
 		}
 
 	}
