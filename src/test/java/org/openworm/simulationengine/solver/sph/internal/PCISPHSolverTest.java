@@ -3,8 +3,6 @@
  */
 package org.openworm.simulationengine.solver.sph.internal;
 
-import static org.junit.Assert.fail;
-
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -130,7 +128,7 @@ public class PCISPHSolverTest
 		List<IModel> initial_models = modelInterpreter.readModel(url);
 		List<IModel> models =  new ArrayList<IModel>(initial_models);
 		
-		for (int cycles = 0; cycles < 10; cycles++)
+		for (int cycles = 0; cycles < 2; cycles++)
 		{
 			models=solver.solve(models, null).get(0);
 		}
