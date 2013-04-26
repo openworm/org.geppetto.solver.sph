@@ -1,4 +1,4 @@
-#Solver bundle for Smoothed Particle Hydrodynamics for the simulation engine for the OpenWorm project
+#Solver bundle for Smoothed Particle Hydrodynamics for the Geppetto simulation engine for the OpenWorm project
 http://openworm.org
 
-Please see installation information [available online](http://bit.ly/NBuKjd).
+Further information on Geppetto is available [on our wiki](https://github.com/openworm/OpenWorm/wiki/Geppetto--Overview).
