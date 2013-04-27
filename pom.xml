@@ -2,11 +2,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>org.openworm</groupId>
-	<artifactId>simulationengine.solver.sph</artifactId>
-	<name>OpenWorm Simulation Engine SPH Solver Bundle</name>
+	<groupId>org.geppetto</groupId>
+	<artifactId>solver.sph</artifactId>
+	<name>Geppetto SPH Solver Bundle</name>
 	<packaging>bundle</packaging>
-	<version>1.0.1</version>
+	<version>0.0.1</version>
 	<properties>
 		<spring.version>3.0.0.RELEASE</spring.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -75,14 +75,14 @@
 			<version>${spring.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>org.openworm</groupId>
-			<artifactId>simulationengine.core</artifactId>
-			<version>1.0.0</version>
+			<groupId>org.geppetto</groupId>
+			<artifactId>core</artifactId>
+			<version>0.0.1</version>
 		</dependency>
 		<dependency>
-			<groupId>org.openworm</groupId>
-			<artifactId>simulationengine.model.sph</artifactId>
-			<version>1.0.1</version>
+			<groupId>org.geppetto</groupId>
+			<artifactId>model.sph</artifactId>
+			<version>0.0.1</version>
 		</dependency>
 	</dependencies>
 	<repositories>
@@ -119,6 +119,7 @@
 				<directory>src/main/java</directory>
 				<includes>
 					<include>resource/**</include>
+					<include>META-INF/**</include>
 				</includes>
 			</resource>
 		</resources>
