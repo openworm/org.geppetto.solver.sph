@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>org.openworm.simulationengine.solver.sph</name>
+	<name>org.geppetto.solver.sph</name>
 	<comment></comment>
 	<projects>
 		<project>org.openworm.simulationengine.core</project>
@@ -24,6 +24,16 @@
 				<dictionary>
 					<key>LaunchConfigHandle</key>
 					<value>&lt;project&gt;/.externalToolBuilders/org.eclipse.m2e.core.maven2Builder (9).launch</value>
+				</dictionary>
+			</arguments>
+		</buildCommand>
+		<buildCommand>
+			<name>org.eclipse.ui.externaltools.ExternalToolBuilder</name>
+			<triggers>full,incremental,</triggers>
+			<arguments>
+				<dictionary>
+					<key>LaunchConfigHandle</key>
+					<value>&lt;project&gt;/.externalToolBuilders/org.eclipse.m2e.core.maven2Builder (17).launch</value>
 				</dictionary>
 			</arguments>
 		</buildCommand>

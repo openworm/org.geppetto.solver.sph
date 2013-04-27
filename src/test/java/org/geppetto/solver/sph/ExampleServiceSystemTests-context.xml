@@ -9,6 +9,6 @@
 							http://www.springframework.org/schema/context/spring-context-2.5.xsd">
 							
 	<!-- Instructs Spring to scan for internal service components to instantiate and configure -->			
-	<context:component-scan base-package="org.openworm.simulationengine.solver.sph.internal" />
+	<context:component-scan base-package="org.geppetto.solver.sph.internal" />
 
 </beans>

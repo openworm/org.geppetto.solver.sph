@@ -12,7 +12,7 @@
 	</appender>
 
 	<!-- Application loggers -->
-	<logger name="org.openworm.simulationengine.solver.sph">
+	<logger name="org.geppetto.solver.sph">
 		<level value="info" />
 	</logger>
 	

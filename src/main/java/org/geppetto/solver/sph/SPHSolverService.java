@@ -1,4 +1,4 @@
-package org.openworm.simulationengine.solver.sph;
+package org.geppetto.solver.sph;
 
 import static java.lang.System.out;
 
@@ -12,16 +12,16 @@ import java.util.Random;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.bridj.Pointer;
-import org.openworm.simulationengine.core.constants.PhysicsConstants;
-import org.openworm.simulationengine.core.model.IModel;
-import org.openworm.simulationengine.core.simulation.ITimeConfiguration;
-import org.openworm.simulationengine.core.solver.ISolver;
-import org.openworm.simulationengine.model.sph.Connection;
-import org.openworm.simulationengine.model.sph.SPHParticle;
-import org.openworm.simulationengine.model.sph.common.SPHConstants;
-import org.openworm.simulationengine.model.sph.x.SPHModelX;
-import org.openworm.simulationengine.model.sph.x.SPHParticleX;
-import org.openworm.simulationengine.model.sph.x.Vector3DX;
+import org.geppetto.core.constants.PhysicsConstants;
+import org.geppetto.core.model.IModel;
+import org.geppetto.core.simulation.ITimeConfiguration;
+import org.geppetto.core.solver.ISolver;
+import org.geppetto.model.sph.Connection;
+import org.geppetto.model.sph.SPHParticle;
+import org.geppetto.model.sph.common.SPHConstants;
+import org.geppetto.model.sph.x.SPHModelX;
+import org.geppetto.model.sph.x.SPHParticleX;
+import org.geppetto.model.sph.x.Vector3DX;
 import org.springframework.stereotype.Service;
 
 import com.nativelibs4java.opencl.CLBuffer;
