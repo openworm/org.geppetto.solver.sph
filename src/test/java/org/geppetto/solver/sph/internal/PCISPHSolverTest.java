@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.openworm.simulationengine.solver.sph.internal;
+package org.geppetto.solver.sph.internal;
 
 import java.net.URL;
 import java.util.ArrayList;
@@ -9,11 +9,11 @@ import java.util.List;
 
 import junit.framework.Assert;
 
+import org.geppetto.core.model.IModel;
+import org.geppetto.model.sph.services.SPHModelInterpreterService;
+import org.geppetto.model.sph.x.SPHModelX;
+import org.geppetto.solver.sph.SPHSolverService;
 import org.junit.Test;
-import org.openworm.simulationengine.core.model.IModel;
-import org.openworm.simulationengine.model.sph.services.SPHModelInterpreterService;
-import org.openworm.simulationengine.model.sph.x.SPHModelX;
-import org.openworm.simulationengine.solver.sph.SPHSolverService;
 
 /**
  * @author matteo@openworm.org
