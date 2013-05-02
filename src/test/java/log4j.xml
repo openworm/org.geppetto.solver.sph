@@ -12,7 +12,7 @@
 	</appender>
 
 	<!-- Application loggers -->
-	<logger name="org.geppetto.solver.sph">
+	<logger name="org.geppetto.solver.sph.SPHSolverService">
 		<level value="info" />
 	</logger>
 	

@@ -43,14 +43,14 @@ public class KernelTest {
 	/*
 	 * TEST JavaCL with CPU
 	 * */
-	@Test
-	public void testKernelCPU() throws Exception {
-		test(DeviceFeature.CPU);
-	}
-	
-	/*
-	 * TEST JavaCL with GPU
-	 * */
+//	@Test
+//	public void testKernelCPU() throws Exception {
+//		test(DeviceFeature.CPU);
+//	}
+//	
+//	/*
+//	 * TEST JavaCL with GPU
+//	 * */
 //	@Test
 //	public void testKernelGPU() throws Exception {
 //		test(DeviceFeature.GPU);
