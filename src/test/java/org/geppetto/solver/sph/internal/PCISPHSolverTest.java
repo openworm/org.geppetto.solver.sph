@@ -14,6 +14,7 @@ import org.geppetto.model.sph.SPHModel;
 import org.geppetto.model.sph.SPHParticle;
 import org.geppetto.model.sph.services.SPHModelInterpreterService;
 import org.geppetto.model.sph.x.SPHModelX;
+import org.geppetto.model.sph.x.Vector3DX;
 import org.geppetto.solver.sph.SPHSolverService;
 import org.junit.Test;
 
@@ -45,6 +46,20 @@ public class PCISPHSolverTest
 			}
 		}
 	}
+	
+	private void printCoordinates(List<IModel> models){
+		SPHModelX mod = (SPHModelX) models.get(0);
+		
+		int i = 1;
+		for(SPHParticle p : mod.getParticles()){
+			Vector3DX pos = (Vector3DX) p.getPositionVector();
+			Vector3DX vel = (Vector3DX) p.getVelocityVector();
+			
+			System.out.println("#" + i + " position x:" + pos.getX() + " y:" + pos.getY() + " z:" + pos.getZ() + " p:" + pos.getP());
+			System.out.println("#" + i + " velocity x:" + vel.getX() + " y:" + vel.getY() + " z:" + vel.getZ() + " p:" + vel.getP());
+			i++;
+		}
+	}
 
 	/*
 	 * 296 boundary particles + 14 liquid particles
@@ -56,10 +71,16 @@ public class PCISPHSolverTest
 		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
 		URL url = new URL("https://www.dropbox.com/s/eshuozw196k3vci/sphModel_14.xml?dl=1");
 		List<IModel> models = modelInterpreter.readModel(url);
-		for(int cycles = 0; cycles < 1; cycles++)
+		
+		int max_cycles = 10;
+		for(int cycles = 0; cycles < max_cycles; cycles++)
 		{
 			models = solver.solve(models, null).get(0);
 			checkModels(models,cycles);
+			
+			if(cycles == max_cycles - 1){
+				//printCoordinates(models);
+			}
 		}
 	}
 
@@ -73,10 +94,16 @@ public class PCISPHSolverTest
 		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
 		URL url = new URL("https://www.dropbox.com/s/8869zlz971ogyra/sphModel_small.xml?dl=1");
 		List<IModel> models = modelInterpreter.readModel(url);
-		for(int cycles = 0; cycles < 18; cycles++)
+		
+		int max_cycles = 10;
+		for(int cycles = 0; cycles < max_cycles; cycles++)
 		{
 			models = solver.solve(models, null).get(0);
 			checkModels(models,cycles);
+			
+			if(cycles==max_cycles - 1){
+				//printCoordinates(models);
+			}
 		}
 	}
 
@@ -90,10 +117,16 @@ public class PCISPHSolverTest
 		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
 		URL url = new URL("https://www.dropbox.com/s/9kx2p8qspdgphd4/sphModel_15.xml?dl=1");
 		List<IModel> models = modelInterpreter.readModel(url);
-		for(int cycles = 0; cycles < 254; cycles++)
+		
+		int max_cycles = 10;
+		for(int cycles = 0; cycles < max_cycles; cycles++)
 		{
 			models = solver.solve(models, null).get(0);
 			checkModels(models,cycles);
+			
+			if(cycles==max_cycles - 1){
+				//printCoordinates(models);
+			}
 		}
 	}
 
@@ -107,10 +140,16 @@ public class PCISPHSolverTest
 		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
 		URL url = new URL("https://www.dropbox.com/s/lerz4rkx75nq0bk/sphModel_216.xml?dl=1");
 		List<IModel> models = modelInterpreter.readModel(url);
-		for(int cycles = 0; cycles < 1; cycles++)
+		
+		int max_cycles = 10;
+		for(int cycles = 0; cycles < max_cycles; cycles++)
 		{
 			models = solver.solve(models, null).get(0);
 			checkModels(models,cycles);
+			
+			if(cycles==max_cycles - 1){
+				//printCoordinates(models);
+			}
 		}
 	}
 
@@ -127,8 +166,9 @@ public class PCISPHSolverTest
 
 		List<IModel> initial_models = modelInterpreter.readModel(url);
 		List<IModel> models = new ArrayList<IModel>(initial_models);
-
-		for(int cycles = 0; cycles < 1; cycles++)
+		
+		int max_cycles = 10;
+		for(int cycles = 0; max_cycles < 10; cycles++)
 		{
 			models = solver.solve(models, null).get(0);
 			int pd = ((SPHModelX) initial_models.get(0)).compareTo((SPHModelX) (models.get(0)));
@@ -153,7 +193,8 @@ public class PCISPHSolverTest
 		List<IModel> initial_models = modelInterpreter.readModel(url);
 		List<IModel> models = new ArrayList<IModel>(initial_models);
 
-		for(int cycles = 0; cycles < 2; cycles++)
+		int max_cycles = 2;
+		for(int cycles = 0; cycles < max_cycles; cycles++)
 		{
 			models = solver.solve(models, null).get(0);
 			checkModels(models, cycles);
