@@ -72,7 +72,7 @@ public class PCISPHSolverTest
 		URL url = new URL("https://www.dropbox.com/s/eshuozw196k3vci/sphModel_14.xml?dl=1");
 		List<IModel> models = modelInterpreter.readModel(url);
 		
-		int max_cycles = 10;
+		int max_cycles = 1;
 		for(int cycles = 0; cycles < max_cycles; cycles++)
 		{
 			models = solver.solve(models, null).get(0);
@@ -95,7 +95,7 @@ public class PCISPHSolverTest
 		URL url = new URL("https://www.dropbox.com/s/8869zlz971ogyra/sphModel_small.xml?dl=1");
 		List<IModel> models = modelInterpreter.readModel(url);
 		
-		int max_cycles = 10;
+		int max_cycles = 19;
 		for(int cycles = 0; cycles < max_cycles; cycles++)
 		{
 			models = solver.solve(models, null).get(0);
