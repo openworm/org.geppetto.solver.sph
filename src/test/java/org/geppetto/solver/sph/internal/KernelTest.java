@@ -14,7 +14,9 @@ import org.junit.Test;
 import com.nativelibs4java.opencl.CLBuffer;
 import com.nativelibs4java.opencl.CLContext;
 import com.nativelibs4java.opencl.CLDevice;
+import com.nativelibs4java.opencl.CLEvent;
 import com.nativelibs4java.opencl.CLKernel;
+import com.nativelibs4java.opencl.CLMem.MapFlags;
 import com.nativelibs4java.opencl.CLMem.Usage;
 import com.nativelibs4java.opencl.CLPlatform.DeviceFeature;
 import com.nativelibs4java.opencl.CLProgram;
@@ -51,10 +53,10 @@ public class KernelTest {
 	/*
 	 * TEST JavaCL with GPU
 	 * */
-//	@Test
-//	public void testKernelGPU() throws Exception {
-//		test(DeviceFeature.GPU);
-//	}
+	@Test
+	public void testKernelGPU() throws Exception {
+		//test(DeviceFeature.GPU);
+	}
 
 	public class FakeSolver{
 		private CLContext _context;
@@ -108,12 +110,17 @@ public class KernelTest {
 
 			_test_kernel = _program.createKernel("test_kernel");
 
+			// example with host pointer allocation
 			_buffer1Ptr = Pointer.allocateFloats(SIZE).order(byteOrder);
 			_buffer2Ptr = Pointer.allocateFloats(SIZE).order(byteOrder);
 			_buffer1 = _context.createBuffer(Usage.Input, _buffer1Ptr, false);
 			_buffer2 = _context.createBuffer(Usage.Output, _buffer2Ptr, false);
-
-			_queue.finish();
+			
+			// example with direct mapping
+			//_buffer1 = _context.createFloatBuffer(Usage.Input, SIZE);
+			//_buffer2 = _context.createFloatBuffer(Usage.Output, SIZE);
+			//_buffer1Ptr = _buffer1.map(_queue, MapFlags.Write);
+     		//_buffer2Ptr = _buffer2.map(_queue, MapFlags.ReadWrite);
 			
 			// populate buffers
 			for (int i = 0; i < SIZE; i++) {
@@ -127,14 +134,19 @@ public class KernelTest {
 			_test_kernel.setArg(0, _buffer1);
 			_test_kernel.setArg(1, _buffer2);
 			_test_kernel.setArg(2, SIZE);
-			_test_kernel.enqueueNDRange(_queue, new int[] { SIZE });
+			CLEvent testEvt = _test_kernel.enqueueNDRange(_queue, new int[] { SIZE });
 
-			_buffer2Ptr = _buffer2.read(_queue);
+			// shouldn't need to do this read operation if the buffers are mapped?
+			_buffer2Ptr = _buffer2.read(_queue, testEvt);
 			
 			float[] results = new float[SIZE];
 			for (int i = 0; i < SIZE; i++) {
 				results[i] = _buffer2Ptr.get(i);
 			}
+			
+			// un-map buffers if they were mapped
+			//_buffer1.unmap(_queue, _buffer1Ptr);
+			//_buffer2.unmap(_queue, _buffer2Ptr);
 			
 			return results;
 		}	
