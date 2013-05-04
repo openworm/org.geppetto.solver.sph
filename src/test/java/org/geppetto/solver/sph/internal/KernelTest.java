@@ -109,30 +109,19 @@ public class KernelTest {
 			_program = _context.createProgram(src);
 
 			_test_kernel = _program.createKernel("test_kernel");
-
-			// example with host pointer allocation
-			// NOTE: this will create a copies of the native buffers
-			_buffer1Ptr = Pointer.allocateFloats(SIZE).order(byteOrder);
-			_buffer2Ptr = Pointer.allocateFloats(SIZE).order(byteOrder);
-			_buffer1 = _context.createBuffer(Usage.Input, _buffer1Ptr, false);
-			_buffer2 = _context.createBuffer(Usage.Output, _buffer2Ptr, false);
 			
 			// example with direct mapping
 			// NOTE: this will map pointers to buffers on the device
-			//_buffer1 = _context.createFloatBuffer(Usage.Input, SIZE);
-			//_buffer2 = _context.createFloatBuffer(Usage.Output, SIZE);
-			//_buffer1Ptr = _buffer1.map(_queue, MapFlags.Write);
-     		//_buffer2Ptr = _buffer2.map(_queue, MapFlags.ReadWrite);
+			_buffer1 = _context.createFloatBuffer(Usage.Input, SIZE);
+			_buffer2 = _context.createFloatBuffer(Usage.Output, SIZE);
+			_buffer1Ptr = _buffer1.map(_queue, MapFlags.Write);
+     		_buffer2Ptr = _buffer2.map(_queue, MapFlags.ReadWrite);
 			
 			// populate buffers
 			for (int i = 0; i < SIZE; i++) {
 				_buffer1Ptr.set(i, b1[i]);
 				_buffer2Ptr.set(i, b2[i]);
 			}
-			
-			// these write operations shouldn't be needed if we are mapping buffers
-			_buffer1.write(_queue, _buffer1Ptr, false);
-			_buffer2.write(_queue, _buffer2Ptr, false);
 		}
 		
 		public float[] solve(){	
@@ -141,10 +130,8 @@ public class KernelTest {
 			_test_kernel.setArg(1, _buffer2);
 			_test_kernel.setArg(2, SIZE);
 			CLEvent testEvt = _test_kernel.enqueueNDRange(_queue, new int[] { SIZE });
-
-			// read out values waiting for the event to finish
-			// NOTE: shouldn't need to do this read operation if the buffers are mapped?
-			_buffer2Ptr = _buffer2.read(_queue, testEvt);
+			
+			testEvt.waitFor();
 			
 			float[] results = new float[SIZE];
 			for (int i = 0; i < SIZE; i++) {
@@ -152,8 +139,8 @@ public class KernelTest {
 			}
 			
 			// un-map buffers if they were mapped
-			//_buffer1.unmap(_queue, _buffer1Ptr);
-			//_buffer2.unmap(_queue, _buffer2Ptr);
+			_buffer1.unmap(_queue, _buffer1Ptr);
+			_buffer2.unmap(_queue, _buffer2Ptr);
 			
 			return results;
 		}	
