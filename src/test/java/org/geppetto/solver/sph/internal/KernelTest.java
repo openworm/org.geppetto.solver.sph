@@ -16,8 +16,7 @@ import com.nativelibs4java.opencl.CLContext;
 import com.nativelibs4java.opencl.CLDevice;
 import com.nativelibs4java.opencl.CLEvent;
 import com.nativelibs4java.opencl.CLKernel;
-import com.nativelibs4java.opencl.CLMem.MapFlags;
-import com.nativelibs4java.opencl.CLMem.Usage;
+import com.nativelibs4java.opencl.CLMem;
 import com.nativelibs4java.opencl.CLPlatform.DeviceFeature;
 import com.nativelibs4java.opencl.CLProgram;
 import com.nativelibs4java.opencl.CLQueue;
@@ -25,124 +24,147 @@ import com.nativelibs4java.opencl.JavaCL;
 import com.nativelibs4java.util.IOUtils;
 
 public class KernelTest {
-	
-	private int buff_size = 10;
-	private float buff1[] = { 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f };
-	private float buff2[] = { 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f };
-
-	private void test(DeviceFeature device) throws Exception {
-		FakeSolver fake = new FakeSolver(buff1, buff2, buff_size, device);
-		
-		float[] buff2_results = fake.solve();
-		
-		for (int i = 0; i < buff_size; i++) {
-			// so we check that every element in the second buffer is equal to
-			// the same element in the first buffer
-			assertEquals(buff1[i], buff2_results[i], 0);
-		}
-	}
+	private static final float[] TEST_DATA = { 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f };
 
 	/*
 	 * TEST JavaCL with CPU
 	 * */
 	@Test
 	public void testKernelCPU() throws Exception {
-		test(DeviceFeature.CPU);
+		out.println("Testing CPU using host memory");
+		test(DeviceFeature.CPU, true);
+		out.println("Testing CPU using device memory");
+		test(DeviceFeature.CPU, false);
 	}
-	
+
 	/*
 	 * TEST JavaCL with GPU
 	 * */
 	@Test
 	public void testKernelGPU() throws Exception {
-		//test(DeviceFeature.GPU);
+		out.println("Testing GPU using host memory");
+		test(DeviceFeature.GPU, true);
+		out.println("Testing GPU using device memory");
+		test(DeviceFeature.GPU, false);
 	}
 
-	public class FakeSolver{
+	private void test(DeviceFeature device, boolean useHostMemory) throws Exception {
+		FakeSolver fake = new FakeSolver(TEST_DATA, device);
+
+		float[] results;
+		if (useHostMemory) {
+			results = fake.solveWithHostMemory();
+		} else {
+			results = fake.solveWithDeviceMemory();
+		}
+
+		assertEquals(TEST_DATA.length, results.length, 0);
+
+		for (int i = 0; i < TEST_DATA.length; i++) {
+			// Check that every element in the input buffer is equal to
+			// the same element in the output buffer
+			assertEquals(TEST_DATA[i], results[i], 0);
+		}
+	}
+
+	public class FakeSolver {
 		private CLContext _context;
-		public CLQueue _queue;
-		private CLProgram _program;
-		private CLDevice _device;
-		private CLKernel _test_kernel;
-		public CLBuffer<Float> _buffer1;
-		public CLBuffer<Float> _buffer2;
-		private Pointer<Float> _buffer1Ptr;
-		private Pointer<Float> _buffer2Ptr;
-		private int SIZE;
+		private CLQueue _queue;
+		private CLKernel _testKernel;
+		private float[] _input;
 		
 		private float b1[] = null;
 		private float b2[] = null;
 		
-		public FakeSolver(float[] buff1, float[] buff2, int size, DeviceFeature device) throws IOException {
-			this.SIZE = size;
-			this.b1 = buff1;
-			this.b2 = buff2;
+		public FakeSolver(float[] input, DeviceFeature device) throws IOException {
+			this._input = input;
 			
 			initializeCL(device);
 		}
-		
-		private void initializeCL(DeviceFeature device) throws IOException {
-			_context = JavaCL.createBestContext(device);
-			ByteOrder byteOrder = _context.getByteOrder();
 
-			out.println("created " + _context);
+		private void initializeCL(DeviceFeature feature) throws IOException {
+			_context = JavaCL.createBestContext(feature);
+
+			out.println("Created OpenCL context" + _context);
 			// an array with available devices
 			CLDevice[] devices = _context.getDevices();
 
 			for (int i = 0; i < devices.length; i++) {
-				out.println("device - " + i + ": " + devices[i]);
+				out.println("Found device - " + i + ": " + devices[i]);
 			}
 
 			// have a look at the output and select a device
-			_device = devices[0];
-			out.println("Version " + _device.getOpenCLVersion());
-			out.println("Version " + _device.getDriverVersion());
-			out.println("using " + _device);
-			out.println("max workgroup size: " + _device.getMaxWorkGroupSize());
-			out.println("max workitems size: " + _device.getMaxWorkItemSizes()[0]);
+			CLDevice device = devices[0];
+			out.println("Using device: " + device);
+			out.println("OpenCL version: " + device.getOpenCLVersion());
+			out.println("Driver version: " + device.getDriverVersion());
+			out.println("Max workgroup size: " + device.getMaxWorkGroupSize());
+			out.println("Max workitems size: " + device.getMaxWorkItemSizes()[0]);
 
 			// create command queue on selected device.
 			_queue = _context.createDefaultQueue();
 
 			// load sources, create and build program
 			String src = IOUtils.readText(SPHSolverService.class.getResourceAsStream("/testKernel.cl"));
-			_program = _context.createProgram(src);
+			CLProgram program = _context.createProgram(src);
 
-			_test_kernel = _program.createKernel("test_kernel");
-			
-			// example with direct mapping
-			// NOTE: this will map pointers to buffers on the device
-			_buffer1 = _context.createFloatBuffer(Usage.Input, SIZE);
-			_buffer2 = _context.createFloatBuffer(Usage.Output, SIZE);
-			_buffer1Ptr = _buffer1.map(_queue, MapFlags.Write);
-     		_buffer2Ptr = _buffer2.map(_queue, MapFlags.ReadWrite);
-			
-			// populate buffers
-			for (int i = 0; i < SIZE; i++) {
-				_buffer1Ptr.set(i, b1[i]);
-				_buffer2Ptr.set(i, b2[i]);
-			}
+			_testKernel = program.createKernel("test_kernel");
 		}
-		
-		public float[] solve(){	
-			// the kernel copies the first buffer in the second one
-			_test_kernel.setArg(0, _buffer1);
-			_test_kernel.setArg(1, _buffer2);
-			_test_kernel.setArg(2, SIZE);
-			CLEvent testEvt = _test_kernel.enqueueNDRange(_queue, new int[] { SIZE });
-			
-			testEvt.waitFor();
-			
-			float[] results = new float[SIZE];
-			for (int i = 0; i < SIZE; i++) {
-				results[i] = _buffer2Ptr.get(i);
-			}
-			
-			// un-map buffers if they were mapped
-			_buffer1.unmap(_queue, _buffer1Ptr);
-			_buffer2.unmap(_queue, _buffer2Ptr);
-			
-			return results;
-		}	
+
+		public synchronized float[] solveWithHostMemory() {
+			// Copy input data to a new allocation of native (host) memory
+			Pointer<Float> ptrIn = Pointer.pointerToFloats(_input).order(_context.getByteOrder());
+			// Allocate native (host) memory for the output data
+			Pointer<Float> ptrOut = Pointer.allocateFloats(_input.length).order(_context.getByteOrder());
+
+			// Create CLBuffer wrappers around input/output buffers, no copying
+			CLBuffer<Float> bufIn = _context.createBuffer(CLMem.Usage.Input, ptrIn, false);
+			CLBuffer<Float> bufOut = _context.createBuffer(CLMem.Usage.Output, ptrOut, false);
+
+			_queue.finish();
+
+			// Setup the method arguments for the kernel
+			_testKernel.setArg(0, bufIn);
+			_testKernel.setArg(1, bufOut);
+			_testKernel.setArg(2, _input.length);
+
+			// Enqueue execution of the kernel
+			CLEvent completion = _testKernel.enqueueNDRange(_queue, new int[] { _input.length });
+			// Wait for the kernel to execute
+			completion.waitFor();
+
+			// Map the output CLBuffer so we can safely read from it
+			Pointer<Float> mappedPtrOut = bufOut.map(_queue, CLMem.MapFlags.Read);
+			// Copy output native (host) memory to a JVM-managed float array
+			float[] output = mappedPtrOut.getFloats();
+			// Unmap the output CLBuffer now that reading is finished
+			bufOut.unmap(_queue, mappedPtrOut);
+
+			return output;
+		}
+
+		public synchronized float[] solveWithDeviceMemory() {
+			// Allocate native (device) memory for the input data
+			CLBuffer<Float> bufIn = _context.createFloatBuffer(CLMem.Usage.Input, _input.length);
+			// Allocate native (device) memory for the output data
+			CLBuffer<Float> bufOut = _context.createFloatBuffer(CLMem.Usage.Output, _input.length);
+
+			// Copy input data directly to device memory
+			Pointer<Float> ptrIn = bufIn.map(_queue, CLMem.MapFlags.Write);
+			ptrIn.setFloats(_input);
+			bufIn.unmap(_queue, ptrIn);
+
+			// Setup the method arguments for the kernel
+			_testKernel.setArg(0, bufIn);
+			_testKernel.setArg(1, bufOut);
+			_testKernel.setArg(2, _input.length);
+
+			// Enqueue execution of the kernel
+			CLEvent completion = _testKernel.enqueueNDRange(_queue, new int[] { _input.length });
+
+			// Read the output buffer when the kernel finishes executing
+			Pointer<Float> output = bufOut.read(_queue, completion);
+			return output.getFloats();
+		}
 	}
 }
