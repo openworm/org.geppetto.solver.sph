@@ -133,9 +133,6 @@ public class KernelTest {
 			// Wait for the kernel to execute
 			completion.waitFor();
 
-			//Pointer<Float> test = bufOut.read(_queue, completion);
-			//return test.getFloats();
-
 			// Map the output CLBuffer so we can safely read from it
 			Pointer<Float> mappedPtrOut = bufOut.map(_queue, CLMem.MapFlags.Read);
 			// Copy output native (host) memory to a JVM-managed float array
