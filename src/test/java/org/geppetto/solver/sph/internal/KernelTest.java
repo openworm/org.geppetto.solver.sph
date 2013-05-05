@@ -1,15 +1,12 @@
 package org.geppetto.solver.sph.internal;
 
 import static java.lang.System.out;
-import static org.junit.Assert.assertEquals;
-
 import java.io.IOException;
-import java.nio.ByteOrder;
 
 import org.bridj.Pointer;
 import org.geppetto.solver.sph.SPHSolverService;
-import org.junit.After;
 import org.junit.Test;
+import static org.junit.Assert.assertEquals;
 
 import com.nativelibs4java.opencl.CLBuffer;
 import com.nativelibs4java.opencl.CLContext;
@@ -43,9 +40,9 @@ public class KernelTest {
 	@Test
 	public void testKernelGPU() throws Exception {
 		out.println("Testing GPU using host memory");
-		test(DeviceFeature.GPU, true);
+		//test(DeviceFeature.GPU, true);
 		out.println("Testing GPU using device memory");
-		test(DeviceFeature.GPU, false);
+		//test(DeviceFeature.GPU, false);
 	}
 
 	private void test(DeviceFeature device, boolean useHostMemory) throws Exception {
@@ -72,9 +69,6 @@ public class KernelTest {
 		private CLQueue _queue;
 		private CLKernel _testKernel;
 		private float[] _input;
-		
-		private float b1[] = null;
-		private float b2[] = null;
 		
 		public FakeSolver(float[] input, DeviceFeature device) throws IOException {
 			this._input = input;
