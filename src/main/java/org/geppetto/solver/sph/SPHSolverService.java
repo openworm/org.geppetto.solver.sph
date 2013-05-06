@@ -30,8 +30,9 @@ import org.springframework.stereotype.Service;
 import com.nativelibs4java.opencl.CLBuffer;
 import com.nativelibs4java.opencl.CLContext;
 import com.nativelibs4java.opencl.CLDevice;
+import com.nativelibs4java.opencl.CLEvent;
 import com.nativelibs4java.opencl.CLKernel;
-import com.nativelibs4java.opencl.CLMem.Usage;
+import com.nativelibs4java.opencl.CLMem;
 import com.nativelibs4java.opencl.CLPlatform.DeviceFeature;
 import com.nativelibs4java.opencl.CLProgram;
 import com.nativelibs4java.opencl.CLQueue;
@@ -168,37 +169,27 @@ public class SPHSolverService implements ISolver
 		_pcisph_computeElasticForces = _program.createKernel("pcisph_computeElasticForces");
 	}
 
-	private void allocateBuffers()
-	{
-		// input buffers declarations
-		_accelerationPtr = Pointer.allocateFloats(_particleCount * 4 * 2);
-		_gridCellIndexPtr = Pointer.allocateInts((_gridCellCount + 1));
-		_gridCellIndexFixedUpPtr = Pointer.allocateInts((_gridCellCount + 1));
-		_neighborMapPtr = Pointer.allocateFloats(_particleCount * SPHConstants.NEIGHBOR_COUNT * 2);
-		_particleIndexPtr = Pointer.allocateInts(_particleCount * 2);
-		_particleIndexBackPtr = Pointer.allocateInts(_particleCount);
-		_positionPtr = Pointer.allocateFloats(_particleCount * 4);
-		_pressurePtr = Pointer.allocateFloats(_particleCount);
-		_rhoPtr = Pointer.allocateFloats(_particleCount * 2);
-		_sortedPositionPtr = Pointer.allocateFloats(_particleCount * 4 * 2);
-		_sortedVelocityPtr = Pointer.allocateFloats(_particleCount * 4);
-		_velocityPtr = Pointer.allocateFloats(_particleCount * 4);
-
-		// alternative buffer defining
-		_acceleration = _context.createBuffer(Usage.InputOutput, _accelerationPtr, false);
-		_gridCellIndex = _context.createBuffer(Usage.InputOutput, _gridCellIndexPtr, false);
-		_gridCellIndexFixedUp = _context.createIntBuffer(Usage.InputOutput, _gridCellIndexFixedUpPtr, false);
-		_neighborMap = _context.createBuffer(Usage.InputOutput, _neighborMapPtr, false);
-		_particleIndex = _context.createBuffer(Usage.InputOutput, _particleIndexPtr, false);
-		_particleIndexBack = _context.createBuffer(Usage.InputOutput, _particleIndexBackPtr, false);
-		_position = _context.createBuffer(Usage.InputOutput, _positionPtr, false);
-		_pressure = _context.createBuffer(Usage.InputOutput, _pressurePtr, false);
-		_rho = _context.createBuffer(Usage.InputOutput, _rhoPtr, false);
-		_sortedPosition = _context.createBuffer(Usage.InputOutput, _sortedPositionPtr, false);
-		_sortedVelocity = _context.createBuffer(Usage.InputOutput, _sortedVelocityPtr, false);
-		_velocity = _context.createBuffer(Usage.InputOutput, _velocityPtr, false);
-
-		_queue.finish();
+	private void allocateBuffers(){		
+		// allocate native device memory for all buffers
+		_acceleration = _context.createFloatBuffer(CLMem.Usage.InputOutput, _particleCount * 4 * 2);
+		_gridCellIndex = _context.createIntBuffer(CLMem.Usage.Output, _gridCellCount + 1);
+		_gridCellIndexFixedUp = _context.createIntBuffer(CLMem.Usage.Input, _gridCellCount + 1);
+		_neighborMap = _context.createFloatBuffer(CLMem.Usage.InputOutput, _particleCount * SPHConstants.NEIGHBOR_COUNT * 2);
+		_particleIndex = _context.createIntBuffer(CLMem.Usage.InputOutput, _particleCount * 2);
+		_particleIndexBack = _context.createIntBuffer(CLMem.Usage.InputOutput, _particleCount);
+		_position = _context.createFloatBuffer(CLMem.Usage.InputOutput, _particleCount * 4);
+		_pressure = _context.createFloatBuffer(CLMem.Usage.InputOutput, _particleCount);
+		_rho = _context.createFloatBuffer(CLMem.Usage.InputOutput, _particleCount * 2);
+		_sortedPosition = _context.createFloatBuffer(CLMem.Usage.InputOutput, _particleCount * 4 * 2);
+		_sortedVelocity = _context.createFloatBuffer(CLMem.Usage.InputOutput, _particleCount * 4);
+		_velocity = _context.createFloatBuffer(CLMem.Usage.InputOutput, _particleCount * 4);
+		
+		// map buffers we need to read/write on, so that data comes/goes straight to the device
+		_gridCellIndexPtr = _gridCellIndex.map(_queue, CLMem.MapFlags.Read);
+		_gridCellIndexFixedUpPtr = _gridCellIndexFixedUp.map(_queue, CLMem.MapFlags.Write);
+		_particleIndexPtr = _particleIndex.map(_queue, CLMem.MapFlags.ReadWrite);
+		_positionPtr = _position.map(_queue, CLMem.MapFlags.ReadWrite);
+		_velocityPtr = _velocity.map(_queue, CLMem.MapFlags.ReadWrite);
 	}
 
 	public void setBuffersFromModel()
@@ -248,9 +239,6 @@ public class SPHSolverService implements ISolver
 			_velocityPtr.set(index + 2, velocityVector.getZ());
 			_velocityPtr.set(index + 3, velocityVector.getP());
 
-			_position.write(_queue, _positionPtr, false);
-			_velocity.write(_queue, _velocityPtr, false);
-
 			// particle counts
 			if(positionVector.getP() == SPHConstants.BOUNDARY_TYPE)
 			{
@@ -271,9 +259,9 @@ public class SPHSolverService implements ISolver
 		{
 			// init elastic connections buffers
 			// TODO: move this back with the other buffers init stuff
-			_elasticConnectionsDataPtr = Pointer.allocateFloats(_numOfElasticP * SPHConstants.NEIGHBOR_COUNT * 4);
-			_elasticConnectionsData = _context.createBuffer(Usage.InputOutput, _elasticConnectionsDataPtr, false);
-
+			_elasticConnectionsData = _context.createFloatBuffer(CLMem.Usage.InputOutput, _numOfElasticP * SPHConstants.NEIGHBOR_COUNT * 4);
+			_elasticConnectionsDataPtr = _elasticConnectionsData.map(_queue, CLMem.MapFlags.Write);
+				
 			int connIndex = 0;
 			for(Connection conn : _model.getConnections())
 			{
@@ -283,8 +271,9 @@ public class SPHSolverService implements ISolver
 				_elasticConnectionsDataPtr.set(connIndex + 3, 0f); // padding
 				connIndex++;
 			}
-
-			_elasticConnectionsData.write(_queue, _elasticConnectionsDataPtr, false);
+			
+			// we copied the stuff down to the device and we won't touch it again so we can unmap
+			_elasticConnectionsData.unmap(_queue, _elasticConnectionsDataPtr);
 		}
 
 		// check that counts are fine
@@ -329,60 +318,59 @@ public class SPHSolverService implements ISolver
 		return 0;
 	}
 
-	public int runHashParticles()
-	{
+	public CLEvent runHashParticles(){
 		// Stage HashParticles
-		_hashParticles.setArg(0, _position);
-		_hashParticles.setArg(1, _gridCellsX);
-		_hashParticles.setArg(2, _gridCellsY);
-		_hashParticles.setArg(3, _gridCellsZ);
-		_hashParticles.setArg(4, PhysicsConstants.HASH_GRID_CELL_SIZE_INV);
-		_hashParticles.setArg(5, _xMin);
-		_hashParticles.setArg(6, _yMin);
-		_hashParticles.setArg(7, _zMin);
-		_hashParticles.setArg(8, _particleIndex);
-		_hashParticles.setArg(9, _particleCount);
-		_hashParticles.enqueueNDRange(_queue, new int[] { getParticleCountRoundedUp() });
-		return 0;
+		_hashParticles.setArg( 0, _position );
+		_hashParticles.setArg( 1, _gridCellsX );
+		_hashParticles.setArg( 2, _gridCellsY );
+		_hashParticles.setArg( 3, _gridCellsZ );
+		_hashParticles.setArg( 4, PhysicsConstants.HASH_GRID_CELL_SIZE_INV );
+		_hashParticles.setArg( 5, _xMin );
+		_hashParticles.setArg( 6, _yMin );
+		_hashParticles.setArg( 7, _zMin );
+		_hashParticles.setArg( 8, _particleIndex );
+		_hashParticles.setArg( 9, _particleCount );
+		CLEvent event = _hashParticles.enqueueNDRange(_queue, new int[] {getParticleCountRoundedUp()});
+		
+		return event;
 	}
 
-	public int runIndexPostPass()
-	{
-		// get values out of buffer
-		Pointer<Integer> gridNextNonEmptyCellBuffer = _gridCellIndex.read(_queue);
+	public int runIndexPostPass(){		
+		// get values out of buffer 
+		// NOTE: we can do this directly without .read on the CLBuffer as it is mapped
+		int[] gridNextNonEmptyCellBuffer = _gridCellIndexPtr.getInts();
 		_queue.finish();
-
+		
 		int recentNonEmptyCell = _gridCellCount;
-		for(int i = _gridCellCount; i >= 0; i--)
+		for(int i= _gridCellCount; i>=0; i--)
 		{
-			if(gridNextNonEmptyCellBuffer.get(i) == SPHConstants.NO_CELL_ID)
-			{
-				gridNextNonEmptyCellBuffer.set(i, recentNonEmptyCell);
+			if(gridNextNonEmptyCellBuffer[i] == SPHConstants.NO_CELL_ID) {
+				gridNextNonEmptyCellBuffer[i] = recentNonEmptyCell; 
 			}
-			else
-			{
-				recentNonEmptyCell = gridNextNonEmptyCellBuffer.get(i);
+			else {
+				recentNonEmptyCell = gridNextNonEmptyCellBuffer[i];
 			}
 		}
-
+		
 		// put results back
-		_gridCellIndexFixedUp.write(_queue, gridNextNonEmptyCellBuffer, true);
+		// NOTE: no need to write using the CLBuffer as it's mapped
+		_gridCellIndexFixedUpPtr.setInts(gridNextNonEmptyCellBuffer);
 		_queue.finish();
-
+		
 		return 0;
 	}
 
-	public int runIndexx()
-	{
+	public CLEvent runIndexx(){
 		// Stage Indexx
-		_indexx.setArg(0, _particleIndex);
+		_indexx.setArg( 0, _particleIndex );
 		_gridCellCount = ((_gridCellsX) * (_gridCellsY)) * (_gridCellsZ);
-		_indexx.setArg(1, _gridCellCount);
-		_indexx.setArg(2, _gridCellIndex);
-		_indexx.setArg(3, _particleCount);
-		int gridCellCountRoundedUp = (((_gridCellCount - 1) / 256) + 1) * 256;
-		_indexx.enqueueNDRange(_queue, new int[] { gridCellCountRoundedUp });
-		return 0;
+		_indexx.setArg( 1, _gridCellCount );
+		_indexx.setArg( 2, _gridCellIndex );
+		_indexx.setArg( 3, _particleCount );
+		int gridCellCountRoundedUp = ((( _gridCellCount - 1 ) / 256 ) + 1 ) * 256;
+		CLEvent event = _indexx.enqueueNDRange(_queue, new int[] {gridCellCountRoundedUp});
+		
+		return event;
 	}
 
 	public int runSortPostPass()
@@ -572,66 +560,63 @@ public class SPHSolverService implements ISolver
 		return 0;
 	}
 
-	public int run_pcisph_integrate()
-	{
+	public CLEvent run_pcisph_integrate(){
 		// Stage Integrate
-		_pcisph_integrate.setArg(0, _acceleration);
-		_pcisph_integrate.setArg(1, _sortedPosition);
-		_pcisph_integrate.setArg(2, _sortedVelocity);
-		_pcisph_integrate.setArg(3, _particleIndex);
-		_pcisph_integrate.setArg(4, _particleIndexBack);
-		_pcisph_integrate.setArg(5, PhysicsConstants.GRAVITY_X);
-		_pcisph_integrate.setArg(6, PhysicsConstants.GRAVITY_Y);
-		_pcisph_integrate.setArg(7, PhysicsConstants.GRAVITY_Z);
-		_pcisph_integrate.setArg(8, PhysicsConstants.SIMULATION_SCALE_INV);
-		_pcisph_integrate.setArg(9, PhysicsConstants.TIME_STEP);
-		_pcisph_integrate.setArg(10, _xMin);
-		_pcisph_integrate.setArg(11, _xMax);
-		_pcisph_integrate.setArg(12, _yMin);
-		_pcisph_integrate.setArg(13, _yMax);
-		_pcisph_integrate.setArg(14, _zMin);
-		_pcisph_integrate.setArg(15, _zMax);
-		_pcisph_integrate.setArg(16, PhysicsConstants.DAMPING);
-		_pcisph_integrate.setArg(17, _position);
-		_pcisph_integrate.setArg(18, _velocity);
-		_pcisph_integrate.setArg(19, _rho);
-		_pcisph_integrate.setArg(20, PhysicsConstants.R0);
-		_pcisph_integrate.setArg(21, _neighborMap);
-		_pcisph_integrate.setArg(22, _particleCount);
-		_pcisph_integrate.enqueueNDRange(_queue, new int[] { getParticleCountRoundedUp() });
-
-		return 0;
+		_pcisph_integrate.setArg( 0, _acceleration );
+		_pcisph_integrate.setArg( 1, _sortedPosition );
+		_pcisph_integrate.setArg( 2, _sortedVelocity );
+		_pcisph_integrate.setArg( 3, _particleIndex );
+		_pcisph_integrate.setArg( 4, _particleIndexBack );
+		_pcisph_integrate.setArg( 5, PhysicsConstants.GRAVITY_X );
+		_pcisph_integrate.setArg( 6, PhysicsConstants.GRAVITY_Y );
+		_pcisph_integrate.setArg( 7, PhysicsConstants.GRAVITY_Z );
+		_pcisph_integrate.setArg( 8, PhysicsConstants.SIMULATION_SCALE_INV );
+		_pcisph_integrate.setArg( 9, PhysicsConstants.TIME_STEP );
+		_pcisph_integrate.setArg( 10, _xMin );
+		_pcisph_integrate.setArg( 11, _xMax );
+		_pcisph_integrate.setArg( 12, _yMin );
+		_pcisph_integrate.setArg( 13, _yMax );
+		_pcisph_integrate.setArg( 14, _zMin );
+		_pcisph_integrate.setArg( 15, _zMax );
+		_pcisph_integrate.setArg( 16, PhysicsConstants.DAMPING );
+		_pcisph_integrate.setArg( 17, _position );
+		_pcisph_integrate.setArg( 18, _velocity );
+		_pcisph_integrate.setArg( 19, _rho );
+		_pcisph_integrate.setArg( 20, PhysicsConstants.R0 );
+		_pcisph_integrate.setArg( 21, _neighborMap );
+		_pcisph_integrate.setArg(22, _particleCount );
+		CLEvent event = _pcisph_integrate.enqueueNDRange(_queue, new int[] {getParticleCountRoundedUp()});
+		
+		return event;
 	}
 
-	public int runSort()
-	{
-		// this version work with qsort
+	public int runSort(){
+		//this version work with qsort
 		int index = 0;
 		List<int[]> particleIndex = new ArrayList<int[]>();
-
+		
 		// get values out of buffer
-		Pointer<Integer> particleInd = _particleIndex.read(_queue);
+		// NOTE: no need to do a read as the pointer is mapped
+		int[] particleInd = _particleIndexPtr.getInts();
 		_queue.finish();
-
-		for(int i = 0; i < _particleCount * 2; i += 2)
-		{
-			int[] element = { particleInd.get(i), particleInd.get(i + 1) };
+		
+		for(int i = 0; i < _particleCount * 2;i+=2){
+			int[] element = {particleInd[i], particleInd[i+1]};
 			particleIndex.add(element);
 		}
 		Collections.sort(particleIndex, new MyCompare());
-		for(int i = 0; i < particleIndex.size(); i++)
-		{
-			for(int j = 0; j < 2; j++)
-			{
-				particleInd.set(index, particleIndex.get(i)[j]);
+		for(int i = 0; i< particleIndex.size();i++){
+			for(int j=0;j<2;j++){
+				particleInd[index] = particleIndex.get(i)[j];
 				index++;
 			}
 		}
-
+		
 		// put results back
-		_particleIndex.write(_queue, particleInd, true);
+		// NOTE: don't need to do a write as the pointer is mapped
+		_particleIndexPtr.setInts(particleInd);
 		_queue.finish();
-
+		
 		return 0;
 	}
 
@@ -645,110 +630,118 @@ public class SPHSolverService implements ISolver
 		}
 	}
 
-	private void step()
-	{
+	private void step(){
 		// search for neighbors stuff
-		long end = 0;
-		long start = System.currentTimeMillis();
+		long end=0;
+		long start=System.currentTimeMillis();
+		
 		logger.info("SPH clear buffer");
 		runClearBuffers();
-		end = System.currentTimeMillis();
-		logger.info("SPH clear buffer end, took " + (end - start) + "ms");
-		start = end;
+		end=System.currentTimeMillis();
+		logger.info("SPH clear buffer end, took "+ (end-start) +"ms");
+		start=end;
+		
 		logger.info("SPH hash particles");
-		runHashParticles();
-		end = System.currentTimeMillis();
-		logger.info("SPH hash particles end, took " + (end - start) + "ms");
-		start = end;
+		CLEvent hashParticles = runHashParticles();
+		end=System.currentTimeMillis();
+		logger.info("SPH hash particles end, took "+ (end-start) +"ms");
+		start=end;
+		
+		// host needs to wait as the next operation requires values from buffers
+		hashParticles.waitFor();
+		
 		logger.info("SPH sort");
 		runSort();
-		end = System.currentTimeMillis();
-		logger.info("SPH sort end, took " + (end - start) + "ms");
-		start = end;
+		end=System.currentTimeMillis();
+		logger.info("SPH sort end, took "+ (end-start) +"ms");
+		start=end;
+		
 		logger.info("SPH sort post pass");
 		runSortPostPass();
-		end = System.currentTimeMillis();
-		logger.info("SPH sort post pass end, took " + (end - start) + "ms");
-		start = end;
+		end=System.currentTimeMillis();
+		logger.info("SPH sort post pass end, took "+ (end-start) +"ms");
+		start=end;
+		
 		logger.info("SPH index");
-		runIndexx();
-		end = System.currentTimeMillis();
-		logger.info("SPH index end, took " + (end - start) + "ms");
-		start = end;
+		CLEvent runIndexx = runIndexx();
+		end=System.currentTimeMillis();
+		logger.info("SPH index end, took "+ (end-start) +"ms");
+		start=end;
+		
+		// host needs to wait as the next operation requires values from buffers
+		runIndexx.waitFor();
+		
 		logger.info("SPH index post pass");
 		runIndexPostPass();
-		end = System.currentTimeMillis();
-		logger.info("SPH index post pass end, took " + (end - start) + "ms");
-		start = end;
+		end=System.currentTimeMillis();
+		logger.info("SPH index post pass end, took "+ (end-start) +"ms");
+		start=end;
+		
 		logger.info("SPH find neighbors");
 		runFindNeighbors();
-		end = System.currentTimeMillis();
-		logger.info("SPH find neighbors end, took " + (end - start) + "ms");
-		start = end;
+		end=System.currentTimeMillis();
+		logger.info("SPH find neighbors end, took "+ (end-start) +"ms");
+		start=end;
 		// PCISPH stuff
 		logger.info("PCI-SPH compute density");
 		run_pcisph_computeDensity();
-		end = System.currentTimeMillis();
-		logger.info("PCI-SPH compute density end, took " + (end - start) + "ms");
-		start = end;
+		end=System.currentTimeMillis();
+		logger.info("PCI-SPH compute density end, took "+ (end-start) +"ms");
+		start=end;
 		logger.info("PCI-SPH compute forces and init pressure");
 		run_pcisph_computeForcesAndInitPressure();
-		end = System.currentTimeMillis();
-		logger.info("PCI-SPH compute forces and init pressure end, took " + (end - start) + "ms");
-		start = end;
+		end=System.currentTimeMillis();
+		logger.info("PCI-SPH compute forces and init pressure end, took "+ (end-start) +"ms");
+		start=end;
 		// Do elastic stuff only if we have elastic particles
-		if(_numOfElasticP > 0)
-		{
+		if(_numOfElasticP > 0){
 			logger.info("PCI-SPH compute elastic forces");
 			run_pcisph_computeElasticForces();
-			end = System.currentTimeMillis();
-			logger.info("PCI-SPH compute elastic forces end, took " + (end - start) + "ms");
-			start = end;
+			end=System.currentTimeMillis();
+			logger.info("PCI-SPH compute elastic forces end, took "+ (end-start) +"ms");
+			start=end;
 		}
-
+		
 		logger.info("PCI-SPH predict/correct loop");
 		// LOOP: 3 times or until "error" becomes less than 2%
-		int iter = 0;
-		int maxIterations = 3;
+		int iter = 0; int maxIterations = 3;
 		do
 		{
 			run_pcisph_predictPositions();
 			run_pcisph_predictDensity();
 			run_pcisph_correctPressure();
 			run_pcisph_computePressureForceAcceleration();
-
+			
 			iter++;
-		}
-		while((iter < maxIterations));
-		end = System.currentTimeMillis();
-		logger.info("PCI-SPH predict/correct loop end, took " + (end - start) + "ms");
-		start = end;
+		} while ((iter<maxIterations));
+		end=System.currentTimeMillis();
+		logger.info("PCI-SPH predict/correct loop end, took "+ (end-start) +"ms");
+		start=end;
+		
 		logger.info("PCI-SPH integrate");
-		run_pcisph_integrate();
-		end = System.currentTimeMillis();
-		logger.info("PCI-SPH integrate end, took " + (end - start) + "ms");
-		start = end;
-		// read positions out
-		logger.info("SPH position read");
-		logger.info("Position element size: " + _position.getElementSize());
-		logger.info("Position element count: " + _position.getElementCount());
-		_positionPtr = _position.read(_queue);
-		end = System.currentTimeMillis();
-		logger.info("SPH position read end, took " + (end - start) + "ms");
-		start = end;
-		// read velocities out
-		logger.info("Velocity element size: " + _velocity.getElementSize());
-		logger.info("Velocity element count: " + _velocity.getElementCount());
-		_velocityPtr = _velocity.read(_queue);
-		end = System.currentTimeMillis();
-		logger.info("SPH velocity read end, took " + (end - start) + "ms");
-		start = end;
+		CLEvent event = run_pcisph_integrate();
+		end=System.currentTimeMillis();
+		logger.info("PCI-SPH integrate end, took "+ (end-start) +"ms");
+		start=end;
+		
+		// wait for the end of the run_pcisph_integrate on device
+		event.waitFor();
+		
 		logger.info("SPH finish queue");
 		_queue.finish();
-		end = System.currentTimeMillis();
-		logger.info("SPH finish queue end, took " + (end - start) + "ms");
-		start = end;
+		end=System.currentTimeMillis();
+		logger.info("SPH finish queue end, took "+ (end-start) +"ms");
+		start=end;
 		logger.info("SPH step done");
+	}
+	
+	private void unmapBuffers(){
+		// unmap all the mapped buffers
+		_gridCellIndex.unmap(_queue, _gridCellIndexPtr);
+		_gridCellIndexFixedUp.unmap(_queue, _gridCellIndexFixedUpPtr);
+		_particleIndex.unmap(_queue, _particleIndexPtr);
+		_position.unmap(_queue, _positionPtr);
+		_velocity.unmap(_queue, _velocityPtr);
 	}
 
 	public void finishQueue()
@@ -804,5 +797,7 @@ public class SPHSolverService implements ISolver
 	public void dispose()
 	{
 		// TODO Erase all buffers close the context and buonanotte al secchio
+		unmapBuffers();
+		cleanContext();
 	}
 };
