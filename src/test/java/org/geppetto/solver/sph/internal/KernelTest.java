@@ -40,9 +40,9 @@ public class KernelTest {
 	@Test
 	public void testKernelGPU() throws Exception {
 		out.println("Testing GPU using host memory");
-		//test(DeviceFeature.GPU, true);
+		test(DeviceFeature.GPU, true);
 		out.println("Testing GPU using device memory");
-		//test(DeviceFeature.GPU, false);
+		test(DeviceFeature.GPU, false);
 	}
 
 	private void test(DeviceFeature device, boolean useHostMemory) throws Exception {
