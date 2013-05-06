@@ -369,7 +369,7 @@ public class SPHSolverService implements ISolver {
 		return 0;
 	}
 	
-	public int runHashParticles(){
+	public CLEvent runHashParticles(){
 		// Stage HashParticles
 		_hashParticles.setArg( 0, _position );
 		_hashParticles.setArg( 1, _gridCellsX );
@@ -381,8 +381,9 @@ public class SPHSolverService implements ISolver {
 		_hashParticles.setArg( 7, _zMin );
 		_hashParticles.setArg( 8, _particleIndex );
 		_hashParticles.setArg( 9, _particleCount );
-		_hashParticles.enqueueNDRange(_queue, new int[] {getParticleCountRoundedUp()});
-		return 0;
+		CLEvent event = _hashParticles.enqueueNDRange(_queue, new int[] {getParticleCountRoundedUp()});
+		
+		return event;
 	}
 	
 	public int runIndexPostPass(){		
@@ -410,7 +411,7 @@ public class SPHSolverService implements ISolver {
 		return 0;
 	}
 	
-	public int runIndexx(){
+	public CLEvent runIndexx(){
 		// Stage Indexx
 		_indexx.setArg( 0, _particleIndex );
 		_gridCellCount = ((_gridCellsX) * (_gridCellsY)) * (_gridCellsZ);
@@ -418,8 +419,9 @@ public class SPHSolverService implements ISolver {
 		_indexx.setArg( 2, _gridCellIndex );
 		_indexx.setArg( 3, _particleCount );
 		int gridCellCountRoundedUp = ((( _gridCellCount - 1 ) / 256 ) + 1 ) * 256;
-		_indexx.enqueueNDRange(_queue, new int[] {gridCellCountRoundedUp});
-		return 0;
+		CLEvent event = _indexx.enqueueNDRange(_queue, new int[] {gridCellCountRoundedUp});
+		
+		return event;
 	}
 	
 	public int runSortPostPass(){
@@ -673,36 +675,49 @@ public class SPHSolverService implements ISolver {
 		// search for neighbors stuff
 		long end=0;
 		long start=System.currentTimeMillis();
+		
 		logger.info("SPH clear buffer");
 		runClearBuffers();
 		end=System.currentTimeMillis();
 		logger.info("SPH clear buffer end, took "+ (end-start) +"ms");
 		start=end;
+		
 		logger.info("SPH hash particles");
-		runHashParticles();
+		CLEvent hashParticles = runHashParticles();
 		end=System.currentTimeMillis();
 		logger.info("SPH hash particles end, took "+ (end-start) +"ms");
 		start=end;
+		
+		// host needs to wait as the next operation requires values from buffers
+		hashParticles.waitFor();
+		
 		logger.info("SPH sort");
 		runSort();
 		end=System.currentTimeMillis();
 		logger.info("SPH sort end, took "+ (end-start) +"ms");
 		start=end;
+		
 		logger.info("SPH sort post pass");
 		runSortPostPass();
 		end=System.currentTimeMillis();
 		logger.info("SPH sort post pass end, took "+ (end-start) +"ms");
 		start=end;
+		
 		logger.info("SPH index");
-		runIndexx();
+		CLEvent runIndexx = runIndexx();
 		end=System.currentTimeMillis();
 		logger.info("SPH index end, took "+ (end-start) +"ms");
 		start=end;
+		
+		// host needs to wait as the next operation requires values from buffers
+		runIndexx.waitFor();
+		
 		logger.info("SPH index post pass");
 		runIndexPostPass();
 		end=System.currentTimeMillis();
 		logger.info("SPH index post pass end, took "+ (end-start) +"ms");
 		start=end;
+		
 		logger.info("SPH find neighbors");
 		runFindNeighbors();
 		end=System.currentTimeMillis();

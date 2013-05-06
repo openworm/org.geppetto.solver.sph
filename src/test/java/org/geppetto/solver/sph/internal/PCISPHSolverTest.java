@@ -95,7 +95,8 @@ public class PCISPHSolverTest
 		URL url = new URL("https://www.dropbox.com/s/8869zlz971ogyra/sphModel_small.xml?dl=1");
 		List<IModel> models = modelInterpreter.readModel(url);
 		
-		int max_cycles = 10;
+		// TODO: values go to NaN around 19 steps - figure out why!
+		int max_cycles = 19;
 		for(int cycles = 0; cycles < max_cycles; cycles++)
 		{
 			models = solver.solve(models, null).get(0);
