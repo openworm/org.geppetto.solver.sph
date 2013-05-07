@@ -115,8 +115,6 @@ public class KernelTest {
 			CLBuffer<Float> bufIn = _context.createBuffer(CLMem.Usage.Input, ptrIn, false);
 			CLBuffer<Float> bufOut = _context.createBuffer(CLMem.Usage.Output, ptrOut, false);
 
-			_queue.finish();
-
 			// Setup the method arguments for the kernel
 			_testKernel.setArg(0, bufIn);
 			_testKernel.setArg(1, bufOut);
@@ -128,11 +126,12 @@ public class KernelTest {
 			completion.waitFor();
 
 			// Map the output CLBuffer so we can safely read from it
-			Pointer<Float> mappedPtrOut = bufOut.map(_queue, CLMem.MapFlags.Read);
-			// Copy output native (host) memory to a JVM-managed float array
-			float[] output = mappedPtrOut.getFloats();
+			bufOut.map(_queue, CLMem.MapFlags.Read);
+			// Copy output native (host) memory to a JVM-managed float array. This
+			// implicitly copies device memory to host memory first, if needed
+			float[] output = ptrOut.getFloats();
 			// Unmap the output CLBuffer now that reading is finished
-			bufOut.unmap(_queue, mappedPtrOut);
+			bufOut.unmap(_queue, ptrOut);
 
 			return output;
 		}
@@ -156,8 +155,10 @@ public class KernelTest {
 			// Enqueue execution of the kernel
 			CLEvent completion = _testKernel.enqueueNDRange(_queue, new int[] { _input.length });
 
-			// Read the output buffer when the kernel finishes executing
+			// Do an explicit copy of the device output buffer to native (host) memory
+			// when the kernel finishes executing
 			Pointer<Float> output = bufOut.read(_queue, completion);
+			// Copy native (host) memory to a JVM-managed float array
 			return output.getFloats();
 		}
 	}
