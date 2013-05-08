@@ -27,6 +27,7 @@ import org.junit.Test;
 public class PCISPHSolverTest
 {
 
+	// TODO: rework this to check that freely moving particles do not assume same position as boundary particles
 	private void checkModels(List<IModel> models, int cycles)
 	{
 		for(IModel m : models)
@@ -49,22 +50,6 @@ public class PCISPHSolverTest
 		}
 	}
 
-	private void printCoordinates(List<IModel> models)
-	{
-		SPHModelX mod = (SPHModelX) models.get(0);
-
-		int i = 1;
-		for(SPHParticle p : mod.getParticles())
-		{
-			Vector3DX pos = (Vector3DX) p.getPositionVector();
-			Vector3DX vel = (Vector3DX) p.getVelocityVector();
-
-			System.out.println("#" + i + " position x:" + pos.getX() + " y:" + pos.getY() + " z:" + pos.getZ() + " p:" + pos.getP());
-			System.out.println("#" + i + " velocity x:" + vel.getX() + " y:" + vel.getY() + " z:" + vel.getZ() + " p:" + vel.getP());
-			i++;
-		}
-	}
-
 	/*
 	 * 296 boundary particles + 14 liquid particles
 	 */
@@ -78,7 +63,7 @@ public class PCISPHSolverTest
 		IModel model = modelInterpreter.readModel(url);
 		solver.initialize(model);
 		StateSet stateSet = solver.solve(new TimeConfiguration(0.1f, 10, 1));
-		System.out.println(stateSet.toString());
+		//System.out.println(stateSet.toString());
 	}
 
 	/*
@@ -95,7 +80,7 @@ public class PCISPHSolverTest
 		IModel model = modelInterpreter.readModel(url);
 		solver.initialize(model);
 		StateSet stateSet = solver.solve(new TimeConfiguration(0.1f, 19, 1));
-		System.out.println(stateSet.toString());
+		//System.out.println(stateSet.toString());
 	}
 
 	/*
@@ -110,7 +95,7 @@ public class PCISPHSolverTest
 		IModel model = modelInterpreter.readModel(url);
 		solver.initialize(model);
 		StateSet stateSet=solver.solve(new TimeConfiguration(0.1f, 10, 1));
-		System.out.println(stateSet.toString());
+		//System.out.println(stateSet.toString());
 	}
 
 	/*
@@ -125,7 +110,7 @@ public class PCISPHSolverTest
 		IModel model = modelInterpreter.readModel(url);
 		solver.initialize(model);
 		StateSet stateSet=solver.solve(new TimeConfiguration(0.1f, 10, 1));
-		System.out.println(stateSet.toString());
+		//System.out.println(stateSet.toString());
 	}
 
 	/*
@@ -142,7 +127,7 @@ public class PCISPHSolverTest
 		IModel model = modelInterpreter.readModel(url);
 		solver.initialize(model);
 		StateSet stateSet=solver.solve(new TimeConfiguration(0.1f, 10, 1));
-		System.out.println(stateSet.toString());
+		//System.out.println(stateSet.toString());
 	}
 
 	/*
@@ -158,7 +143,7 @@ public class PCISPHSolverTest
 
 		IModel model = modelInterpreter.readModel(url);
 		solver.initialize(model);
-		StateSet stateSet=solver.solve(new TimeConfiguration(0.1f, 10, 1));
-		System.out.println(stateSet.toString());
+		StateSet stateSet=solver.solve(new TimeConfiguration(0.1f, 3, 1));
+		//System.out.println(stateSet.toString());
 	}
 }
