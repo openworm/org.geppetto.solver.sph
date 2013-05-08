@@ -172,24 +172,17 @@ public class SPHSolverService implements ISolver
 	private void allocateBuffers(){		
 		// allocate native device memory for all buffers
 		_acceleration = _context.createFloatBuffer(CLMem.Usage.InputOutput, _particleCount * 4 * 2);
-		_gridCellIndex = _context.createIntBuffer(CLMem.Usage.Output, _gridCellCount + 1);
+		_gridCellIndex = _context.createIntBuffer(CLMem.Usage.InputOutput, _gridCellCount + 1);
 		_gridCellIndexFixedUp = _context.createIntBuffer(CLMem.Usage.Input, _gridCellCount + 1);
-		_neighborMap = _context.createFloatBuffer(CLMem.Usage.InputOutput, _particleCount * SPHConstants.NEIGHBOR_COUNT * 2);
+		_neighborMap = _context.createFloatBuffer(CLMem.Usage.Input, _particleCount * SPHConstants.NEIGHBOR_COUNT * 2);
 		_particleIndex = _context.createIntBuffer(CLMem.Usage.InputOutput, _particleCount * 2);
-		_particleIndexBack = _context.createIntBuffer(CLMem.Usage.InputOutput, _particleCount);
+		_particleIndexBack = _context.createIntBuffer(CLMem.Usage.Input, _particleCount);
 		_position = _context.createFloatBuffer(CLMem.Usage.InputOutput, _particleCount * 4);
-		_pressure = _context.createFloatBuffer(CLMem.Usage.InputOutput, _particleCount);
-		_rho = _context.createFloatBuffer(CLMem.Usage.InputOutput, _particleCount * 2);
-		_sortedPosition = _context.createFloatBuffer(CLMem.Usage.InputOutput, _particleCount * 4 * 2);
-		_sortedVelocity = _context.createFloatBuffer(CLMem.Usage.InputOutput, _particleCount * 4);
+		_pressure = _context.createFloatBuffer(CLMem.Usage.Input, _particleCount);
+		_rho = _context.createFloatBuffer(CLMem.Usage.Input, _particleCount * 2);
+		_sortedPosition = _context.createFloatBuffer(CLMem.Usage.Input, _particleCount * 4 * 2);
+		_sortedVelocity = _context.createFloatBuffer(CLMem.Usage.Input, _particleCount * 4);
 		_velocity = _context.createFloatBuffer(CLMem.Usage.InputOutput, _particleCount * 4);
-		
-		// map buffers we need to read/write on, so that data comes/goes straight to the device
-		_gridCellIndexPtr = _gridCellIndex.map(_queue, CLMem.MapFlags.Read);
-		_gridCellIndexFixedUpPtr = _gridCellIndexFixedUp.map(_queue, CLMem.MapFlags.Write);
-		_particleIndexPtr = _particleIndex.map(_queue, CLMem.MapFlags.ReadWrite);
-		_positionPtr = _position.map(_queue, CLMem.MapFlags.ReadWrite);
-		_velocityPtr = _velocity.map(_queue, CLMem.MapFlags.ReadWrite);
 	}
 
 	public void setBuffersFromModel()
@@ -228,7 +221,11 @@ public class SPHSolverService implements ISolver
 
 			Vector3DX positionVector = (Vector3DX) _model.getParticles().get(i).getPositionVector();
 			Vector3DX velocityVector = (Vector3DX) _model.getParticles().get(i).getVelocityVector();
-
+			
+			// map for writing
+			_positionPtr = _position.map(_queue, CLMem.MapFlags.Write);
+			_velocityPtr = _velocity.map(_queue, CLMem.MapFlags.Write);
+			
 			// buffer population
 			_positionPtr.set(index, positionVector.getX());
 			_positionPtr.set(index + 1, positionVector.getY());
@@ -238,6 +235,10 @@ public class SPHSolverService implements ISolver
 			_velocityPtr.set(index + 1, velocityVector.getY());
 			_velocityPtr.set(index + 2, velocityVector.getZ());
 			_velocityPtr.set(index + 3, velocityVector.getP());
+			
+			// unmap after writing
+			_position.unmap(_queue, _positionPtr);
+			_velocity.unmap(_queue, _velocityPtr);
 
 			// particle counts
 			if(positionVector.getP() == SPHConstants.BOUNDARY_TYPE)
@@ -337,9 +338,9 @@ public class SPHSolverService implements ISolver
 
 	public int runIndexPostPass(){		
 		// get values out of buffer 
-		// NOTE: we can do this directly without .read on the CLBuffer as it is mapped
+		_gridCellIndexPtr = _gridCellIndex.map(_queue, CLMem.MapFlags.Read);
 		int[] gridNextNonEmptyCellBuffer = _gridCellIndexPtr.getInts();
-		_queue.finish();
+		_gridCellIndex.unmap(_queue, _gridCellIndexPtr);
 		
 		int recentNonEmptyCell = _gridCellCount;
 		for(int i= _gridCellCount; i>=0; i--)
@@ -353,9 +354,9 @@ public class SPHSolverService implements ISolver
 		}
 		
 		// put results back
-		// NOTE: no need to write using the CLBuffer as it's mapped
+		_gridCellIndexFixedUpPtr = _gridCellIndexFixedUp.map(_queue, CLMem.MapFlags.Write);
 		_gridCellIndexFixedUpPtr.setInts(gridNextNonEmptyCellBuffer);
-		_queue.finish();
+		_gridCellIndexFixedUp.unmap(_queue, _gridCellIndexFixedUpPtr);
 		
 		return 0;
 	}
@@ -596,9 +597,8 @@ public class SPHSolverService implements ISolver
 		List<int[]> particleIndex = new ArrayList<int[]>();
 		
 		// get values out of buffer
-		// NOTE: no need to do a read as the pointer is mapped
+		_particleIndexPtr = _particleIndex.map(_queue, CLMem.MapFlags.ReadWrite);
 		int[] particleInd = _particleIndexPtr.getInts();
-		_queue.finish();
 		
 		for(int i = 0; i < _particleCount * 2;i+=2){
 			int[] element = {particleInd[i], particleInd[i+1]};
@@ -613,9 +613,8 @@ public class SPHSolverService implements ISolver
 		}
 		
 		// put results back
-		// NOTE: don't need to do a write as the pointer is mapped
 		_particleIndexPtr.setInts(particleInd);
-		_queue.finish();
+		_particleIndex.unmap(_queue, _particleIndexPtr);
 		
 		return 0;
 	}
@@ -734,15 +733,6 @@ public class SPHSolverService implements ISolver
 		start=end;
 		logger.info("SPH step done");
 	}
-	
-	private void unmapBuffers(){
-		// unmap all the mapped buffers
-		_gridCellIndex.unmap(_queue, _gridCellIndexPtr);
-		_gridCellIndexFixedUp.unmap(_queue, _gridCellIndexFixedUpPtr);
-		_particleIndex.unmap(_queue, _particleIndexPtr);
-		_position.unmap(_queue, _positionPtr);
-		_velocity.unmap(_queue, _velocityPtr);
-	}
 
 	public void finishQueue()
 	{
@@ -777,6 +767,7 @@ public class SPHSolverService implements ISolver
 
 	private void updateStateSet(StateSet stateSet)
 	{
+		_positionPtr = _position.map(_queue, CLMem.MapFlags.Read);
 		for(int i = 0, index=0; i < _particleCount; i++,index=index+4)
 		{
 			stateSet.addStateValue(new StateInstancePath(SPHModelInterpreterService.getPropertyPath(i, "pos", "x")), ValuesFactory.getFloatValue(_positionPtr.get(index)));
@@ -784,6 +775,7 @@ public class SPHSolverService implements ISolver
 			stateSet.addStateValue(new StateInstancePath(SPHModelInterpreterService.getPropertyPath(i, "pos", "z")), ValuesFactory.getFloatValue(_positionPtr.get(index + 2)));
 			stateSet.addStateValue(new StateInstancePath(SPHModelInterpreterService.getPropertyPath(i, "pos", "p")), ValuesFactory.getFloatValue(_positionPtr.get(index + 3)));
 		}
+		_position.unmap(_queue, _positionPtr);
 	}
 
 	@Override
@@ -797,7 +789,6 @@ public class SPHSolverService implements ISolver
 	public void dispose()
 	{
 		// TODO Erase all buffers close the context and buonanotte al secchio
-		unmapBuffers();
 		cleanContext();
 	}
 };
