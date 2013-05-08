@@ -79,7 +79,7 @@ public class PCISPHSolverTest
 		// TODO: values go to NaN around 19 steps - figure out why!
 		IModel model = modelInterpreter.readModel(url);
 		solver.initialize(model);
-		StateSet stateSet = solver.solve(new TimeConfiguration(0.1f, 19, 1));
+		StateSet stateSet = solver.solve(new TimeConfiguration(0.1f, 10, 1));
 		//System.out.println(stateSet.toString());
 	}
 
@@ -126,7 +126,7 @@ public class PCISPHSolverTest
 
 		IModel model = modelInterpreter.readModel(url);
 		solver.initialize(model);
-		StateSet stateSet=solver.solve(new TimeConfiguration(0.1f, 10, 1));
+		StateSet stateSet=solver.solve(new TimeConfiguration(0.1f, 2, 1));
 		//System.out.println(stateSet.toString());
 	}
 
@@ -143,7 +143,7 @@ public class PCISPHSolverTest
 
 		IModel model = modelInterpreter.readModel(url);
 		solver.initialize(model);
-		StateSet stateSet=solver.solve(new TimeConfiguration(0.1f, 3, 1));
+		StateSet stateSet=solver.solve(new TimeConfiguration(0.1f, 2, 1));
 		//System.out.println(stateSet.toString());
 	}
 }

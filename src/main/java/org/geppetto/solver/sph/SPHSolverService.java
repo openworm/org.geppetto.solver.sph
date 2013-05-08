@@ -630,7 +630,8 @@ public class SPHSolverService implements ISolver
 	}
 
 	private void step(){
-		// search for neighbors stuff
+		long endStep=0;
+		long startStep=System.currentTimeMillis();
 		long end=0;
 		long start=System.currentTimeMillis();
 		
@@ -681,17 +682,20 @@ public class SPHSolverService implements ISolver
 		end=System.currentTimeMillis();
 		logger.info("SPH find neighbors end, took "+ (end-start) +"ms");
 		start=end;
-		// PCISPH stuff
+		
+		// PCISPH stuff starts here
 		logger.info("PCI-SPH compute density");
 		run_pcisph_computeDensity();
 		end=System.currentTimeMillis();
 		logger.info("PCI-SPH compute density end, took "+ (end-start) +"ms");
 		start=end;
+		
 		logger.info("PCI-SPH compute forces and init pressure");
 		run_pcisph_computeForcesAndInitPressure();
 		end=System.currentTimeMillis();
 		logger.info("PCI-SPH compute forces and init pressure end, took "+ (end-start) +"ms");
 		start=end;
+		
 		// Do elastic stuff only if we have elastic particles
 		if(_numOfElasticP > 0){
 			logger.info("PCI-SPH compute elastic forces");
@@ -727,11 +731,14 @@ public class SPHSolverService implements ISolver
 		event.waitFor();
 		
 		logger.info("SPH finish queue");
+		// TODO: figure out if we need to actually call this
 		_queue.finish();
 		end=System.currentTimeMillis();
 		logger.info("SPH finish queue end, took "+ (end-start) +"ms");
 		start=end;
-		logger.info("SPH step done");
+		
+		endStep=System.currentTimeMillis();
+		logger.info("SPH computation step done, took "+ (endStep-startStep) +"ms");
 	}
 
 	public void finishQueue()
@@ -758,8 +765,13 @@ public class SPHSolverService implements ISolver
 		StateSet stateSet = new StateSet(_model.getId());
 		for(int i = 0; i < timeConfiguration.getTimeSteps(); i++)
 		{
+			long end=0;
+			long start=System.currentTimeMillis();
+			logger.info("SPH STEP START");
 			step();
 			updateStateSet(stateSet);
+			end=System.currentTimeMillis();
+			logger.info("SPH STEP END, took "+ (end-start) +"ms");
 		}
 		logger.info("SPH solver end, took: " + (System.currentTimeMillis() - time) + "ms");
 		return stateSet;
