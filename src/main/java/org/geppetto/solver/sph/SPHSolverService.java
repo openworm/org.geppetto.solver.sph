@@ -124,7 +124,7 @@ public class SPHSolverService implements ISolver
 
 	private void onceOffInit() throws IOException
 	{
-		_context = JavaCL.createBestContext(DeviceFeature.CPU);
+		_context = JavaCL.createBestContext(DeviceFeature.GPU);
 
 		out.println("created " + _context);
 		// an array with available devices
