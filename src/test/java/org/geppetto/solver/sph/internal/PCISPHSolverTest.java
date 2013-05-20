@@ -188,6 +188,52 @@ public class PCISPHSolverTest
 		
 		checkStateSetForNaN(stateSet, false);
 	}
+	
+	/*
+	 * 296 boundary particles + 14 liquid particles
+	 */
+	@Test
+	public void testSolve14_StepByStep_VS_OneGo() throws Exception
+	{
+		URL url = this.getClass().getResource("/sphModel_small.xml");
+		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
+		IModel model = modelInterpreter.readModel(url);
+		
+		// check that we don't have particles with overlapping positions
+		checkModelForOverlappingParticles((SPHModelX)model, false);
+		
+		int cycles = 20;
+		
+		// run cycles one by one
+		SPHSolverService solver1 = new SPHSolverService();
+		solver1.initialize(model);
+		StateSet stateSet1 = null;
+		for(int i = 0; i < cycles; i++){
+			stateSet1 = solver1.solve(new TimeConfiguration(0.1f, 1, 1));
+		}
+		
+		// run cycles at once
+		SPHSolverService solver2 = new SPHSolverService();
+		solver2.initialize(model);
+		StateSet stateSet2 = solver2.solve(new TimeConfiguration(0.1f, cycles, 1));
+		
+		// assert state sets equality at the last cycle
+		Map<StateInstancePath, List<AValue>> stateMap1 = stateSet1.getStatesMap();
+		Map<StateInstancePath, List<AValue>> stateMap2 = stateSet2.getStatesMap();
+		
+		for(StateInstancePath k : stateMap2.keySet())
+		{
+			// last cycle of stateMap2
+			AValue v2 = stateMap2.get(k).get(cycles - 1);
+			// only cycle - the last - of stateMap1
+			AValue v1 = stateMap1.get(k).get(0);
+			
+			Assert.assertTrue(v1.getStringValue().equals(v2.getStringValue()));
+		}
+		
+		checkStateSetForNaN(stateSet1, false);
+		checkStateSetForNaN(stateSet2, false);
+	}
 
 	/*
 	 * Same scene as testSolve14 but with 1 more particle
