@@ -1185,7 +1185,7 @@
         <velocityVector p="0.0" z="-1.0" y="0.0" x="0.0"/>
     </particles>
     <particles mass="1.0">
-        <positionVector p="1.1" z="6.251177" y="7.7280245" x="1.0142751"/>
-        <velocityVector p="0.0" z="-0.3000275" y="-0.45896786" x="-0.42222357"/>
+        <positionVector p="1.1" z="0.000177" y="0.000245" x="0.000275"/>
+        <velocityVector p="0.0" z="-5.3000275" y="-5.45896786" x="-5.42222357"/>
     </particles>
 </SPHModel>
