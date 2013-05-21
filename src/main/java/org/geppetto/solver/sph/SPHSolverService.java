@@ -117,14 +117,21 @@ public class SPHSolverService implements ISolver
 
 	public static Random RandomGenerator = new Random();
 
+	public SPHSolverService(String hardwareProfile) throws Exception
+	{
+		this.onceOffInit(hardwareProfile);
+	}
+	
 	public SPHSolverService() throws Exception
 	{
-		this.onceOffInit();
+		this(SPHConstants.CPU_PROFILE);
 	}
 
-	private void onceOffInit() throws IOException
+	private void onceOffInit(String hwProfile) throws IOException
 	{
-		_context = JavaCL.createBestContext(DeviceFeature.CPU);
+		DeviceFeature feature = (hwProfile == SPHConstants.CPU_PROFILE) ? DeviceFeature.CPU : DeviceFeature.GPU;
+		
+		_context = JavaCL.createBestContext(feature);
 
 		out.println("created " + _context);
 		// an array with available devices
