@@ -129,6 +129,7 @@ public class SPHSolverService implements ISolver
 
 	private void onceOffInit(String hwProfile) throws IOException
 	{
+		// TODO: check if the selected profile is actually available
 		DeviceFeature feature = (hwProfile == SPHConstants.CPU_PROFILE) ? DeviceFeature.CPU : DeviceFeature.GPU;
 		
 		_context = JavaCL.createBestContext(feature);
