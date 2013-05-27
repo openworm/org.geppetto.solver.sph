@@ -193,7 +193,7 @@ public class SPHSolverService implements ISolver
 		_velocity = _context.createFloatBuffer(CLMem.Usage.InputOutput, _particleCount * 4);
 	}
 
-	public void setBuffersFromModel()
+	private void setBuffersFromModel()
 	{
 		// set dimensions
 		_xMax = _model.getXMax();
@@ -297,7 +297,7 @@ public class SPHSolverService implements ISolver
 		this._context.release();
 	}
 
-	public int runClearBuffers()
+	private int runClearBuffers()
 	{
 		_clearBuffers.setArg(0, _neighborMap);
 		_clearBuffers.setArg(1, _particleCount);
@@ -305,7 +305,7 @@ public class SPHSolverService implements ISolver
 		return 0;
 	}
 
-	public int runFindNeighbors()
+	private int runFindNeighbors()
 	{
 		_findNeighbors.setArg(0, _gridCellIndexFixedUp);
 		_findNeighbors.setArg(1, _sortedPosition);
@@ -327,7 +327,7 @@ public class SPHSolverService implements ISolver
 		return 0;
 	}
 
-	public CLEvent runHashParticles(){
+	private CLEvent runHashParticles(){
 		// Stage HashParticles
 		_hashParticles.setArg( 0, _position );
 		_hashParticles.setArg( 1, _gridCellsX );
@@ -344,7 +344,7 @@ public class SPHSolverService implements ISolver
 		return event;
 	}
 
-	public int runIndexPostPass(){		
+	private int runIndexPostPass(){		
 		// get values out of buffer 
 		_gridCellIndexPtr = _gridCellIndex.map(_queue, CLMem.MapFlags.Read);
 		int[] gridNextNonEmptyCellBuffer = _gridCellIndexPtr.getInts();
@@ -369,7 +369,7 @@ public class SPHSolverService implements ISolver
 		return 0;
 	}
 
-	public CLEvent runIndexx(){
+	private CLEvent runIndexx(){
 		// Stage Indexx
 		_indexx.setArg( 0, _particleIndex );
 		_gridCellCount = ((_gridCellsX) * (_gridCellsY)) * (_gridCellsZ);
@@ -382,7 +382,7 @@ public class SPHSolverService implements ISolver
 		return event;
 	}
 
-	public int runSortPostPass()
+	private int runSortPostPass()
 	{
 		// Stage SortPostPass
 		_sortPostPass.setArg(0, _particleIndex);
@@ -396,7 +396,7 @@ public class SPHSolverService implements ISolver
 		return 0;
 	}
 
-	public int run_pcisph_computeDensity()
+	private int run_pcisph_computeDensity()
 	{
 		// Stage ComputeDensityPressure
 		_pcisph_computeDensity.setArg(0, _neighborMap);
@@ -418,7 +418,7 @@ public class SPHSolverService implements ISolver
 		return 0;
 	}
 
-	public int run_pcisph_computeForcesAndInitPressure()
+	private int run_pcisph_computeForcesAndInitPressure()
 	{
 		_pcisph_computeForcesAndInitPressure.setArg(0, _neighborMap);
 		_pcisph_computeForcesAndInitPressure.setArg(1, _rho);
@@ -444,7 +444,7 @@ public class SPHSolverService implements ISolver
 		return 0;
 	}
 
-	public int run_pcisph_computeElasticForces()
+	private int run_pcisph_computeElasticForces()
 	{
 		_pcisph_computeElasticForces.setArg(0, _neighborMap);
 		_pcisph_computeElasticForces.setArg(1, _sortedPosition);
@@ -468,7 +468,7 @@ public class SPHSolverService implements ISolver
 		return 0;
 	}
 
-	public int run_pcisph_predictPositions()
+	private int run_pcisph_predictPositions()
 	{
 		_pcisph_predictPositions.setArg(0, _acceleration);
 		_pcisph_predictPositions.setArg(1, _sortedPosition);
@@ -497,7 +497,7 @@ public class SPHSolverService implements ISolver
 		return 0;
 	}
 
-	public int run_pcisph_predictDensity()
+	private int run_pcisph_predictDensity()
 	{
 		// Stage predict density
 		_pcisph_predictDensity.setArg(0, _neighborMap);
@@ -519,7 +519,7 @@ public class SPHSolverService implements ISolver
 		return 0;
 	}
 
-	public int run_pcisph_correctPressure()
+	private int run_pcisph_correctPressure()
 	{
 		// Stage correct pressure
 		_pcisph_correctPressure.setArg(0, _neighborMap);
@@ -543,7 +543,7 @@ public class SPHSolverService implements ISolver
 		return 0;
 	}
 
-	public int run_pcisph_computePressureForceAcceleration()
+	private int run_pcisph_computePressureForceAcceleration()
 	{
 		// Stage ComputeAcceleration
 		_pcisph_computePressureForceAcceleration.setArg(0, _neighborMap);
@@ -569,7 +569,8 @@ public class SPHSolverService implements ISolver
 		return 0;
 	}
 
-	public CLEvent run_pcisph_integrate(){
+	private CLEvent run_pcisph_integrate()
+	{
 		// Stage Integrate
 		_pcisph_integrate.setArg( 0, _acceleration );
 		_pcisph_integrate.setArg( 1, _sortedPosition );
@@ -599,7 +600,8 @@ public class SPHSolverService implements ISolver
 		return event;
 	}
 
-	public int runSort(){
+	private int runSort()
+	{
 		//this version work with qsort
 		int index = 0;
 		List<int[]> particleIndex = new ArrayList<int[]>();
@@ -754,12 +756,12 @@ public class SPHSolverService implements ISolver
 		_queue.finish();
 	}
 
-	public Float round(Float val, int roundingFactor)
+	private Float round(Float val, int roundingFactor)
 	{
 		return (float) Math.round(val * roundingFactor) / roundingFactor;
 	}
 
-	public int getParticleCountRoundedUp()
+	private int getParticleCountRoundedUp()
 	{
 		return (((_particleCount - 1) / 256) + 1) * 256;
 	}
