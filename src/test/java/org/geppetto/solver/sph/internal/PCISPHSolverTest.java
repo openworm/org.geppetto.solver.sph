@@ -244,9 +244,8 @@ public class PCISPHSolverTest
 		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
 		IModel model = modelInterpreter.readModel(url);
 		
-		// we have one particle that overlaps with boundary particles in this test
 		// NOTE: commenting out as it takes a while for big scenes
-		// checkModelForOverlappingParticles((SPHModelX)model, true);
+		// checkModelForOverlappingParticles((SPHModelX)model, false);
 		
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
@@ -267,9 +266,8 @@ public class PCISPHSolverTest
 		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
 		IModel model = modelInterpreter.readModel(url);
 		
-		// we have one particle that overlaps with boundary particles in this test
 		// NOTE: commenting out as it takes a while for big scenes
-		// checkModelForOverlappingParticles((SPHModelX)model, true);
+		// checkModelForOverlappingParticles((SPHModelX)model, false);
 
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
