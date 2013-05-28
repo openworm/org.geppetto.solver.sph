@@ -6,18 +6,12 @@ package org.geppetto.solver.sph.internal;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import junit.framework.Assert;
 
 import org.geppetto.core.model.IModel;
-import org.geppetto.core.model.StateInstancePath;
-import org.geppetto.core.model.StateSet;
-import org.geppetto.core.model.values.AValue;
-import org.geppetto.core.model.values.FloatValue;
+import org.geppetto.core.model.state.StateTreeRoot;
 import org.geppetto.core.simulation.TimeConfiguration;
-import org.geppetto.model.sph.SPHModel;
-import org.geppetto.model.sph.SPHParticle;
 import org.geppetto.model.sph.common.SPHConstants;
 import org.geppetto.model.sph.services.SPHModelInterpreterService;
 import org.geppetto.model.sph.x.SPHModelX;
@@ -31,7 +25,7 @@ import org.junit.Test;
  */
 public class PCISPHSolverTest
 {
-	private static final String NAN = "NaN";
+	
 	
 	private void checkModelForOverlappingParticles(SPHModelX model, boolean expected)
 	{
@@ -76,51 +70,23 @@ public class PCISPHSolverTest
 	}
 	
 	/*
-	 * Checks the entire StateSet for NaN values
-	 * NOTE: this takes a lot of time if we have many particles - use checkFinalStateStringForNaN for big scenes
+	 * Checks the entire StateTreeRoot for NaN values
 	 * */
-	private void checkStateSetForNaN(StateSet set, boolean expected)
+	private void checkStateTreeForNaN(StateTreeRoot set, boolean expected)
 	{
-		List<String> matches = new ArrayList<String>();
-		
-		Map<StateInstancePath, List<AValue>> stateMap = set.getStatesMap();
-		
-		for(StateInstancePath k : stateMap.keySet())
-		{
-			for(AValue v : stateMap.get(k))
-			{
-				if(v.getStringValue().equals(NAN))
-				{
-					matches.add(k.toString());
-				}
-			}
-		}
+		FindNaNVisitor findNaNVisitor=new FindNaNVisitor();
+		set.apply(findNaNVisitor);
 		
 		if(expected)
 		{
-			Assert.assertTrue("No NaN values detected when expected.", matches.size() > 0);
+			Assert.assertTrue("No NaN values detected when expected.", !findNaNVisitor.hasNaN());
 		} 
 		else 
 		{
-			String details = matches.toString();
-			Assert.assertTrue("Unexpected NaN values detected: " + details, matches.size() == 0);
+			Assert.assertTrue("Unexpected NaN values detected: " + findNaNVisitor.getParticleWithNaN(), findNaNVisitor.hasNaN());
 		}
 	}
 	
-	/*
-	 * Once we get NaN values they will stay like that - so we can just look at the final values
-	 * */
-	private void checkFinalStateStringForNaN(String stateString, boolean expected)
-	{
-		if(expected)
-		{
-			Assert.assertTrue("No NaN values detected when expected.", stateString.contains(NAN));
-		} 
-		else 
-		{
-			Assert.assertFalse("Unexpected NaN values detected.", stateString.contains(NAN));
-		}
-	}
 
 	/*
 	 * 296 boundary particles + 1 liquid particle
@@ -137,11 +103,11 @@ public class PCISPHSolverTest
 		
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
-		StateSet stateSet = solver.solve(new TimeConfiguration(0.1f, 2, 1));
+		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 2, 1));
 		
 		//System.out.println(stateSet.lastStateToString());
 		
-		checkStateSetForNaN(stateSet, false);
+		checkStateTreeForNaN(stateSet, false);
 	}
 	
 	/*
@@ -159,12 +125,12 @@ public class PCISPHSolverTest
 		
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
-		StateSet stateSet = solver.solve(new TimeConfiguration(0.1f, 20, 1));
+		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 20, 1));
 		
 		//System.out.println(stateSet.toString());
 		
 		// expect NaN values since in the initial conditions particle 309 overlaps with boundary particles
-		checkStateSetForNaN(stateSet, true);
+		checkStateTreeForNaN(stateSet, true);
 	}
 
 	/*
@@ -182,11 +148,11 @@ public class PCISPHSolverTest
 		
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
-		StateSet stateSet = solver.solve(new TimeConfiguration(0.1f, 20, 1));
+		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 20, 1));
 		
 		//System.out.println(stateSet.toString());
 		
-		checkStateSetForNaN(stateSet, false);
+		checkStateTreeForNaN(stateSet, false);
 	}
 	
 	/*
@@ -207,32 +173,21 @@ public class PCISPHSolverTest
 		// run cycles one by one
 		SPHSolverService solver1 = new SPHSolverService();
 		solver1.initialize(model);
-		StateSet stateSet1 = null;
+		StateTreeRoot stateTree1 = null;
 		for(int i = 0; i < cycles; i++){
-			stateSet1 = solver1.solve(new TimeConfiguration(0.1f, 1, 1));
+			stateTree1 = solver1.solve(new TimeConfiguration(0.1f, 1, 1));
 		}
 		
 		// run cycles at once
 		SPHSolverService solver2 = new SPHSolverService();
 		solver2.initialize(model);
-		StateSet stateSet2 = solver2.solve(new TimeConfiguration(0.1f, cycles, 1));
+		StateTreeRoot stateTree2 = solver2.solve(new TimeConfiguration(0.1f, cycles, 1));
 		
-		// assert state sets equality at the last cycle
-		Map<StateInstancePath, List<AValue>> stateMap1 = stateSet1.getStatesMap();
-		Map<StateInstancePath, List<AValue>> stateMap2 = stateSet2.getStatesMap();
+		//checks the trees are equivalent
+		Assert.assertEquals(stateTree1.toString(),stateTree2.toString());
 		
-		for(StateInstancePath k : stateMap2.keySet())
-		{
-			// last cycle of stateMap2
-			AValue v2 = stateMap2.get(k).get(cycles - 1);
-			// only cycle - the last - of stateMap1
-			AValue v1 = stateMap1.get(k).get(0);
-			
-			Assert.assertTrue(v1.getStringValue().equals(v2.getStringValue()));
-		}
-		
-		checkStateSetForNaN(stateSet1, false);
-		checkStateSetForNaN(stateSet2, false);
+		checkStateTreeForNaN(stateTree1, false);
+		checkStateTreeForNaN(stateTree2, false);
 	}
 
 	/*
@@ -250,11 +205,11 @@ public class PCISPHSolverTest
 		
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
-		StateSet stateSet = solver.solve(new TimeConfiguration(0.1f, 20, 1));
+		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 20, 1));
 		
 		//System.out.println(stateSet.toString());
 		
-		checkStateSetForNaN(stateSet, false);
+		checkStateTreeForNaN(stateSet, false);
 	}
 
 	/*
@@ -272,11 +227,11 @@ public class PCISPHSolverTest
 		
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
-		StateSet stateSet = solver.solve(new TimeConfiguration(0.1f, 20, 1));
+		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 20, 1));
 		
 		//System.out.println(stateSet.toString());
 		
-		checkStateSetForNaN(stateSet, false);
+		checkStateTreeForNaN(stateSet, false);
 	}
 
 	/*
@@ -295,7 +250,7 @@ public class PCISPHSolverTest
 		
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
-		StateSet stateSet = solver.solve(new TimeConfiguration(0.1f, 1, 1));
+		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 1, 1));
 		
 		//System.out.println(stateSet.toString());
 		
@@ -318,7 +273,7 @@ public class PCISPHSolverTest
 
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
-		StateSet stateSet = solver.solve(new TimeConfiguration(0.1f, 1, 1));
+		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 1, 1));
 		
 		//System.out.println(stateSet.toString());
 		

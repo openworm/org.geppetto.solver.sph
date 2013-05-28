@@ -15,8 +15,10 @@ import org.bridj.Pointer;
 import org.geppetto.core.common.GeppettoInitializationException;
 import org.geppetto.core.constants.PhysicsConstants;
 import org.geppetto.core.model.IModel;
-import org.geppetto.core.model.StateInstancePath;
-import org.geppetto.core.model.StateSet;
+import org.geppetto.core.model.state.CompositeStateNode;
+import org.geppetto.core.model.state.SimpleStateNode;
+import org.geppetto.core.model.state.StateTreeRoot;
+import org.geppetto.core.model.values.FloatValue;
 import org.geppetto.core.model.values.ValuesFactory;
 import org.geppetto.core.simulation.IRunConfiguration;
 import org.geppetto.core.solver.ISolver;
@@ -114,6 +116,7 @@ public class SPHSolverService implements ISolver
 	public int _numOfBoundaryP;
 
 	private SPHModelX _model;
+	private StateTreeRoot _stateTree;
 
 	public static Random RandomGenerator = new Random();
 
@@ -121,7 +124,7 @@ public class SPHSolverService implements ISolver
 	{
 		this.onceOffInit(hardwareProfile);
 	}
-	
+
 	public SPHSolverService() throws Exception
 	{
 		this(SPHConstants.CPU_PROFILE);
@@ -131,7 +134,7 @@ public class SPHSolverService implements ISolver
 	{
 		// TODO: check if the selected profile is actually available
 		DeviceFeature feature = (hwProfile == SPHConstants.CPU_PROFILE) ? DeviceFeature.CPU : DeviceFeature.GPU;
-		
+
 		_context = JavaCL.createBestContext(feature);
 
 		out.println("created " + _context);
@@ -177,7 +180,8 @@ public class SPHSolverService implements ISolver
 		_pcisph_computeElasticForces = _program.createKernel("pcisph_computeElasticForces");
 	}
 
-	private void allocateBuffers(){		
+	private void allocateBuffers()
+	{
 		// allocate native device memory for all buffers
 		_acceleration = _context.createFloatBuffer(CLMem.Usage.InputOutput, _particleCount * 4 * 2);
 		_gridCellIndex = _context.createIntBuffer(CLMem.Usage.InputOutput, _gridCellCount + 1);
@@ -229,11 +233,11 @@ public class SPHSolverService implements ISolver
 
 			Vector3DX positionVector = (Vector3DX) _model.getParticles().get(i).getPositionVector();
 			Vector3DX velocityVector = (Vector3DX) _model.getParticles().get(i).getVelocityVector();
-			
+
 			// map for writing
 			_positionPtr = _position.map(_queue, CLMem.MapFlags.Write);
 			_velocityPtr = _velocity.map(_queue, CLMem.MapFlags.Write);
-			
+
 			// buffer population
 			_positionPtr.set(index, positionVector.getX());
 			_positionPtr.set(index + 1, positionVector.getY());
@@ -243,7 +247,7 @@ public class SPHSolverService implements ISolver
 			_velocityPtr.set(index + 1, velocityVector.getY());
 			_velocityPtr.set(index + 2, velocityVector.getZ());
 			_velocityPtr.set(index + 3, velocityVector.getP());
-			
+
 			// unmap after writing
 			_position.unmap(_queue, _positionPtr);
 			_velocity.unmap(_queue, _velocityPtr);
@@ -270,7 +274,7 @@ public class SPHSolverService implements ISolver
 			// TODO: move this back with the other buffers init stuff
 			_elasticConnectionsData = _context.createFloatBuffer(CLMem.Usage.InputOutput, _numOfElasticP * SPHConstants.NEIGHBOR_COUNT * 4);
 			_elasticConnectionsDataPtr = _elasticConnectionsData.map(_queue, CLMem.MapFlags.Write);
-				
+
 			int connIndex = 0;
 			for(Connection conn : _model.getConnections())
 			{
@@ -280,7 +284,7 @@ public class SPHSolverService implements ISolver
 				_elasticConnectionsDataPtr.set(connIndex + 3, 0f); // padding
 				connIndex++;
 			}
-			
+
 			// we copied the stuff down to the device and we won't touch it again so we can unmap
 			_elasticConnectionsData.unmap(_queue, _elasticConnectionsDataPtr);
 		}
@@ -294,7 +298,8 @@ public class SPHSolverService implements ISolver
 
 	public void cleanContext()
 	{
-		this._context.release();
+		_stateTree = null;
+		_context.release();
 	}
 
 	private int runClearBuffers()
@@ -327,58 +332,63 @@ public class SPHSolverService implements ISolver
 		return 0;
 	}
 
-	private CLEvent runHashParticles(){
+	private CLEvent runHashParticles()
+	{
 		// Stage HashParticles
-		_hashParticles.setArg( 0, _position );
-		_hashParticles.setArg( 1, _gridCellsX );
-		_hashParticles.setArg( 2, _gridCellsY );
-		_hashParticles.setArg( 3, _gridCellsZ );
-		_hashParticles.setArg( 4, PhysicsConstants.HASH_GRID_CELL_SIZE_INV );
-		_hashParticles.setArg( 5, _xMin );
-		_hashParticles.setArg( 6, _yMin );
-		_hashParticles.setArg( 7, _zMin );
-		_hashParticles.setArg( 8, _particleIndex );
-		_hashParticles.setArg( 9, _particleCount );
-		CLEvent event = _hashParticles.enqueueNDRange(_queue, new int[] {getParticleCountRoundedUp()});
-		
+		_hashParticles.setArg(0, _position);
+		_hashParticles.setArg(1, _gridCellsX);
+		_hashParticles.setArg(2, _gridCellsY);
+		_hashParticles.setArg(3, _gridCellsZ);
+		_hashParticles.setArg(4, PhysicsConstants.HASH_GRID_CELL_SIZE_INV);
+		_hashParticles.setArg(5, _xMin);
+		_hashParticles.setArg(6, _yMin);
+		_hashParticles.setArg(7, _zMin);
+		_hashParticles.setArg(8, _particleIndex);
+		_hashParticles.setArg(9, _particleCount);
+		CLEvent event = _hashParticles.enqueueNDRange(_queue, new int[] { getParticleCountRoundedUp() });
+
 		return event;
 	}
 
-	private int runIndexPostPass(){		
-		// get values out of buffer 
+	private int runIndexPostPass()
+	{
+		// get values out of buffer
 		_gridCellIndexPtr = _gridCellIndex.map(_queue, CLMem.MapFlags.Read);
 		int[] gridNextNonEmptyCellBuffer = _gridCellIndexPtr.getInts();
 		_gridCellIndex.unmap(_queue, _gridCellIndexPtr);
-		
+
 		int recentNonEmptyCell = _gridCellCount;
-		for(int i= _gridCellCount; i>=0; i--)
+		for(int i = _gridCellCount; i >= 0; i--)
 		{
-			if(gridNextNonEmptyCellBuffer[i] == SPHConstants.NO_CELL_ID) {
-				gridNextNonEmptyCellBuffer[i] = recentNonEmptyCell; 
+			if(gridNextNonEmptyCellBuffer[i] == SPHConstants.NO_CELL_ID)
+			{
+				gridNextNonEmptyCellBuffer[i] = recentNonEmptyCell;
 			}
-			else {
+			else
+			{
 				recentNonEmptyCell = gridNextNonEmptyCellBuffer[i];
 			}
 		}
-		
+
 		// put results back
 		_gridCellIndexFixedUpPtr = _gridCellIndexFixedUp.map(_queue, CLMem.MapFlags.Write);
 		_gridCellIndexFixedUpPtr.setInts(gridNextNonEmptyCellBuffer);
 		_gridCellIndexFixedUp.unmap(_queue, _gridCellIndexFixedUpPtr);
-		
+
 		return 0;
 	}
 
-	private CLEvent runIndexx(){
+	private CLEvent runIndexx()
+	{
 		// Stage Indexx
-		_indexx.setArg( 0, _particleIndex );
+		_indexx.setArg(0, _particleIndex);
 		_gridCellCount = ((_gridCellsX) * (_gridCellsY)) * (_gridCellsZ);
-		_indexx.setArg( 1, _gridCellCount );
-		_indexx.setArg( 2, _gridCellIndex );
-		_indexx.setArg( 3, _particleCount );
-		int gridCellCountRoundedUp = ((( _gridCellCount - 1 ) / 256 ) + 1 ) * 256;
-		CLEvent event = _indexx.enqueueNDRange(_queue, new int[] {gridCellCountRoundedUp});
-		
+		_indexx.setArg(1, _gridCellCount);
+		_indexx.setArg(2, _gridCellIndex);
+		_indexx.setArg(3, _particleCount);
+		int gridCellCountRoundedUp = (((_gridCellCount - 1) / 256) + 1) * 256;
+		CLEvent event = _indexx.enqueueNDRange(_queue, new int[] { gridCellCountRoundedUp });
+
 		return event;
 	}
 
@@ -572,60 +582,63 @@ public class SPHSolverService implements ISolver
 	private CLEvent run_pcisph_integrate()
 	{
 		// Stage Integrate
-		_pcisph_integrate.setArg( 0, _acceleration );
-		_pcisph_integrate.setArg( 1, _sortedPosition );
-		_pcisph_integrate.setArg( 2, _sortedVelocity );
-		_pcisph_integrate.setArg( 3, _particleIndex );
-		_pcisph_integrate.setArg( 4, _particleIndexBack );
-		_pcisph_integrate.setArg( 5, PhysicsConstants.GRAVITY_X );
-		_pcisph_integrate.setArg( 6, PhysicsConstants.GRAVITY_Y );
-		_pcisph_integrate.setArg( 7, PhysicsConstants.GRAVITY_Z );
-		_pcisph_integrate.setArg( 8, PhysicsConstants.SIMULATION_SCALE_INV );
-		_pcisph_integrate.setArg( 9, PhysicsConstants.TIME_STEP );
-		_pcisph_integrate.setArg( 10, _xMin );
-		_pcisph_integrate.setArg( 11, _xMax );
-		_pcisph_integrate.setArg( 12, _yMin );
-		_pcisph_integrate.setArg( 13, _yMax );
-		_pcisph_integrate.setArg( 14, _zMin );
-		_pcisph_integrate.setArg( 15, _zMax );
-		_pcisph_integrate.setArg( 16, PhysicsConstants.DAMPING );
-		_pcisph_integrate.setArg( 17, _position );
-		_pcisph_integrate.setArg( 18, _velocity );
-		_pcisph_integrate.setArg( 19, _rho );
-		_pcisph_integrate.setArg( 20, PhysicsConstants.R0 );
-		_pcisph_integrate.setArg( 21, _neighborMap );
-		_pcisph_integrate.setArg(22, _particleCount );
-		CLEvent event = _pcisph_integrate.enqueueNDRange(_queue, new int[] {getParticleCountRoundedUp()});
-		
+		_pcisph_integrate.setArg(0, _acceleration);
+		_pcisph_integrate.setArg(1, _sortedPosition);
+		_pcisph_integrate.setArg(2, _sortedVelocity);
+		_pcisph_integrate.setArg(3, _particleIndex);
+		_pcisph_integrate.setArg(4, _particleIndexBack);
+		_pcisph_integrate.setArg(5, PhysicsConstants.GRAVITY_X);
+		_pcisph_integrate.setArg(6, PhysicsConstants.GRAVITY_Y);
+		_pcisph_integrate.setArg(7, PhysicsConstants.GRAVITY_Z);
+		_pcisph_integrate.setArg(8, PhysicsConstants.SIMULATION_SCALE_INV);
+		_pcisph_integrate.setArg(9, PhysicsConstants.TIME_STEP);
+		_pcisph_integrate.setArg(10, _xMin);
+		_pcisph_integrate.setArg(11, _xMax);
+		_pcisph_integrate.setArg(12, _yMin);
+		_pcisph_integrate.setArg(13, _yMax);
+		_pcisph_integrate.setArg(14, _zMin);
+		_pcisph_integrate.setArg(15, _zMax);
+		_pcisph_integrate.setArg(16, PhysicsConstants.DAMPING);
+		_pcisph_integrate.setArg(17, _position);
+		_pcisph_integrate.setArg(18, _velocity);
+		_pcisph_integrate.setArg(19, _rho);
+		_pcisph_integrate.setArg(20, PhysicsConstants.R0);
+		_pcisph_integrate.setArg(21, _neighborMap);
+		_pcisph_integrate.setArg(22, _particleCount);
+		CLEvent event = _pcisph_integrate.enqueueNDRange(_queue, new int[] { getParticleCountRoundedUp() });
+
 		return event;
 	}
 
 	private int runSort()
 	{
-		//this version work with qsort
+		// this version work with qsort
 		int index = 0;
 		List<int[]> particleIndex = new ArrayList<int[]>();
-		
+
 		// get values out of buffer
 		_particleIndexPtr = _particleIndex.map(_queue, CLMem.MapFlags.ReadWrite);
 		int[] particleInd = _particleIndexPtr.getInts();
-		
-		for(int i = 0; i < _particleCount * 2;i+=2){
-			int[] element = {particleInd[i], particleInd[i+1]};
+
+		for(int i = 0; i < _particleCount * 2; i += 2)
+		{
+			int[] element = { particleInd[i], particleInd[i + 1] };
 			particleIndex.add(element);
 		}
 		Collections.sort(particleIndex, new MyCompare());
-		for(int i = 0; i< particleIndex.size();i++){
-			for(int j=0;j<2;j++){
+		for(int i = 0; i < particleIndex.size(); i++)
+		{
+			for(int j = 0; j < 2; j++)
+			{
 				particleInd[index] = particleIndex.get(i)[j];
 				index++;
 			}
 		}
-		
+
 		// put results back
 		_particleIndexPtr.setInts(particleInd);
 		_particleIndex.unmap(_queue, _particleIndexPtr);
-		
+
 		return 0;
 	}
 
@@ -639,116 +652,120 @@ public class SPHSolverService implements ISolver
 		}
 	}
 
-	private void step(){
-		long endStep=0;
-		long startStep=System.currentTimeMillis();
-		long end=0;
-		long start=System.currentTimeMillis();
-		
+	private void step()
+	{
+		long endStep = 0;
+		long startStep = System.currentTimeMillis();
+		long end = 0;
+		long start = System.currentTimeMillis();
+
 		logger.info("SPH clear buffer");
 		runClearBuffers();
-		end=System.currentTimeMillis();
-		logger.info("SPH clear buffer end, took "+ (end-start) +"ms");
-		start=end;
-		
+		end = System.currentTimeMillis();
+		logger.info("SPH clear buffer end, took " + (end - start) + "ms");
+		start = end;
+
 		logger.info("SPH hash particles");
 		CLEvent hashParticles = runHashParticles();
-		end=System.currentTimeMillis();
-		logger.info("SPH hash particles end, took "+ (end-start) +"ms");
-		start=end;
-		
+		end = System.currentTimeMillis();
+		logger.info("SPH hash particles end, took " + (end - start) + "ms");
+		start = end;
+
 		// host needs to wait as the next operation requires values from buffers
 		hashParticles.waitFor();
-		
+
 		logger.info("SPH sort");
 		runSort();
-		end=System.currentTimeMillis();
-		logger.info("SPH sort end, took "+ (end-start) +"ms");
-		start=end;
-		
+		end = System.currentTimeMillis();
+		logger.info("SPH sort end, took " + (end - start) + "ms");
+		start = end;
+
 		logger.info("SPH sort post pass");
 		runSortPostPass();
-		end=System.currentTimeMillis();
-		logger.info("SPH sort post pass end, took "+ (end-start) +"ms");
-		start=end;
-		
+		end = System.currentTimeMillis();
+		logger.info("SPH sort post pass end, took " + (end - start) + "ms");
+		start = end;
+
 		logger.info("SPH index");
 		CLEvent runIndexx = runIndexx();
-		end=System.currentTimeMillis();
-		logger.info("SPH index end, took "+ (end-start) +"ms");
-		start=end;
-		
+		end = System.currentTimeMillis();
+		logger.info("SPH index end, took " + (end - start) + "ms");
+		start = end;
+
 		// host needs to wait as the next operation requires values from buffers
 		runIndexx.waitFor();
-		
+
 		logger.info("SPH index post pass");
 		runIndexPostPass();
-		end=System.currentTimeMillis();
-		logger.info("SPH index post pass end, took "+ (end-start) +"ms");
-		start=end;
-		
+		end = System.currentTimeMillis();
+		logger.info("SPH index post pass end, took " + (end - start) + "ms");
+		start = end;
+
 		logger.info("SPH find neighbors");
 		runFindNeighbors();
-		end=System.currentTimeMillis();
-		logger.info("SPH find neighbors end, took "+ (end-start) +"ms");
-		start=end;
-		
+		end = System.currentTimeMillis();
+		logger.info("SPH find neighbors end, took " + (end - start) + "ms");
+		start = end;
+
 		// PCISPH stuff starts here
 		logger.info("PCI-SPH compute density");
 		run_pcisph_computeDensity();
-		end=System.currentTimeMillis();
-		logger.info("PCI-SPH compute density end, took "+ (end-start) +"ms");
-		start=end;
-		
+		end = System.currentTimeMillis();
+		logger.info("PCI-SPH compute density end, took " + (end - start) + "ms");
+		start = end;
+
 		logger.info("PCI-SPH compute forces and init pressure");
 		run_pcisph_computeForcesAndInitPressure();
-		end=System.currentTimeMillis();
-		logger.info("PCI-SPH compute forces and init pressure end, took "+ (end-start) +"ms");
-		start=end;
-		
+		end = System.currentTimeMillis();
+		logger.info("PCI-SPH compute forces and init pressure end, took " + (end - start) + "ms");
+		start = end;
+
 		// Do elastic stuff only if we have elastic particles
-		if(_numOfElasticP > 0){
+		if(_numOfElasticP > 0)
+		{
 			logger.info("PCI-SPH compute elastic forces");
 			run_pcisph_computeElasticForces();
-			end=System.currentTimeMillis();
-			logger.info("PCI-SPH compute elastic forces end, took "+ (end-start) +"ms");
-			start=end;
+			end = System.currentTimeMillis();
+			logger.info("PCI-SPH compute elastic forces end, took " + (end - start) + "ms");
+			start = end;
 		}
-		
+
 		logger.info("PCI-SPH predict/correct loop");
 		// LOOP: 3 times or until "error" becomes less than 2%
-		int iter = 0; int maxIterations = 3;
+		int iter = 0;
+		int maxIterations = 3;
 		do
 		{
 			run_pcisph_predictPositions();
 			run_pcisph_predictDensity();
 			run_pcisph_correctPressure();
 			run_pcisph_computePressureForceAcceleration();
-			
+
 			iter++;
-		} while ((iter<maxIterations));
-		end=System.currentTimeMillis();
-		logger.info("PCI-SPH predict/correct loop end, took "+ (end-start) +"ms");
-		start=end;
-		
+		}
+		while((iter < maxIterations));
+		end = System.currentTimeMillis();
+		logger.info("PCI-SPH predict/correct loop end, took " + (end - start) + "ms");
+		start = end;
+
 		logger.info("PCI-SPH integrate");
 		CLEvent event = run_pcisph_integrate();
-		end=System.currentTimeMillis();
-		logger.info("PCI-SPH integrate end, took "+ (end-start) +"ms");
-		start=end;
-		
+		end = System.currentTimeMillis();
+		logger.info("PCI-SPH integrate end, took " + (end - start) + "ms");
+		start = end;
+
 		// wait for the end of the run_pcisph_integrate on device
 		event.waitFor();
-		
+
 		logger.info("SPH finish queue");
 		// TODO: figure out if we need to actually call this
 		_queue.finish();
-		end=System.currentTimeMillis();
-		logger.info("SPH finish queue end, took "+ (end-start) +"ms");
-		start=end;
-		
-		endStep=System.currentTimeMillis();
-		logger.info("SPH computation step done, took "+ (endStep-startStep) +"ms");
+		end = System.currentTimeMillis();
+		logger.info("SPH finish queue end, took " + (end - start) + "ms");
+		start = end;
+
+		endStep = System.currentTimeMillis();
+		logger.info("SPH computation step done, took " + (endStep - startStep) + "ms");
 	}
 
 	public void finishQueue()
@@ -767,37 +784,78 @@ public class SPHSolverService implements ISolver
 	}
 
 	@Override
-	public StateSet solve(IRunConfiguration timeConfiguration)
+	public StateTreeRoot solve(IRunConfiguration timeConfiguration)
 	{
 		// TODO: extend this to use time configuration to do multiple steps in one go
 		long time = System.currentTimeMillis();
 		logger.info("SPH solver start");
-		StateSet stateSet = new StateSet(_model.getId());
+		if(_stateTree == null)
+		{
+			_stateTree = new StateTreeRoot(_model.getId());
+		}
 		for(int i = 0; i < timeConfiguration.getTimeSteps(); i++)
 		{
-			long end=0;
-			long start=System.currentTimeMillis();
+			long end = 0;
+			long start = System.currentTimeMillis();
 			logger.info("SPH STEP START");
 			step();
-			updateStateSet(stateSet);
-			end=System.currentTimeMillis();
-			logger.info("SPH STEP END, took "+ (end-start) +"ms");
+			updateStateTree();
+			end = System.currentTimeMillis();
+			logger.info("SPH STEP END, took " + (end - start) + "ms");
 		}
 		logger.info("SPH solver end, took: " + (System.currentTimeMillis() - time) + "ms");
-		return stateSet;
+		return _stateTree;
 	}
 
-	private void updateStateSet(StateSet stateSet)
+	private void updateStateTree()
 	{
 		_positionPtr = _position.map(_queue, CLMem.MapFlags.Read);
-		for(int i = 0, index=0; i < _particleCount; i++,index=index+4)
+
+		// ASSUMPTION: The solver will never create new states after the first time step
+		// we can call it principle of conservation of the states; if there is a good
+		// reason to revoke this assumption we need to add code that at every cycle checks
+		// if some new states exist to eventually add them to the stateTree
+		if(_stateTree.getChildren().isEmpty())
 		{
-			stateSet.addStateValue(new StateInstancePath(SPHModelInterpreterService.getPropertyPath(i, "pos", "x")), ValuesFactory.getFloatValue(_positionPtr.get(index)));
-			stateSet.addStateValue(new StateInstancePath(SPHModelInterpreterService.getPropertyPath(i, "pos", "y")), ValuesFactory.getFloatValue(_positionPtr.get(index + 1)));
-			stateSet.addStateValue(new StateInstancePath(SPHModelInterpreterService.getPropertyPath(i, "pos", "z")), ValuesFactory.getFloatValue(_positionPtr.get(index + 2)));
-			stateSet.addStateValue(new StateInstancePath(SPHModelInterpreterService.getPropertyPath(i, "pos", "p")), ValuesFactory.getFloatValue(_positionPtr.get(index + 3)));
+			// the state tree is empty, let's create it
+			for(int i = 0, index = 0; i < _particleCount; i++, index = index + 4)
+			{
+				String particleId = SPHModelInterpreterService.getParticleId(i);
+				FloatValue xV = ValuesFactory.getFloatValue(_positionPtr.get(index));
+				FloatValue yV = ValuesFactory.getFloatValue(_positionPtr.get(index + 1));
+				FloatValue zV = ValuesFactory.getFloatValue(_positionPtr.get(index + 2));
+				FloatValue pV = ValuesFactory.getFloatValue(_positionPtr.get(index + 3));
+
+				if(pV.getAsFloat() != 3.1f)
+				{
+					//we dont need to create a state for the boundary particles, they don't move.
+					CompositeStateNode particle = new CompositeStateNode(particleId);
+					_stateTree.addChild(particle);
+					CompositeStateNode pos = new CompositeStateNode("pos");
+					particle.addChild(pos);
+					SimpleStateNode x = new SimpleStateNode("x");
+					x.addValue(xV);
+					pos.addChild(x);
+					SimpleStateNode y = new SimpleStateNode("y");
+					y.addValue(yV);
+					pos.addChild(y);
+					SimpleStateNode z = new SimpleStateNode("z");
+					z.addValue(zV);
+					pos.addChild(z);
+					SimpleStateNode p = new SimpleStateNode("p");
+					p.addValue(pV);
+					pos.addChild(p);
+				}
+			}
 		}
+		else
+		{
+			UpdateSPHStateTreeVisitor updateSPHStateTreeVisitor = new UpdateSPHStateTreeVisitor(_positionPtr);
+			_stateTree.apply(updateSPHStateTreeVisitor);
+		}
+
 		_position.unmap(_queue, _positionPtr);
+
 	}
 
 	@Override
