@@ -79,11 +79,11 @@ public class PCISPHSolverTest
 		
 		if(expected)
 		{
-			Assert.assertTrue("No NaN values detected when expected.", !findNaNVisitor.hasNaN());
+			Assert.assertTrue("No NaN values detected when expected.", findNaNVisitor.hasNaN());
 		} 
 		else 
 		{
-			Assert.assertTrue("Unexpected NaN values detected: " + findNaNVisitor.getParticleWithNaN(), findNaNVisitor.hasNaN());
+			Assert.assertTrue("Unexpected NaN values detected: " + findNaNVisitor.getParticleWithNaN(), !findNaNVisitor.hasNaN());
 		}
 	}
 	
