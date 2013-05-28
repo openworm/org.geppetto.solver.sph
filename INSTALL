@@ -1,0 +1,18 @@
+This is a quick install guide for Linux since that seems to have been a problem. The key is in getting an OpenCL implementation on your computer. This is about getting the AMD implementation. Keep in mind that it is not necessarily easy to uninstall so if that is important to you you should try this on a virtual machine or something.
+First, go into a temp folder, e.g. ~/Downloads. Now you need to get the correct SDK from http://developer.amd.com/tools-and-sdks/heterogeneous-computing/amd-accelerated-parallel-processing-app-sdk/downloads/#one. Assuming you got version 2.8,
+> mkdir AMDAPP
+> cd AMDAPP
+> cp AMD-APP-SDK-v2.8-lnx64.tgz AMDAPP
+> cd AMDAPP/
+> tar xvzf AMD-APP-SDK-v2.8-lnx64.tgz
+> sudo ./Install-AMD-APP.sh
+
+Now there is some craziness involving the way that OpenCL is loaded, since Khronos decided that just putting something like libOpenCL.so in /usr/lib like everybody else who writes shared libraries does was no good. No, people might want to dynamically choose between different OCL implementations at execution time. So, they put all these registration files in /etc/OpenCL/vendors; luckily for us, AMD included the registration files, but didn't put them in the right place during installation, so you have to do it manually. Assuming you're still in AMDAPP,
+> tar xvzf icd-registration.tgz
+> sudo cp etc/OpenCL/vendors/* /etc/OpenCL/vendors/
+
+I make fun, but this is important to how JavaCL loads the libraries, and if it can't detect the correct libraries from the .icd files in /etc/OpenCL/vendors it will throw some sort of exception like CL_PLATFORM_NOT_FOUND_KHR, which means that JavaCL was able to load libOpenCL.so but was unable to find valid or any registration files in /etc/OpenCL/vendors.
+
+
+It should be fairly straightforward to run stuff now. Just stay in this top level directory and run `mvn {test|install|whatever}`.
+
