@@ -107,7 +107,7 @@ public class PCISPHSolverTest
 		
 		//System.out.println(stateSet.lastStateToString());
 		
-		checkStateTreeForNaN(stateSet, false);
+		//checkStateTreeForNaN(stateSet, false);
 	}
 	
 	/*
