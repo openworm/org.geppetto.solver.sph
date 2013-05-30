@@ -862,6 +862,7 @@ public class SPHSolverService implements ISolver
 	public void initialize(IModel model) throws GeppettoInitializationException
 	{
 		_model = (SPHModelX) model;
+		_stateTree=null;
 		setBuffersFromModel();
 	}
 
