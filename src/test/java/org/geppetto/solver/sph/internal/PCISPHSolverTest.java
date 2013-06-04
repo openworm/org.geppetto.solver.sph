@@ -100,6 +100,24 @@ public class PCISPHSolverTest
 	}
 	
 	/*
+	 * Counts how many non-boundary particles are in the model.
+	 * */
+	private int countNonBoundaryParticles(SPHModelX model)
+	{
+		int count = 0;
+		for(int i = 0; i < model.getNumberOfParticles(); i++)
+		{
+			Vector3DX positionVector = (Vector3DX) model.getParticles().get(i).getPositionVector();
+			
+			if (positionVector.getP() != SPHConstants.BOUNDARY_TYPE){
+				count++;
+			}
+		}
+		
+		return count;
+	}
+	
+	/*
 	 * Checks the entire StateTreeRoot for NaN values
 	 * */
 	private void checkStateTreeForNaN(StateTreeRoot set, boolean expected)
@@ -120,6 +138,7 @@ public class PCISPHSolverTest
 
 	/*
 	 * 296 boundary particles + 1 liquid particle
+	 * NOTE: particle is very close to the origin and it is shot towards it with high velocity
 	 */
 	@Test
 	public void testSolve1_NoNaN() throws Exception
@@ -135,9 +154,10 @@ public class PCISPHSolverTest
 		solver.initialize(model);
 		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 2, 1));
 		
-		//System.out.println(stateSet.lastStateToString());
-		
+		// NOTE: this is commented out as it fails on Apple CPU - should pass everywhere else
 		//checkStateTreeForNaN(stateSet, false);
+		
+		Assert.assertTrue("Particle count doesn't match.", stateSet.getChildren().size() == countNonBoundaryParticles((SPHModelX)model));
 	}
 	
 	/*
@@ -157,10 +177,10 @@ public class PCISPHSolverTest
 		solver.initialize(model);
 		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 20, 1));
 		
-		//System.out.println(stateSet.toString());
-		
 		// expect NaN values since in the initial conditions particle 309 overlaps with boundary particles
 		checkStateTreeForNaN(stateSet, true);
+		
+		Assert.assertTrue("Particle count doesn't match.", stateSet.getChildren().size() == countNonBoundaryParticles((SPHModelX)model));
 	}
 
 	/*
@@ -180,9 +200,9 @@ public class PCISPHSolverTest
 		solver.initialize(model);
 		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 20, 1));
 		
-		//System.out.println(stateSet.toString());
-		
 		checkStateTreeForNaN(stateSet, false);
+		
+		Assert.assertTrue("Particle count doesn't match.", stateSet.getChildren().size() == countNonBoundaryParticles((SPHModelX)model));
 	}
 	
 	/*
@@ -218,6 +238,9 @@ public class PCISPHSolverTest
 		
 		checkStateTreeForNaN(stateTree1, false);
 		checkStateTreeForNaN(stateTree2, false);
+		
+		Assert.assertTrue("Particle count doesn't match.", stateTree1.getChildren().size() == countNonBoundaryParticles((SPHModelX)model));
+		Assert.assertTrue("Particle count doesn't match.", stateTree2.getChildren().size() == countNonBoundaryParticles((SPHModelX)model));
 	}
 
 	/*
@@ -237,9 +260,9 @@ public class PCISPHSolverTest
 		solver.initialize(model);
 		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 20, 1));
 		
-		//System.out.println(stateSet.toString());
-		
 		checkStateTreeForNaN(stateSet, false);
+		
+		Assert.assertTrue("Particle count doesn't match.", stateSet.getChildren().size() == countNonBoundaryParticles((SPHModelX)model));
 	}
 
 	/*
@@ -259,9 +282,9 @@ public class PCISPHSolverTest
 		solver.initialize(model);
 		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 20, 1));
 		
-		//System.out.println(stateSet.toString());
-		
 		checkStateTreeForNaN(stateSet, false);
+		
+		Assert.assertTrue("Particle count doesn't match.", stateSet.getChildren().size() == countNonBoundaryParticles((SPHModelX)model));
 	}
 
 	/*
@@ -281,9 +304,9 @@ public class PCISPHSolverTest
 		solver.initialize(model);
 		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 1, 1));
 		
-		//System.out.println(stateSet.toString());
+		checkStateTreeForNaN(stateSet, false);
 		
-		//checkFinalStateStringForNaN(stateSet.lastStateToString(), false);
+		Assert.assertTrue("Particle count doesn't match.", stateSet.getChildren().size() == countNonBoundaryParticles((SPHModelX)model));
 	}
 
 	/*
@@ -303,8 +326,8 @@ public class PCISPHSolverTest
 		solver.initialize(model);
 		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 1, 1));
 		
-		//System.out.println(stateSet.toString());
+		checkStateTreeForNaN(stateSet, false);
 		
-		//checkFinalStateStringForNaN(stateSet.lastStateToString(), false);
+		Assert.assertTrue("Particle count doesn't match.", stateSet.getChildren().size() == countNonBoundaryParticles((SPHModelX)model));
 	}
 }
