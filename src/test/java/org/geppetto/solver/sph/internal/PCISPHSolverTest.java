@@ -41,6 +41,7 @@ import junit.framework.Assert;
 
 import org.geppetto.core.model.IModel;
 import org.geppetto.core.model.state.StateTreeRoot;
+import org.geppetto.core.model.state.visitors.RemoveTimeStepsVisitor;
 import org.geppetto.core.simulation.TimeConfiguration;
 import org.geppetto.model.sph.common.SPHConstants;
 import org.geppetto.model.sph.services.SPHModelInterpreterService;
@@ -55,7 +56,6 @@ import org.junit.Test;
  */
 public class PCISPHSolverTest
 {
-	
 	
 	private void checkModelForOverlappingParticles(SPHModelX model, boolean expected)
 	{
@@ -135,6 +135,15 @@ public class PCISPHSolverTest
 		}
 	}
 	
+	/*
+	 * Checks the entire StateTreeRoot for NaN values
+	 * */
+	private void removeFirstStateFromTree(StateTreeRoot set)
+	{
+		RemoveTimeStepsVisitor removeTimeStepVisitor= new RemoveTimeStepsVisitor(1);
+		set.apply(removeTimeStepVisitor);
+	}
+	
 
 	/*
 	 * 296 boundary particles + 1 liquid particle
@@ -155,7 +164,7 @@ public class PCISPHSolverTest
 		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 2, 1));
 		
 		// NOTE: this is commented out as it fails on Apple CPU - should pass everywhere else
-		//checkStateTreeForNaN(stateSet, false);
+		checkStateTreeForNaN(stateSet, false);
 		
 		Assert.assertTrue("Particle count doesn't match.", stateSet.getChildren().size() == countNonBoundaryParticles((SPHModelX)model));
 	}
@@ -207,6 +216,7 @@ public class PCISPHSolverTest
 	
 	/*
 	 * 296 boundary particles + 14 liquid particles
+	 * NOTE: compares results from running cycles in one go vs step by step
 	 */
 	@Test
 	public void testSolve14_StepByStep_VS_OneGo() throws Exception
@@ -308,9 +318,48 @@ public class PCISPHSolverTest
 		
 		Assert.assertTrue("Particle count doesn't match.", stateSet.getChildren().size() == countNonBoundaryParticles((SPHModelX)model));
 	}
+	
+	/*
+	 * Pure liquid scene with "many" liquid particles
+	 * NOTE: compares results from running cycles in one go vs step by step
+	 */
+	@Test
+	public void testSolvePureLiquid_StepByStep_VS_OneGo() throws Exception
+	{
+		URL url = this.getClass().getResource("/sphModel_PureLiquid.xml");
+		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
+		IModel model = modelInterpreter.readModel(url);
+		
+		// check that we don't have particles with overlapping positions
+		checkModelForOverlappingParticles((SPHModelX)model, false);
+		
+		int cycles = 2;
+		
+		// run cycles one by one
+		SPHSolverService solver1 = new SPHSolverService();
+		solver1.initialize(model);
+		StateTreeRoot stateTree1 = null;
+		for(int i = 0; i < cycles; i++){
+			stateTree1 = solver1.solve(new TimeConfiguration(0.1f, 1, 1));
+		}
+		
+		// run cycles at once
+		SPHSolverService solver2 = new SPHSolverService();
+		solver2.initialize(model);
+		StateTreeRoot stateTree2 = solver2.solve(new TimeConfiguration(0.1f, cycles, 1));
+		
+		//checks the trees are equivalent
+		Assert.assertEquals(stateTree1.toString(),stateTree2.toString());
+		
+		checkStateTreeForNaN(stateTree1, false);
+		checkStateTreeForNaN(stateTree2, false);
+		
+		Assert.assertTrue("Particle count doesn't match.", stateTree1.getChildren().size() == countNonBoundaryParticles((SPHModelX)model));
+		Assert.assertTrue("Particle count doesn't match.", stateTree2.getChildren().size() == countNonBoundaryParticles((SPHModelX)model));
+	}
 
 	/*
-	 * A test built around the original pureLiquid scene used to test the C++ version
+	 * Scene with a block of elastic matter plus liquid
 	 */
 	@Test
 	public void testSolveElastic_NoNaN() throws Exception
@@ -329,5 +378,76 @@ public class PCISPHSolverTest
 		checkStateTreeForNaN(stateSet, false);
 		
 		Assert.assertTrue("Particle count doesn't match.", stateSet.getChildren().size() == countNonBoundaryParticles((SPHModelX)model));
+	}
+	
+	/*
+	 * Scene with a block of elastic matter plus liquid
+	 * NOTE: solves step by step - this frees memory so we can run many steps without running out of heap space
+	 */
+	@Test
+	public void testSolveElastic_StepByStep_NoNaN() throws Exception
+	{
+		URL url = this.getClass().getResource("/sphModel_Elastic.xml");
+		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
+		IModel model = modelInterpreter.readModel(url);
+		
+		// check that we don't have particles with overlapping positions
+		checkModelForOverlappingParticles((SPHModelX)model, false);
+		
+		int cycles = 2;
+		
+		// run cycles one by one
+		SPHSolverService solver1 = new SPHSolverService();
+		solver1.initialize(model);
+		StateTreeRoot stateTree = null;
+		for(int i = 0; i < cycles; i++){
+			stateTree = solver1.solve(new TimeConfiguration(0.1f, 1, 1));
+			if (i > 0) {
+				removeFirstStateFromTree(stateTree);
+			}
+		}
+		
+		checkStateTreeForNaN(stateTree, false);
+		
+		Assert.assertTrue("Particle count doesn't match.", stateTree.getChildren().size() == countNonBoundaryParticles((SPHModelX)model));
+	}
+	
+	/*
+	 * Scene with a block of elastic matter plus liquid
+	 * NOTE: compares results from running cycles in one go vs step by step
+	 */
+	@Test
+	public void testSolveElastic_StepByStep_VS_OneGo() throws Exception
+	{
+		URL url = this.getClass().getResource("/sphModel_Elastic.xml");
+		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
+		IModel model = modelInterpreter.readModel(url);
+		
+		// check that we don't have particles with overlapping positions
+		checkModelForOverlappingParticles((SPHModelX)model, false);
+		
+		int cycles = 2;
+		
+		// run cycles one by one
+		SPHSolverService solver1 = new SPHSolverService();
+		solver1.initialize(model);
+		StateTreeRoot stateTree1 = null;
+		for(int i = 0; i < cycles; i++){
+			stateTree1 = solver1.solve(new TimeConfiguration(0.1f, 1, 1));
+		}
+		
+		// run cycles at once
+		SPHSolverService solver2 = new SPHSolverService();
+		solver2.initialize(model);
+		StateTreeRoot stateTree2 = solver2.solve(new TimeConfiguration(0.1f, cycles, 1));
+		
+		//checks the trees are equivalent
+		Assert.assertEquals(stateTree1.toString(),stateTree2.toString());
+		
+		checkStateTreeForNaN(stateTree1, false);
+		checkStateTreeForNaN(stateTree2, false);
+		
+		Assert.assertTrue("Particle count doesn't match.", stateTree1.getChildren().size() == countNonBoundaryParticles((SPHModelX)model));
+		Assert.assertTrue("Particle count doesn't match.", stateTree2.getChildren().size() == countNonBoundaryParticles((SPHModelX)model));
 	}
 }
