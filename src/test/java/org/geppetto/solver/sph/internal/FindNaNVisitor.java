@@ -32,13 +32,15 @@
  *******************************************************************************/
 package org.geppetto.solver.sph.internal;
 
+import junit.framework.Assert;
+
 import org.geppetto.core.model.state.SimpleStateNode;
 import org.geppetto.core.model.state.visitors.DefaultStateVisitor;
 import org.geppetto.core.model.values.AValue;
 
 /**
- * @author matteocantarelli
- *
+ * @author matteo@openworm.org
+ * @author giovanni@openworm.org
  */
 public class FindNaNVisitor extends DefaultStateVisitor
 {
@@ -55,6 +57,8 @@ public class FindNaNVisitor extends DefaultStateVisitor
 	@Override
 	public boolean visitSimpleStateNode(SimpleStateNode node)
 	{
+		Assert.assertFalse(node.getValues().size() == 0);
+		
 		int i=0;
 		for(AValue v:node.getValues())
 		{
