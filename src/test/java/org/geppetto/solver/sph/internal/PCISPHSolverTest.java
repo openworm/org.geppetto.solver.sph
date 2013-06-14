@@ -331,7 +331,7 @@ public class PCISPHSolverTest
 		IModel model = modelInterpreter.readModel(url);
 		
 		// check that we don't have particles with overlapping positions
-		checkModelForOverlappingParticles((SPHModelX)model, false);
+		// checkModelForOverlappingParticles((SPHModelX)model, false);
 		
 		int cycles = 2;
 		
@@ -392,7 +392,7 @@ public class PCISPHSolverTest
 		IModel model = modelInterpreter.readModel(url);
 		
 		// check that we don't have particles with overlapping positions
-		checkModelForOverlappingParticles((SPHModelX)model, false);
+		//checkModelForOverlappingParticles((SPHModelX)model, false);
 		
 		int cycles = 2;
 		
@@ -424,7 +424,7 @@ public class PCISPHSolverTest
 		IModel model = modelInterpreter.readModel(url);
 		
 		// check that we don't have particles with overlapping positions
-		checkModelForOverlappingParticles((SPHModelX)model, false);
+		// checkModelForOverlappingParticles((SPHModelX)model, false);
 		
 		int cycles = 2;
 		

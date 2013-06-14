@@ -312,8 +312,8 @@ public class SPHSolverService implements ISolver
 			for(Connection conn : _model.getConnections())
 			{
 				_elasticConnectionsDataPtr.set(connIndex, conn.getP1());
-				_elasticConnectionsDataPtr.set(connIndex + 1, conn.getP2());
-				_elasticConnectionsDataPtr.set(connIndex + 2, conn.getDistance());
+				_elasticConnectionsDataPtr.set(connIndex + 1, conn.getDistance());
+				_elasticConnectionsDataPtr.set(connIndex + 2, conn.getMysteryValue());
 				_elasticConnectionsDataPtr.set(connIndex + 3, 0f); // padding
 				connIndex++;
 			}
