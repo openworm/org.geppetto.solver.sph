@@ -160,7 +160,7 @@ public class SPHSolverService implements ISolver
 
 	public SPHSolverService() throws Exception
 	{
-		this(SPHConstants.CPU_PROFILE);
+		this(SPHConstants.GPU_PROFILE);
 	}
 
 	private void onceOffInit(String hwProfile) throws IOException
