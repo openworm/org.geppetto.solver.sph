@@ -190,6 +190,7 @@
 				<configuration>
 					<excludes>
 						<exclude>**/PCISPHSolverBigTest.java</exclude>
+						<exclude>**/StepValidationTest.java</exclude>
 					</excludes>
 				</configuration>
 			</plugin>
