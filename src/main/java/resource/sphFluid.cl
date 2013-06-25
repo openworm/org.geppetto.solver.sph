@@ -1120,6 +1120,7 @@ __kernel void pcisph_computePressureForceAcceleration(
 	int id_source_particle = PI_SERIAL_ID( particleIndex[id] );
 	
 	if((int)(position[ id_source_particle ].w) == BOUNDARY_PARTICLE){
+		acceleration[ PARTICLE_COUNT+id ] = 0.f;
 		return;
 	}
 	
@@ -1211,7 +1212,7 @@ __kernel void pcisph_integrate(
 	float4 velocity_ = sortedVelocity[ id ];
 
 	// Semi-implicit Euler integration 
-	float4 newVelocity_ = velocity_ + timeStep * acceleration_  ; //newVelocity_.w = 0.f;
+	float4 newVelocity_ = velocity_ + timeStep * acceleration_; //newVelocity_.w = 0.f;
 
 	float posTimeStep = timeStep * simulationScaleInv;			
 	float4 newPosition_ = position_ + posTimeStep * newVelocity_; //newPosition_.w = 0.f;
