@@ -47,6 +47,7 @@ import org.geppetto.model.sph.common.SPHConstants;
 import org.geppetto.model.sph.services.SPHModelInterpreterService;
 import org.geppetto.model.sph.x.SPHModelX;
 import org.geppetto.model.sph.x.Vector3DX;
+import org.geppetto.solver.sph.PCISPHTestUtilities;
 import org.geppetto.solver.sph.SPHSolverService;
 import org.junit.Test;
 
@@ -55,96 +56,7 @@ import org.junit.Test;
  * @author giovanni@openworm.org
  */
 public class PCISPHSolverTest
-{
-	
-	private void checkModelForOverlappingParticles(SPHModelX model, boolean expected)
-	{
-		int particleCount = model.getNumberOfParticles();
-		
-		// build a list of boundary particles - don't assume they are in any order
-		List<Vector3DX> boundary = new ArrayList<Vector3DX>();
-		for(int i = 0; i < particleCount; i++)
-		{
-			Vector3DX positionVector = (Vector3DX) model.getParticles().get(i).getPositionVector();
-			
-			if (positionVector.getP() == SPHConstants.BOUNDARY_TYPE){
-				boundary.add(positionVector);
-			}
-		}
-		
-		// go through particles and check for freely moving particles with same coordinates as boundary
-		// NOTE: this should never happen
-		List<Vector3DX> overlapping = new ArrayList<Vector3DX>();
-		for(int i = 0; i < particleCount; i++)
-		{
-			Vector3DX vector = (Vector3DX) model.getParticles().get(i).getPositionVector();
-			
-			// run it against all the boundary positions
-			if (vector.getP() != SPHConstants.BOUNDARY_TYPE){
-				for(Vector3DX v : boundary)
-				{
-					if(v.getX().equals(vector.getX()) && v.getY().equals(vector.getY()) && v.getZ().equals(vector.getZ()))
-					{
-						overlapping.add(vector);
-					}
-				}
-			}
-		}
-		
-		if(expected){
-			Assert.assertTrue("Found no overlapping particles when they were expected.", overlapping.size() > 0);
-		}
-		else{
-			Assert.assertTrue("Found overlapping particles when they were not expected: " + overlapping.toString(), overlapping.size() == 0);
-		}
-	}
-	
-	/*
-	 * Counts how many non-boundary particles are in the model.
-	 * */
-	private int countNonBoundaryParticles(SPHModelX model)
-	{
-		int count = 0;
-		for(int i = 0; i < model.getNumberOfParticles(); i++)
-		{
-			Vector3DX positionVector = (Vector3DX) model.getParticles().get(i).getPositionVector();
-			
-			if (positionVector.getP() != SPHConstants.BOUNDARY_TYPE){
-				count++;
-			}
-		}
-		
-		return count;
-	}
-	
-	/*
-	 * Checks the entire StateTreeRoot for NaN values
-	 * */
-	private void checkStateTreeForNaN(StateTreeRoot set, boolean expected)
-	{
-		FindNaNVisitor findNaNVisitor=new FindNaNVisitor();
-		set.apply(findNaNVisitor);
-		
-		if(expected)
-		{
-			Assert.assertTrue("No NaN values detected when expected.", findNaNVisitor.hasNaN());
-		} 
-		else 
-		{
-			Assert.assertTrue("Unexpected NaN values detected: " + findNaNVisitor.getParticleWithNaN(), !findNaNVisitor.hasNaN());
-		}
-	}
-	
-	/*
-	 * Removes the first state from state tree values
-	 * */
-	private void removeFirstStateFromTree(StateTreeRoot set)
-	{
-		RemoveTimeStepsVisitor removeTimeStepVisitor= new RemoveTimeStepsVisitor(1);
-		set.apply(removeTimeStepVisitor);
-	}
-	
-
+{	
 	/*
 	 * 296 boundary particles + 1 liquid particle
 	 * NOTE: particle is very close to the origin and it is shot towards it with high velocity
@@ -157,7 +69,7 @@ public class PCISPHSolverTest
 		IModel model = modelInterpreter.readModel(url);
 		
 		// check that we don't have particles with overlapping positions
-		checkModelForOverlappingParticles((SPHModelX)model, false);
+		PCISPHTestUtilities.checkModelForOverlappingParticles((SPHModelX)model, false);
 		
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
@@ -166,7 +78,7 @@ public class PCISPHSolverTest
 		// NOTE: this is commented out as it fails on Apple CPU - should pass everywhere else
 		//checkStateTreeForNaN(stateSet, false);
 		
-		Assert.assertTrue("Particle count doesn't match.", stateSet.getChildren().size() == countNonBoundaryParticles((SPHModelX)model));
+		Assert.assertTrue("Particle count doesn't match.", stateSet.getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
 	}
 	
 	/*
@@ -180,16 +92,16 @@ public class PCISPHSolverTest
 		IModel model = modelInterpreter.readModel(url);
 		
 		// we have one particle that overlaps with boundary particles in this test
-		checkModelForOverlappingParticles((SPHModelX)model, true);
+		PCISPHTestUtilities.checkModelForOverlappingParticles((SPHModelX)model, true);
 		
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
 		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 20, 1));
 		
 		// expect NaN values since in the initial conditions particle 309 overlaps with boundary particles
-		checkStateTreeForNaN(stateSet, true);
+		PCISPHTestUtilities.checkStateTreeForNaN(stateSet, true);
 		
-		Assert.assertTrue("Particle count doesn't match.", stateSet.getChildren().size() == countNonBoundaryParticles((SPHModelX)model));
+		Assert.assertTrue("Particle count doesn't match.", stateSet.getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
 	}
 
 	/*
@@ -203,15 +115,15 @@ public class PCISPHSolverTest
 		IModel model = modelInterpreter.readModel(url);
 		
 		// check that we don't have particles with overlapping positions
-		checkModelForOverlappingParticles((SPHModelX)model, false);
+		PCISPHTestUtilities.checkModelForOverlappingParticles((SPHModelX)model, false);
 		
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
 		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 20, 1));
 		
-		checkStateTreeForNaN(stateSet, false);
+		PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
 		
-		Assert.assertTrue("Particle count doesn't match.", stateSet.getChildren().size() == countNonBoundaryParticles((SPHModelX)model));
+		Assert.assertTrue("Particle count doesn't match.", stateSet.getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
 	}
 	
 	/*
@@ -226,7 +138,7 @@ public class PCISPHSolverTest
 		IModel model = modelInterpreter.readModel(url);
 		
 		// check that we don't have particles with overlapping positions
-		checkModelForOverlappingParticles((SPHModelX)model, false);
+		PCISPHTestUtilities.checkModelForOverlappingParticles((SPHModelX)model, false);
 		
 		int cycles = 20;
 		
@@ -246,11 +158,11 @@ public class PCISPHSolverTest
 		//checks the trees are equivalent
 		Assert.assertEquals(stateTree1.toString(),stateTree2.toString());
 		
-		checkStateTreeForNaN(stateTree1, false);
-		checkStateTreeForNaN(stateTree2, false);
+		PCISPHTestUtilities.checkStateTreeForNaN(stateTree1, false);
+		PCISPHTestUtilities.checkStateTreeForNaN(stateTree2, false);
 		
-		Assert.assertTrue("Particle count doesn't match.", stateTree1.getChildren().size() == countNonBoundaryParticles((SPHModelX)model));
-		Assert.assertTrue("Particle count doesn't match.", stateTree2.getChildren().size() == countNonBoundaryParticles((SPHModelX)model));
+		Assert.assertTrue("Particle count doesn't match.", stateTree1.getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
+		Assert.assertTrue("Particle count doesn't match.", stateTree2.getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
 	}
 
 	/*
@@ -264,15 +176,15 @@ public class PCISPHSolverTest
 		IModel model = modelInterpreter.readModel(url);
 		
 		// check that we don't have particles with overlapping positions
-		checkModelForOverlappingParticles((SPHModelX)model, false);
+		PCISPHTestUtilities.checkModelForOverlappingParticles((SPHModelX)model, false);
 		
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
 		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 20, 1));
 		
-		checkStateTreeForNaN(stateSet, false);
+		PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
 		
-		Assert.assertTrue("Particle count doesn't match.", stateSet.getChildren().size() == countNonBoundaryParticles((SPHModelX)model));
+		Assert.assertTrue("Particle count doesn't match.", stateSet.getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
 	}
 
 	/*
@@ -286,14 +198,14 @@ public class PCISPHSolverTest
 		IModel model = modelInterpreter.readModel(url);
 		
 		// check that we don't have particles with overlapping positions
-		checkModelForOverlappingParticles((SPHModelX)model, false);
+		PCISPHTestUtilities.checkModelForOverlappingParticles((SPHModelX)model, false);
 		
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
 		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 20, 1));
 		
-		checkStateTreeForNaN(stateSet, false);
+		PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
 		
-		Assert.assertTrue("Particle count doesn't match.", stateSet.getChildren().size() == countNonBoundaryParticles((SPHModelX)model));
+		Assert.assertTrue("Particle count doesn't match.", stateSet.getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
 	}
 }

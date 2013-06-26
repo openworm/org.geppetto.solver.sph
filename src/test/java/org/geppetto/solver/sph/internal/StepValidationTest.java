@@ -33,13 +33,7 @@
 
 package org.geppetto.solver.sph.internal;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.net.URL;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -47,10 +41,12 @@ import java.util.Set;
 import junit.framework.Assert;
 
 import org.geppetto.core.model.state.StateTreeRoot;
+import org.geppetto.core.model.state.visitors.RemoveTimeStepsVisitor;
 import org.geppetto.core.simulation.TimeConfiguration;
 
 import org.geppetto.model.sph.services.SPHModelInterpreterService;
 import org.geppetto.model.sph.x.SPHModelX;
+import org.geppetto.solver.sph.PCISPHTestUtilities;
 import org.geppetto.solver.sph.SPHSolverService;
 import org.junit.Test;
 
@@ -59,9 +55,9 @@ public class StepValidationTest {
 	@Test
 	public void testValidateLiquidScene16974() throws Exception {
 		// load reference values at various steps from C++ version
-		String position1 = readFile(StepValidationTest.class.getResource("/results/liquid_16974/position_log_1.txt").getPath());
-		String position5 = readFile(StepValidationTest.class.getResource("/results/liquid_16974/position_log_5.txt").getPath());
-		String position10 = readFile(StepValidationTest.class.getResource("/results/liquid_16974/position_log_10.txt").getPath());
+		String position1 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_16974/position_log_1.txt").getPath());
+		String position5 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_16974/position_log_5.txt").getPath());
+		String position10 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_16974/position_log_10.txt").getPath());
 		
 		Map<Integer, String[]> referenceValuesMap = new HashMap<Integer, String[]>();
 		referenceValuesMap.put(1, position1.split(System.getProperty("line.separator")));
@@ -88,11 +84,16 @@ public class StepValidationTest {
 			// calculate step
 			StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 1, 1));
 			
+			// only keep latest step results
+			if (i > 0) {
+				PCISPHTestUtilities.removeFirstStateFromTree(stateSet);
+			}
+			
 			// get reference values
 			int step = i + 1;
 			String[] referenceValues = referenceValuesMap.get(step);
 			
-			checkStateTreeForNaN(stateSet, false);
+			PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
 			
 			if( referenceValuesMap.containsKey(step) )
 			{
@@ -115,9 +116,9 @@ public class StepValidationTest {
 	@Test
 	public void testValidateElasticScene_SingleBundle() throws Exception {
 		// load reference values at various steps from C++ version
-		String position1 = readFile(StepValidationTest.class.getResource("/results/elastic/position_log_1.txt").getPath());
-		String position5 = readFile(StepValidationTest.class.getResource("/results/elastic/position_log_5.txt").getPath());
-		String position10 = readFile(StepValidationTest.class.getResource("/results/elastic/position_log_10.txt").getPath());
+		String position1 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/elastic/position_log_1.txt").getPath());
+		String position5 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/elastic/position_log_5.txt").getPath());
+		String position10 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/elastic/position_log_10.txt").getPath());
 		
 		Map<Integer, String[]> referenceValuesMap = new HashMap<Integer, String[]>();
 		referenceValuesMap.put(1, position1.split(System.getProperty("line.separator")));
@@ -144,11 +145,16 @@ public class StepValidationTest {
 			// calculate step
 			StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 1, 1));
 			
+			// only keep latest step results
+			if (i > 0) {
+				PCISPHTestUtilities.removeFirstStateFromTree(stateSet);
+			}
+			
 			// get reference values
 			int step = i + 1;
 			String[] referenceValues = referenceValuesMap.get(step);
 			
-			checkStateTreeForNaN(stateSet, false);
+			PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
 			
 			if( referenceValuesMap.containsKey(step) )
 			{
@@ -165,40 +171,6 @@ public class StepValidationTest {
 			Integer step = entry.getKey();
 			// assert there are no mismatching values
 			Assert.assertTrue(entry.getValue().size() + " mismatching values found on step " + step, entry.getValue().size() == 0);
-		}
-	}
-	
-	private String readFile(String path) throws IOException
-	{
-		FileInputStream stream = new FileInputStream(new File(path));
-		try
-		{
-			FileChannel fc = stream.getChannel();
-			MappedByteBuffer bb = fc.map(FileChannel.MapMode.READ_ONLY, 0, fc.size());
-			/* Instead of using default, pass in a decoder. */
-			return Charset.defaultCharset().decode(bb).toString();
-		}
-		finally
-		{
-			stream.close();
-		}
-	}
-	
-	/*
-	 * Checks the entire StateTreeRoot for NaN values
-	 * */
-	private void checkStateTreeForNaN(StateTreeRoot set, boolean expected)
-	{
-		FindNaNVisitor findNaNVisitor=new FindNaNVisitor();
-		set.apply(findNaNVisitor);
-		
-		if(expected)
-		{
-			Assert.assertTrue("No NaN values detected when expected.", findNaNVisitor.hasNaN());
-		} 
-		else 
-		{
-			Assert.assertTrue("Unexpected NaN values detected: " + findNaNVisitor.getParticleWithNaN(), !findNaNVisitor.hasNaN());
 		}
 	}
 }
