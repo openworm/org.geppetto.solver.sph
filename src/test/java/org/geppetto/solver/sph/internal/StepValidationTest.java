@@ -41,7 +41,6 @@ import java.util.Set;
 import junit.framework.Assert;
 
 import org.geppetto.core.model.state.StateTreeRoot;
-import org.geppetto.core.model.state.visitors.RemoveTimeStepsVisitor;
 import org.geppetto.core.simulation.TimeConfiguration;
 
 import org.geppetto.model.sph.services.SPHModelInterpreterService;
@@ -55,11 +54,13 @@ public class StepValidationTest {
 	@Test
 	public void testValidateLiquidScene16974() throws Exception {
 		// load reference values at various steps from C++ version
+		String position0 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_16974/position_log_0.txt").getPath());
 		String position1 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_16974/position_log_1.txt").getPath());
 		String position5 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_16974/position_log_5.txt").getPath());
 		String position10 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_16974/position_log_10.txt").getPath());
 		
 		Map<Integer, String[]> referenceValuesMap = new HashMap<Integer, String[]>();
+		referenceValuesMap.put(0, position0.split(System.getProperty("line.separator")));
 		referenceValuesMap.put(1, position1.split(System.getProperty("line.separator")));
 		referenceValuesMap.put(5, position5.split(System.getProperty("line.separator")));
 		referenceValuesMap.put(10, position10.split(System.getProperty("line.separator")));
@@ -79,6 +80,21 @@ public class StepValidationTest {
 		solver.initialize(model);
 		
 		Map<Integer,Set<Integer>> mismatchingSetsMap = new HashMap<Integer, Set<Integer>>();
+		
+		int step = 0;
+		if( referenceValuesMap.containsKey(step) )
+		{
+			// get reference values
+			String[] referenceValues = referenceValuesMap.get(step);
+
+			StateTreeRoot stateSet = solver.getStateTree();
+
+			// compare state tree with logged values for each recorded step
+			CompareStateVisitor compareVisitor = new CompareStateVisitor(referenceValues);
+			stateSet.apply(compareVisitor);
+			mismatchingSetsMap.put(step, compareVisitor.getMismatches());
+		}
+		
 		for(int i = 0; i < 10; i++)
 		{
 			// calculate step
@@ -90,7 +106,7 @@ public class StepValidationTest {
 			}
 			
 			// get reference values
-			int step = i + 1;
+			step = i + 1;
 			String[] referenceValues = referenceValuesMap.get(step);
 			
 			PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
@@ -104,23 +120,35 @@ public class StepValidationTest {
 			}
 		}
 		
+		StringBuilder sb = new StringBuilder();
+		
 		// check mismatching stuff
 		for (Map.Entry<Integer,Set<Integer>> entry : mismatchingSetsMap.entrySet())
 		{
-			Integer step = entry.getKey();
+			Integer _step = entry.getKey();
 			// assert there are no mismatching values
-			Assert.assertTrue(entry.getValue().size() + " mismatching values found on step " + step, entry.getValue().size() == 0);
+			if (entry.getValue().size() != 0)
+				sb
+					.append(entry.getValue().size()).append(" of ").append(referenceValuesMap.get(_step).length)
+					.append(" mismatching values found on step ").append(_step).append("\n")
+					;
 		}
+		
+		String msg = sb.toString();
+		if (!msg.isEmpty())
+			Assert.fail(msg);
 	}
 	
 	@Test
 	public void testValidateElasticScene_SingleBundle() throws Exception {
 		// load reference values at various steps from C++ version
+		String position0 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/elastic/position_log_0.txt").getPath());
 		String position1 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/elastic/position_log_1.txt").getPath());
 		String position5 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/elastic/position_log_5.txt").getPath());
 		String position10 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/elastic/position_log_10.txt").getPath());
 		
 		Map<Integer, String[]> referenceValuesMap = new HashMap<Integer, String[]>();
+		referenceValuesMap.put(0, position0.split(System.getProperty("line.separator")));
 		referenceValuesMap.put(1, position1.split(System.getProperty("line.separator")));
 		referenceValuesMap.put(5, position5.split(System.getProperty("line.separator")));
 		referenceValuesMap.put(10, position10.split(System.getProperty("line.separator")));
@@ -140,6 +168,21 @@ public class StepValidationTest {
 		solver.initialize(model);
 		
 		Map<Integer,Set<Integer>> mismatchingSetsMap = new HashMap<Integer, Set<Integer>>();
+
+		int step = 0;
+		if( referenceValuesMap.containsKey(step) )
+		{
+			// get reference values
+			String[] referenceValues = referenceValuesMap.get(step);
+			
+			StateTreeRoot stateSet = solver.getStateTree();
+
+			// compare state tree with logged values for each recorded step
+			CompareStateVisitor compareVisitor = new CompareStateVisitor(referenceValues);
+			stateSet.apply(compareVisitor);
+			mismatchingSetsMap.put(step, compareVisitor.getMismatches());
+		}
+
 		for(int i = 0; i < 10; i++)
 		{
 			// calculate step
@@ -151,7 +194,7 @@ public class StepValidationTest {
 			}
 			
 			// get reference values
-			int step = i + 1;
+			step = i + 1;
 			String[] referenceValues = referenceValuesMap.get(step);
 			
 			PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
@@ -165,12 +208,21 @@ public class StepValidationTest {
 			}
 		}
 		
+		StringBuilder sb = new StringBuilder();
+		
 		// check mismatching stuff
 		for (Map.Entry<Integer,Set<Integer>> entry : mismatchingSetsMap.entrySet())
 		{
-			Integer step = entry.getKey();
+			Integer _step = entry.getKey();
 			// assert there are no mismatching values
-			Assert.assertTrue(entry.getValue().size() + " mismatching values found on step " + step, entry.getValue().size() == 0);
+			if (entry.getValue().size() != 0)
+				sb
+					.append(entry.getValue().size()).append(" of ").append(referenceValuesMap.get(_step).length)
+					.append(" mismatching values found on step ").append(_step).append("\n");
 		}
+		
+		String msg = sb.toString();
+		if (!msg.isEmpty())
+			Assert.fail(msg);
 	}
 }

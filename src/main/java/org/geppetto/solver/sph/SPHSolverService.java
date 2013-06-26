@@ -815,6 +815,17 @@ public class SPHSolverService implements ISolver
 	{
 		return (((_particleCount - 1) / 256) + 1) * 256;
 	}
+	
+	//XXX: for debug only, remove
+	public StateTreeRoot getStateTree() {
+		if(_stateTree == null)
+		{
+			_stateTree = new StateTreeRoot(_model.getId());
+			updateStateTree();
+		}
+		
+		return _stateTree;
+	}
 
 	@Override
 	public StateTreeRoot solve(IRunConfiguration timeConfiguration)
