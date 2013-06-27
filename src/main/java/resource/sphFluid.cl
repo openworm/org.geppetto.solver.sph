@@ -758,8 +758,8 @@ __kernel void pcisph_computeForcesAndInitPressure(
 				vi = sortedVelocity[id];
 				vj = sortedVelocity[jd];
 				sum += (sortedVelocity[jd]-sortedVelocity[id])*(hScaled-r_ij)/rho[jd];
-
-				accel_surfTensForce += -0.0013f*Wpoly6Coefficient*pow(hScaled2/2,3)*(sortedPosition[id]-sortedPosition[jd])*simulationScale;
+				
+				accel_surfTensForce += -0.0013f*Wpoly6Coefficient*pow(hScaled2/2.f,3.f)*(sortedPosition[id]-sortedPosition[jd])*simulationScale;
 			}
 		}
 
