@@ -53,6 +53,11 @@ public class CompareStateVisitor extends DefaultStateVisitor
 	private String[] referenceStates = null;
 	private Set<Integer> mismatchingIDs = new HashSet<>();
 	
+	private final String X = "x";
+	private final String Y = "y";
+	private final String Z = "z";
+	private final String P = "p";
+	
 	public CompareStateVisitor(String[] referenceStates) {
 		super();
 		this.referenceStates = referenceStates;
@@ -92,22 +97,29 @@ public class CompareStateVisitor extends DefaultStateVisitor
 		
 		String name = node.getName();
 		switch (name) {
-        case "x":  
+        case X:  
         	refVal = refVector.getX();
             break;
-        case "y":
+        case Y:
         	refVal = refVector.getY();
         	break;
-        case "z":
+        case Z:
         	refVal = refVector.getZ();
         	break;
-        case "p":
+        case P:
         	refVal = refVector.getP();
         	break;
 		}
 		
-		// round to 3rd decimal digit
-		if(!(round(nodeVal.floatValue(), 3) == round(refVal, 3)))
+		// round to 3rd decimal digit for X - Y - Z
+		if((name.equals(X) || name.equals(Y) || name.equals(Z)) &&
+		   !(round(nodeVal.floatValue(), 3) == round(refVal, 3)))
+		{
+			// add ID to mismatching set
+			mismatchingIDs.add(currentID);
+		}
+		else if (name.equals(P) && 
+				 !(round(nodeVal.floatValue(), 0) == round(refVal, 0)))
 		{
 			// add ID to mismatching set
 			mismatchingIDs.add(currentID);

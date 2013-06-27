@@ -140,7 +140,7 @@ public class StepValidationTest {
 	}
 	
 	@Test
-	public void testValidateElasticScene_SingleBundle() throws Exception {
+	public void testValidateElasticSceneSingleBundle() throws Exception {
 		// load reference values at various steps from C++ version
 		String position0 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/elastic/position_log_0.txt").getPath());
 		String position1 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/elastic/position_log_1.txt").getPath());
