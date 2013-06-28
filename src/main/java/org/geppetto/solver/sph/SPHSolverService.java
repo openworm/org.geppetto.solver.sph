@@ -870,7 +870,7 @@ public class SPHSolverService implements ISolver
 				FloatValue zV = ValuesFactory.getFloatValue(_positionPtr.get(index + 2));
 				FloatValue pV = ValuesFactory.getFloatValue(_positionPtr.get(index + 3));
 
-				if(pV.getAsFloat() != 3.1f)
+				if(pV.getAsFloat() != SPHConstants.BOUNDARY_TYPE)
 				{
 					//we dont need to create a state for the boundary particles, they don't move.
 					CompositeStateNode particle = new CompositeStateNode(particleId);
