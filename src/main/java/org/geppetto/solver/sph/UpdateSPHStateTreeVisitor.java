@@ -68,11 +68,6 @@ public class UpdateSPHStateTreeVisitor extends DefaultStateVisitor
 			_yV = ValuesFactory.getFloatValue(_positionPtr.get(index + 1));
 			_zV = ValuesFactory.getFloatValue(_positionPtr.get(index + 2));
 			_pV = ValuesFactory.getFloatValue(_positionPtr.get(index + 3));
-			if(_pV.getAsFloat()==3.1f)
-			{
-				//boundary particles don't move, don't visit the children!
-				return false;
-			}
 				
 		}
 		return super.inCompositeStateNode(node);
