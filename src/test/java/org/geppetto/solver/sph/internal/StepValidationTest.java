@@ -35,6 +35,7 @@ package org.geppetto.solver.sph.internal;
 
 import java.net.URL;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -56,14 +57,28 @@ public class StepValidationTest {
 		// load reference values at various steps from C++ version
 		String position0 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_16974/position_log_0.txt").getPath());
 		String position1 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_16974/position_log_1.txt").getPath());
+		String position2 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_16974/position_log_2.txt").getPath());
+		String position3 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_16974/position_log_3.txt").getPath());
+		String position4 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_16974/position_log_4.txt").getPath());
 		String position5 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_16974/position_log_5.txt").getPath());
 		String position10 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_16974/position_log_10.txt").getPath());
+		String position20 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_16974/position_log_20.txt").getPath());
+		String position30 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_16974/position_log_30.txt").getPath());
+		String position40 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_16974/position_log_40.txt").getPath());
+		String position50 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_16974/position_log_50.txt").getPath());
 		
 		Map<Integer, String[]> referenceValuesMap = new HashMap<Integer, String[]>();
 		referenceValuesMap.put(0, position0.split(System.getProperty("line.separator")));
 		referenceValuesMap.put(1, position1.split(System.getProperty("line.separator")));
+		referenceValuesMap.put(2, position2.split(System.getProperty("line.separator")));
+		referenceValuesMap.put(3, position3.split(System.getProperty("line.separator")));
+		referenceValuesMap.put(4, position4.split(System.getProperty("line.separator")));
 		referenceValuesMap.put(5, position5.split(System.getProperty("line.separator")));
 		referenceValuesMap.put(10, position10.split(System.getProperty("line.separator")));
+		referenceValuesMap.put(20, position20.split(System.getProperty("line.separator")));
+		referenceValuesMap.put(30, position30.split(System.getProperty("line.separator")));
+		referenceValuesMap.put(40, position40.split(System.getProperty("line.separator")));
+		referenceValuesMap.put(50, position50.split(System.getProperty("line.separator")));
 		
 		// load Java generated scene
 		URL url = this.getClass().getResource("/sphModel_liquid_16974.xml");
@@ -79,7 +94,7 @@ public class StepValidationTest {
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
 		
-		Map<Integer,Set<Integer>> mismatchingSetsMap = new HashMap<Integer, Set<Integer>>();
+		Map<Integer,Set<Integer>> mismatchingSetsMap = new LinkedHashMap<Integer, Set<Integer>>();
 		
 		int step = 0;
 		if( referenceValuesMap.containsKey(step) )
@@ -95,7 +110,7 @@ public class StepValidationTest {
 			mismatchingSetsMap.put(step, compareVisitor.getMismatches());
 		}
 		
-		for(int i = 0; i < 10; i++)
+		for(int i = 0; i < 50; i++)
 		{
 			// calculate step
 			StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 1, 1));
@@ -167,7 +182,7 @@ public class StepValidationTest {
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
 		
-		Map<Integer,Set<Integer>> mismatchingSetsMap = new HashMap<Integer, Set<Integer>>();
+		Map<Integer,Set<Integer>> mismatchingSetsMap = new LinkedHashMap<Integer, Set<Integer>>();
 
 		int step = 0;
 		if( referenceValuesMap.containsKey(step) )
@@ -216,9 +231,8 @@ public class StepValidationTest {
 			Integer _step = entry.getKey();
 			// assert there are no mismatching values
 			if (entry.getValue().size() != 0)
-				sb
-					.append(entry.getValue().size()).append(" of ").append(referenceValuesMap.get(_step).length)
-					.append(" mismatching values found on step ").append(_step).append("\n");
+				sb.append(entry.getValue().size()).append(" of ").append(referenceValuesMap.get(_step).length)
+				  .append(" mismatching values found on step ").append(_step).append("\n");
 		}
 		
 		String msg = sb.toString();
