@@ -223,7 +223,7 @@ public class SPHSolverService implements ISolver
 		_particleIndex = _context.createIntBuffer(CLMem.Usage.InputOutput, _particleCount * 2);
 		_particleIndexBack = _context.createIntBuffer(CLMem.Usage.Input, _particleCount);
 		_position = _context.createFloatBuffer(CLMem.Usage.InputOutput, _particleCount * 4);
-		_pressure = _context.createFloatBuffer(CLMem.Usage.Input, _particleCount);
+		_pressure = _context.createFloatBuffer(CLMem.Usage.Input, _particleCount * 4);
 		_rho = _context.createFloatBuffer(CLMem.Usage.Input, _particleCount * 2);
 		_sortedPosition = _context.createFloatBuffer(CLMem.Usage.Input, _particleCount * 4 * 2);
 		_sortedVelocity = _context.createFloatBuffer(CLMem.Usage.Input, _particleCount * 4);
