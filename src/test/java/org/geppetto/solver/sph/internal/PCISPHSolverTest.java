@@ -76,7 +76,7 @@ public class PCISPHSolverTest
 		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 2, 1));
 		
 		// NOTE: this is commented out as it fails on Apple CPU - should pass everywhere else
-		//checkStateTreeForNaN(stateSet, false);
+		// PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
 		
 		Assert.assertTrue("Particle count doesn't match.", stateSet.getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
 	}
@@ -202,9 +202,9 @@ public class PCISPHSolverTest
 		
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
-		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 20, 1));
+		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 10, 1));
 		
-		PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
+		PCISPHTestUtilities.checkStateTreeForNaN(stateSet, true);
 		
 		Assert.assertTrue("Particle count doesn't match.", stateSet.getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
 	}
