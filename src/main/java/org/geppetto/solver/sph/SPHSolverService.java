@@ -160,7 +160,7 @@ public class SPHSolverService implements ISolver
 
 	public SPHSolverService() throws Exception
 	{
-		this(SPHConstants.GPU_PROFILE);
+		this(SPHConstants.CPU_PROFILE);
 	}
 
 	private void onceOffInit(String hwProfile) throws IOException
@@ -195,22 +195,21 @@ public class SPHSolverService implements ISolver
 		_program = _context.createProgram(src);
 
 		// kernels
-		_clearBuffers = _program.createKernel("clearBuffers");
-		_findNeighbors = _program.createKernel("findNeighbors");
-		_hashParticles = _program.createKernel("hashParticles");
-		// PORTING-NOTE: indexPostPass is gone from kernels in the latest version,logic moved from opencl to host code (this class)
-		_indexx = _program.createKernel("indexx");
-		_sortPostPass = _program.createKernel("sortPostPass");
+		_clearBuffers = _program.createKernel(KernelsEnum.CLEAR_BUFFERS.toString());
+		_findNeighbors = _program.createKernel(KernelsEnum.FIND_NEIGHBORS.toString());
+		_hashParticles = _program.createKernel(KernelsEnum.HASH_PARTICLES.toString());
+		_indexx = _program.createKernel(KernelsEnum.INDEX.toString());
+		_sortPostPass = _program.createKernel(KernelsEnum.SORT_POST_PASS.toString());
 
 		// PCI-SPH specific
-		_pcisph_computeForcesAndInitPressure = _program.createKernel("pcisph_computeForcesAndInitPressure");
-		_pcisph_integrate = _program.createKernel("pcisph_integrate");
-		_pcisph_predictPositions = _program.createKernel("pcisph_predictPositions");
-		_pcisph_predictDensity = _program.createKernel("pcisph_predictDensity");
-		_pcisph_correctPressure = _program.createKernel("pcisph_correctPressure");
-		_pcisph_computePressureForceAcceleration = _program.createKernel("pcisph_computePressureForceAcceleration");
-		_pcisph_computeDensity = _program.createKernel("pcisph_computeDensity");
-		_pcisph_computeElasticForces = _program.createKernel("pcisph_computeElasticForces");
+		_pcisph_computeForcesAndInitPressure = _program.createKernel(KernelsEnum.COMPUTE_FORCES_INIT_PRESSURE.toString());
+		_pcisph_integrate = _program.createKernel(KernelsEnum.INTEGRATE.toString());
+		_pcisph_predictPositions = _program.createKernel(KernelsEnum.PREDICT_POSITION.toString());
+		_pcisph_predictDensity = _program.createKernel(KernelsEnum.PREDICT_DENSITY.toString());
+		_pcisph_correctPressure = _program.createKernel(KernelsEnum.CORRECT_PRESSURE.toString());
+		_pcisph_computePressureForceAcceleration = _program.createKernel(KernelsEnum.COMPUTE_PRESSURE_FORCE_ACCELERATION.toString());
+		_pcisph_computeDensity = _program.createKernel(KernelsEnum.COMPUTE_DENSITY.toString());
+		_pcisph_computeElasticForces = _program.createKernel(KernelsEnum.COMPUTE_ELASTIC_FORCES.toString());
 	}
 
 	private void allocateBuffers()
