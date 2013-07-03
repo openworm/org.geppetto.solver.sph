@@ -33,33 +33,23 @@
 
 package org.geppetto.solver.sph;
 
-public enum KernelsEnum {
-	    CLEAR_BUFFERS("clearBuffers"),
-	    HASH_PARTICLES("hashParticles"),
-	    SORT("sort"),
-	    SORT_POST_PASS("sortPostPass"),
-	    INDEX("indexx"),
-	    INDEX_POST_PASS("indexxPostPass"),
-	    FIND_NEIGHBORS("findNeighbors"),
-	    COMPUTE_DENSITY("pcisph_computeDensity"),
-	    COMPUTE_FORCES_INIT_PRESSURE("pcisph_computeForcesAndInitPressure"),
-	    COMPUTE_ELASTIC_FORCES("pcisph_computeElasticForces"),
-	    PREDICT_POSITION("pcisph_predictPositions"),
-	    PREDICT_DENSITY("pcisph_predictDensity"),
-	    CORRECT_PRESSURE("pcisph_correctPressure"),
-	    COMPUTE_PRESSURE_FORCE_ACCELERATION("pcisph_computePressureForceAcceleration"),
-	    PREDICTIVE_LOOP("predictiveLoop"),
-	    INTEGRATE("pcisph_integrate"),
-	    ;
-	    
-	    private KernelsEnum(final String text) {
-	        this.text = text;
-	    }
+import java.util.ArrayList;
+import java.util.List;
 
-	    private final String text;
-
-	    @Override
-	    public String toString() {
-	        return text;
-	    }
+public class PCISPHCheckPoint {
+	
+	public List<Float> acceleration = new ArrayList<Float>();
+	public List<Integer> gridCellIndex = new ArrayList<Integer>();
+	public List<Integer> gridCellIndexFixedUp = new ArrayList<Integer>();
+	public List<Float> neighborMap = new ArrayList<Float>();
+	public List<Integer> particleIndex = new ArrayList<Integer>();
+	public List<Integer> particleIndexBack = new ArrayList<Integer>();
+	public List<Float> position = new ArrayList<Float>();
+	public List<Float> pressure = new ArrayList<Float>();
+	public List<Float> rho = new ArrayList<Float>();
+	public List<Float> sortedPosition = new ArrayList<Float>();
+	public List<Float> sortedVelocity = new ArrayList<Float>();
+	public List<Float> velocity = new ArrayList<Float>();
+	public List<Float> elasticConnections = new ArrayList<Float>();
+	
 }

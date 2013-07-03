@@ -33,33 +33,30 @@
 
 package org.geppetto.solver.sph;
 
-public enum KernelsEnum {
-	    CLEAR_BUFFERS("clearBuffers"),
-	    HASH_PARTICLES("hashParticles"),
-	    SORT("sort"),
-	    SORT_POST_PASS("sortPostPass"),
-	    INDEX("indexx"),
-	    INDEX_POST_PASS("indexxPostPass"),
-	    FIND_NEIGHBORS("findNeighbors"),
-	    COMPUTE_DENSITY("pcisph_computeDensity"),
-	    COMPUTE_FORCES_INIT_PRESSURE("pcisph_computeForcesAndInitPressure"),
-	    COMPUTE_ELASTIC_FORCES("pcisph_computeElasticForces"),
-	    PREDICT_POSITION("pcisph_predictPositions"),
-	    PREDICT_DENSITY("pcisph_predictDensity"),
-	    CORRECT_PRESSURE("pcisph_correctPressure"),
-	    COMPUTE_PRESSURE_FORCE_ACCELERATION("pcisph_computePressureForceAcceleration"),
-	    PREDICTIVE_LOOP("predictiveLoop"),
-	    INTEGRATE("pcisph_integrate"),
-	    ;
-	    
-	    private KernelsEnum(final String text) {
-	        this.text = text;
-	    }
+public enum BuffersEnum {
+    ACCELERATION("acceleration"),
+    GRID_CELL_INDEX("gridCellIndex"),
+    GRID_CELL_INDEX_FIXED("gridCellIndexFixedUp"),
+    NEIGHBOR_MAP("neighborMap"),
+    PARTICLE_INDEX("particleIndex"),
+    PARTICLE_INDEX_BACK("particleIndexBack"),
+    POSITION("position"),
+    PRESSURE("pressure"),
+    RHO("rho"),
+    SORTED_POSITION("sortedPosition"),
+    SORTED_VELOCITY("sortedVelocity"),
+    VELOCITY("velocity"),
+    ELASTIC_CONNECTIONS("elasticConnections"),
+    ;
+    
+    private BuffersEnum(final String text) {
+        this.text = text;
+    }
 
-	    private final String text;
+    private final String text;
 
-	    @Override
-	    public String toString() {
-	        return text;
-	    }
+    @Override
+    public String toString() {
+        return text;
+    }
 }
