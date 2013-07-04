@@ -239,4 +239,108 @@ public class StepValidationTest {
 		if (!msg.isEmpty())
 			Assert.fail(msg);
 	}
+	
+	@Test
+	public void testValidateLiquidScene780() throws Exception {
+		// load reference values at various steps from C++ version
+		String position0 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_780/position_log_0.txt").getPath());
+		String position1 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_780/position_log_1.txt").getPath());
+		String position2 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_780/position_log_2.txt").getPath());
+		String position3 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_780/position_log_3.txt").getPath());
+		String position4 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_780/position_log_4.txt").getPath());
+		String position5 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_780/position_log_5.txt").getPath());
+		String position10 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_780/position_log_10.txt").getPath());
+		String position20 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_780/position_log_20.txt").getPath());
+		String position30 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_780/position_log_30.txt").getPath());
+		String position40 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_780/position_log_40.txt").getPath());
+		String position50 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_780/position_log_50.txt").getPath());
+		String position100 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_780/position_log_100.txt").getPath());
+		
+		Map<Integer, String[]> referenceValuesMap = new HashMap<Integer, String[]>();
+		referenceValuesMap.put(0, position0.split(System.getProperty("line.separator")));
+		referenceValuesMap.put(1, position1.split(System.getProperty("line.separator")));
+		referenceValuesMap.put(2, position2.split(System.getProperty("line.separator")));
+		referenceValuesMap.put(3, position3.split(System.getProperty("line.separator")));
+		referenceValuesMap.put(4, position4.split(System.getProperty("line.separator")));
+		referenceValuesMap.put(5, position5.split(System.getProperty("line.separator")));
+		referenceValuesMap.put(10, position10.split(System.getProperty("line.separator")));
+		referenceValuesMap.put(20, position20.split(System.getProperty("line.separator")));
+		referenceValuesMap.put(30, position30.split(System.getProperty("line.separator")));
+		referenceValuesMap.put(40, position40.split(System.getProperty("line.separator")));
+		referenceValuesMap.put(50, position50.split(System.getProperty("line.separator")));
+		referenceValuesMap.put(100, position100.split(System.getProperty("line.separator")));
+		
+		// load Java generated scene
+		URL url = this.getClass().getResource("/sphModel_liquid_780.xml");
+		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
+		SPHModelX model = (SPHModelX)modelInterpreter.readModel(url);
+		
+		// 3. assert number of particles is fine
+		for (Map.Entry<Integer, String[]> entry : referenceValuesMap.entrySet())
+		{
+		    Assert.assertTrue("number of lines on positions and number of particles on sphModel do not match", model.getParticles().size() == entry.getValue().length);
+		}
+		
+		SPHSolverService solver = new SPHSolverService();
+		solver.initialize(model);
+		
+		Map<Integer,Set<Integer>> mismatchingSetsMap = new LinkedHashMap<Integer, Set<Integer>>();
+		
+		int step = 0;
+		if( referenceValuesMap.containsKey(step) )
+		{
+			// get reference values
+			String[] referenceValues = referenceValuesMap.get(step);
+
+			StateTreeRoot stateSet = solver.getStateTree();
+
+			// compare state tree with logged values for each recorded step
+			CompareStateVisitor compareVisitor = new CompareStateVisitor(referenceValues);
+			stateSet.apply(compareVisitor);
+			mismatchingSetsMap.put(step, compareVisitor.getMismatches());
+		}
+		
+		for(int i = 0; i < 100; i++)
+		{
+			// calculate step
+			StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 1, 1));
+			
+			// only keep latest step results
+			if (i > 0) {
+				PCISPHTestUtilities.removeFirstStateFromTree(stateSet);
+			}
+			
+			// get reference values
+			step = i + 1;
+			String[] referenceValues = referenceValuesMap.get(step);
+			
+			PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
+			
+			if( referenceValuesMap.containsKey(step) )
+			{
+				// compare state tree with logged values for each recorded step
+				CompareStateVisitor compareVisitor = new CompareStateVisitor(referenceValues);
+				stateSet.apply(compareVisitor);
+				mismatchingSetsMap.put(step, compareVisitor.getMismatches());
+			}
+		}
+		
+		StringBuilder sb = new StringBuilder();
+		
+		// check mismatching stuff
+		for (Map.Entry<Integer,Set<Integer>> entry : mismatchingSetsMap.entrySet())
+		{
+			Integer _step = entry.getKey();
+			// assert there are no mismatching values
+			if (entry.getValue().size() != 0)
+				sb
+					.append(entry.getValue().size()).append(" of ").append(referenceValuesMap.get(_step).length)
+					.append(" mismatching values found on step ").append(_step).append("\n")
+					;
+		}
+		
+		String msg = sb.toString();
+		if (!msg.isEmpty())
+			Assert.fail(msg);
+	}
 }
