@@ -192,6 +192,7 @@
 						<exclude>**/PCISPHSolverBigTest.java</exclude>
 						<exclude>**/StepValidationTest.java</exclude>
 						<exclude>**/RecordCheckpointsTest.java</exclude>
+						<exclude>**/StepValidationWithCheckpointsTest.java</exclude>
 					</excludes>
 				</configuration>
 			</plugin>
