@@ -70,7 +70,7 @@ public class StepValidationWithCheckpointsTest {
 		logs.put(BuffersEnum.SORTED_VELOCITY, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/01_sortedvelocity_log_runClearBuffers_0.txt"));
 		logs.put(BuffersEnum.VELOCITY, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/01_velocity_log_runClearBuffers_0.txt"));
 		
-		evaluateCheckpoint(KernelsEnum.CLEAR_BUFFERS, logs);
+		evaluateCheckpoint(KernelsEnum.CLEAR_BUFFERS, logs, this.getClass().getResource("/sphModel_liquid_780.xml"));
 	}
 	
 	@Test
@@ -89,7 +89,7 @@ public class StepValidationWithCheckpointsTest {
 		logs.put(BuffersEnum.SORTED_VELOCITY, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/02_sortedvelocity_log_runHashParticles_0.txt"));
 		logs.put(BuffersEnum.VELOCITY, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/02_velocity_log_runHashParticles_0.txt"));
 		
-		evaluateCheckpoint(KernelsEnum.HASH_PARTICLES, logs);
+		evaluateCheckpoint(KernelsEnum.HASH_PARTICLES, logs, this.getClass().getResource("/sphModel_liquid_780.xml"));
 	}
 	
 	@Test
@@ -108,7 +108,7 @@ public class StepValidationWithCheckpointsTest {
 		logs.put(BuffersEnum.SORTED_VELOCITY, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/03_sortedvelocity_log_runSort_0.txt"));
 		logs.put(BuffersEnum.VELOCITY, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/03_velocity_log_runSort_0.txt"));
 		
-		evaluateCheckpoint(KernelsEnum.SORT, logs);
+		evaluateCheckpoint(KernelsEnum.SORT, logs, this.getClass().getResource("/sphModel_liquid_780.xml"));
 	}
 	
 	private Vector3D get3DVector(String values)
@@ -150,38 +150,19 @@ public class StepValidationWithCheckpointsTest {
 		return floatSeries;
 	}
 	
-	private void evaluateCheckpoint(KernelsEnum checkpoint, Map<BuffersEnum, URL> logs) throws Exception
+	private void evaluateCheckpoint(KernelsEnum checkpoint, Map<BuffersEnum, URL> logs, URL modelURL) throws Exception
 	{
 		// load reference values at various steps from C++ version
-		String density_01 = PCISPHTestUtilities.readFile(logs.get(BuffersEnum.RHO).getPath());
-		String gridcell_01 = PCISPHTestUtilities.readFile(logs.get(BuffersEnum.GRID_CELL_INDEX).getPath());
-		String gridcellfixedup_01 = PCISPHTestUtilities.readFile(logs.get(BuffersEnum.GRID_CELL_INDEX_FIXED).getPath());
-		String index_01 = PCISPHTestUtilities.readFile(logs.get(BuffersEnum.PARTICLE_INDEX).getPath());
-		String indexback_01 = PCISPHTestUtilities.readFile(logs.get(BuffersEnum.PARTICLE_INDEX_BACK).getPath());
-		String neighbormap_01 = PCISPHTestUtilities.readFile(logs.get(BuffersEnum.NEIGHBOR_MAP).getPath());
-		String position_01 = PCISPHTestUtilities.readFile(logs.get(BuffersEnum.POSITION).getPath());
-		String pressure_01 = PCISPHTestUtilities.readFile(logs.get(BuffersEnum.PRESSURE).getPath());
-		String sortedposition_01 = PCISPHTestUtilities.readFile(logs.get(BuffersEnum.SORTED_POSITION).getPath());
-		String sortedvelocity_01 = PCISPHTestUtilities.readFile(logs.get(BuffersEnum.SORTED_VELOCITY).getPath());
-		String velocity_01 = PCISPHTestUtilities.readFile(logs.get(BuffersEnum.VELOCITY).getPath());
-		
 		Map<BuffersEnum, String[]> checkpointReferenceValuesMap = new HashMap<BuffersEnum, String[]>();
-		checkpointReferenceValuesMap.put(BuffersEnum.RHO, density_01.split(System.getProperty("line.separator")));
-		checkpointReferenceValuesMap.put(BuffersEnum.GRID_CELL_INDEX, gridcell_01.split(System.getProperty("line.separator")));
-		checkpointReferenceValuesMap.put(BuffersEnum.GRID_CELL_INDEX_FIXED, gridcellfixedup_01.split(System.getProperty("line.separator")));
-		checkpointReferenceValuesMap.put(BuffersEnum.PARTICLE_INDEX, index_01.split(System.getProperty("line.separator")));
-		checkpointReferenceValuesMap.put(BuffersEnum.PARTICLE_INDEX_BACK, indexback_01.split(System.getProperty("line.separator")));
-		checkpointReferenceValuesMap.put(BuffersEnum.NEIGHBOR_MAP, neighbormap_01.split(System.getProperty("line.separator")));
-		checkpointReferenceValuesMap.put(BuffersEnum.POSITION, position_01.split(System.getProperty("line.separator")));
-		checkpointReferenceValuesMap.put(BuffersEnum.PRESSURE, pressure_01.split(System.getProperty("line.separator")));
-		checkpointReferenceValuesMap.put(BuffersEnum.SORTED_POSITION, sortedposition_01.split(System.getProperty("line.separator")));
-		checkpointReferenceValuesMap.put(BuffersEnum.SORTED_VELOCITY, sortedvelocity_01.split(System.getProperty("line.separator")));
-		checkpointReferenceValuesMap.put(BuffersEnum.VELOCITY, velocity_01.split(System.getProperty("line.separator")));
+		for (Map.Entry<BuffersEnum, URL> entry : logs.entrySet())
+		{
+			String fileContent = PCISPHTestUtilities.readFile(logs.get(entry.getKey()).getPath());
+			checkpointReferenceValuesMap.put(entry.getKey(), fileContent.split(System.getProperty("line.separator")));
+		}
 		
 		// load Java generated scene
-		URL url = this.getClass().getResource("/sphModel_liquid_780.xml");
 		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
-		SPHModelX model = (SPHModelX)modelInterpreter.readModel(url);
+		SPHModelX model = (SPHModelX)modelInterpreter.readModel(modelURL);
 		
 		SPHSolverService solver = new SPHSolverService(true);
 		solver.initialize(model);
