@@ -92,6 +92,25 @@ public class StepValidationWithCheckpointsTest {
 		evaluateCheckpoint(KernelsEnum.HASH_PARTICLES, logs);
 	}
 	
+	@Test
+	public void testCheckpoints_780_SORT() throws Exception {
+		// load reference values at various steps from C++ version
+		Map<BuffersEnum, URL> logs = new LinkedHashMap<BuffersEnum, URL>();
+		logs.put(BuffersEnum.RHO, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/03_density_log_runSort_0.txt"));
+		logs.put(BuffersEnum.GRID_CELL_INDEX, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/03_gridcellindex_log_runSort_0.txt"));
+		logs.put(BuffersEnum.GRID_CELL_INDEX_FIXED, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/03_gridcellindexfixedup_log_runSort_0.txt"));
+		logs.put(BuffersEnum.PARTICLE_INDEX, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/03_index_log_runSort_0.txt"));
+		logs.put(BuffersEnum.PARTICLE_INDEX_BACK, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/03_indexback_log_runSort_0.txt"));
+		logs.put(BuffersEnum.NEIGHBOR_MAP, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/03_neighbormap_log_runSort_0.txt"));
+		logs.put(BuffersEnum.POSITION, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/03_position_log_runSort_0.txt"));
+		logs.put(BuffersEnum.PRESSURE, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/03_pressure_log_runSort_0.txt"));
+		logs.put(BuffersEnum.SORTED_POSITION, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/03_sortedposition_log_runSort_0.txt"));
+		logs.put(BuffersEnum.SORTED_VELOCITY, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/03_sortedvelocity_log_runSort_0.txt"));
+		logs.put(BuffersEnum.VELOCITY, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/03_velocity_log_runSort_0.txt"));
+		
+		evaluateCheckpoint(KernelsEnum.SORT, logs);
+	}
+	
 	private Vector3D get3DVector(String values)
 	{
 		Vector3D v = new Vector3D();
