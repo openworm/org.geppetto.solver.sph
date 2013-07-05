@@ -57,17 +57,75 @@ public class StepValidationWithCheckpointsTest {
 	@Test
 	public void testCheckpoints_780_CLEARBUFFERS() throws Exception {
 		// load reference values at various steps from C++ version
-		String density_01 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/01_density_log_runClearBuffers_0.txt").getPath());
-		String gridcell_01 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/01_gridcellindex_log_runClearBuffers_0.txt").getPath());
-		String gridcellfixedup_01 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/01_gridcellindexfixedup_log_runClearBuffers_0.txt").getPath());
-		String index_01 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/01_index_log_runClearBuffers_0.txt").getPath());
-		String indexback_01 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/01_indexback_log_runClearBuffers_0.txt").getPath());
-		String neighbormap_01 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/01_neighbormap_log_runClearBuffers_0.txt").getPath());
-		String position_01 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/01_position_log_runClearBuffers_0.txt").getPath());
-		String pressure_01 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/01_pressure_log_runClearBuffers_0.txt").getPath());
-		String sortedposition_01 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/01_sortedposition_log_runClearBuffers_0.txt").getPath());
-		String sortedvelocity_01 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/01_sortedvelocity_log_runClearBuffers_0.txt").getPath());
-		String velocity_01 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/01_velocity_log_runClearBuffers_0.txt").getPath());
+		Map<BuffersEnum, URL> logs = new LinkedHashMap<BuffersEnum, URL>();
+		logs.put(BuffersEnum.RHO, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/01_density_log_runClearBuffers_0.txt"));
+		logs.put(BuffersEnum.GRID_CELL_INDEX, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/01_gridcellindex_log_runClearBuffers_0.txt"));
+		logs.put(BuffersEnum.GRID_CELL_INDEX_FIXED, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/01_gridcellindexfixedup_log_runClearBuffers_0.txt"));
+		logs.put(BuffersEnum.PARTICLE_INDEX, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/01_index_log_runClearBuffers_0.txt"));
+		logs.put(BuffersEnum.PARTICLE_INDEX_BACK, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/01_indexback_log_runClearBuffers_0.txt"));
+		logs.put(BuffersEnum.NEIGHBOR_MAP, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/01_neighbormap_log_runClearBuffers_0.txt"));
+		logs.put(BuffersEnum.POSITION, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/01_position_log_runClearBuffers_0.txt"));
+		logs.put(BuffersEnum.PRESSURE, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/01_pressure_log_runClearBuffers_0.txt"));
+		logs.put(BuffersEnum.SORTED_POSITION, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/01_sortedposition_log_runClearBuffers_0.txt"));
+		logs.put(BuffersEnum.SORTED_VELOCITY, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/01_sortedvelocity_log_runClearBuffers_0.txt"));
+		logs.put(BuffersEnum.VELOCITY, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/01_velocity_log_runClearBuffers_0.txt"));
+		
+		evaluateCheckpoint(KernelsEnum.CLEAR_BUFFERS, logs);
+	}
+	
+	private Vector3D get3DVector(String values)
+	{
+		Vector3D v = new Vector3D();
+		String[] coordinates = values.split("\t");
+		
+		if (coordinates.length > 0) v.setX(new Float(coordinates[0].trim()));
+		if (coordinates.length > 1) v.setY(new Float(coordinates[1].trim()));
+		if (coordinates.length > 2) v.setZ(new Float(coordinates[2].trim()));
+		if (coordinates.length > 3)	v.setP(new Float(coordinates[3].trim()));
+
+		return v;
+	}
+	
+	private Integer[] getIntValues(String values)
+	{
+		String[] series = values.split("\t");
+		Integer[] intSeries = new Integer[series.length];
+		
+		for(int i=0; i<series.length; i++)
+		{
+			intSeries[i] = Integer.parseInt(series[i]);
+		}
+		
+		return intSeries;
+	}
+	
+	private Float[] getFloatValues(String values)
+	{
+		String[] series = values.split("\t");
+		Float[] floatSeries = new Float[series.length];
+		
+		for(int i=0; i<series.length; i++)
+		{
+			floatSeries[i] = Float.parseFloat(series[i]);
+		}
+		
+		return floatSeries;
+	}
+	
+	private void evaluateCheckpoint(KernelsEnum checkpoint, Map<BuffersEnum, URL> logs) throws Exception
+	{
+		// load reference values at various steps from C++ version
+		String density_01 = PCISPHTestUtilities.readFile(logs.get(BuffersEnum.RHO).getPath());
+		String gridcell_01 = PCISPHTestUtilities.readFile(logs.get(BuffersEnum.GRID_CELL_INDEX).getPath());
+		String gridcellfixedup_01 = PCISPHTestUtilities.readFile(logs.get(BuffersEnum.GRID_CELL_INDEX_FIXED).getPath());
+		String index_01 = PCISPHTestUtilities.readFile(logs.get(BuffersEnum.PARTICLE_INDEX).getPath());
+		String indexback_01 = PCISPHTestUtilities.readFile(logs.get(BuffersEnum.PARTICLE_INDEX_BACK).getPath());
+		String neighbormap_01 = PCISPHTestUtilities.readFile(logs.get(BuffersEnum.NEIGHBOR_MAP).getPath());
+		String position_01 = PCISPHTestUtilities.readFile(logs.get(BuffersEnum.POSITION).getPath());
+		String pressure_01 = PCISPHTestUtilities.readFile(logs.get(BuffersEnum.PRESSURE).getPath());
+		String sortedposition_01 = PCISPHTestUtilities.readFile(logs.get(BuffersEnum.SORTED_POSITION).getPath());
+		String sortedvelocity_01 = PCISPHTestUtilities.readFile(logs.get(BuffersEnum.SORTED_VELOCITY).getPath());
+		String velocity_01 = PCISPHTestUtilities.readFile(logs.get(BuffersEnum.VELOCITY).getPath());
 		
 		Map<BuffersEnum, String[]> checkpointReferenceValuesMap = new HashMap<BuffersEnum, String[]>();
 		checkpointReferenceValuesMap.put(BuffersEnum.RHO, density_01.split(System.getProperty("line.separator")));
@@ -96,7 +154,7 @@ public class StepValidationWithCheckpointsTest {
 		solver.solve(new TimeConfiguration(0.1f, 1, 1));
 		
 		// get checkpoint of interest
-		PCISPHCheckPoint checkpoint_CLEARBUFFERS = solver.getCheckpointsMap().get(KernelsEnum.CLEAR_BUFFERS);
+		PCISPHCheckPoint checkpoint_CLEARBUFFERS = solver.getCheckpointsMap().get(checkpoint);
 		
 		// get buffer sizes
 		Map<BuffersEnum, Integer> dimensions = solver.getBuffersSizeMap();
@@ -432,44 +490,5 @@ public class StepValidationWithCheckpointsTest {
 		String msg = sb.toString();
 		if (!msg.isEmpty())
 			Assert.fail(msg);
-	}
-	
-	private Vector3D get3DVector(String values)
-	{
-		Vector3D v = new Vector3D();
-		String[] coordinates = values.split("\t");
-		
-		if (coordinates.length > 0) v.setX(new Float(coordinates[0].trim()));
-		if (coordinates.length > 1) v.setY(new Float(coordinates[1].trim()));
-		if (coordinates.length > 2) v.setZ(new Float(coordinates[2].trim()));
-		if (coordinates.length > 3)	v.setP(new Float(coordinates[3].trim()));
-
-		return v;
-	}
-	
-	private Integer[] getIntValues(String values)
-	{
-		String[] series = values.split("\t");
-		Integer[] intSeries = new Integer[series.length];
-		
-		for(int i=0; i<series.length; i++)
-		{
-			intSeries[i] = Integer.parseInt(series[i]);
-		}
-		
-		return intSeries;
-	}
-	
-	private Float[] getFloatValues(String values)
-	{
-		String[] series = values.split("\t");
-		Float[] floatSeries = new Float[series.length];
-		
-		for(int i=0; i<series.length; i++)
-		{
-			floatSeries[i] = Float.parseFloat(series[i]);
-		}
-		
-		return floatSeries;
 	}
 }
