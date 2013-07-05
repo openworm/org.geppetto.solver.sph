@@ -73,6 +73,25 @@ public class StepValidationWithCheckpointsTest {
 		evaluateCheckpoint(KernelsEnum.CLEAR_BUFFERS, logs);
 	}
 	
+	@Test
+	public void testCheckpoints_780_HASHPARTICLES() throws Exception {
+		// load reference values at various steps from C++ version
+		Map<BuffersEnum, URL> logs = new LinkedHashMap<BuffersEnum, URL>();
+		logs.put(BuffersEnum.RHO, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/02_density_log_runHashParticles_0.txt"));
+		logs.put(BuffersEnum.GRID_CELL_INDEX, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/02_gridcellindex_log_runHashParticles_0.txt"));
+		logs.put(BuffersEnum.GRID_CELL_INDEX_FIXED, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/02_gridcellindexfixedup_log_runHashParticles_0.txt"));
+		logs.put(BuffersEnum.PARTICLE_INDEX, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/02_index_log_runHashParticles_0.txt"));
+		logs.put(BuffersEnum.PARTICLE_INDEX_BACK, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/02_indexback_log_runHashParticles_0.txt"));
+		logs.put(BuffersEnum.NEIGHBOR_MAP, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/02_neighbormap_log_runHashParticles_0.txt"));
+		logs.put(BuffersEnum.POSITION, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/02_position_log_runHashParticles_0.txt"));
+		logs.put(BuffersEnum.PRESSURE, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/02_pressure_log_runHashParticles_0.txt"));
+		logs.put(BuffersEnum.SORTED_POSITION, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/02_sortedposition_log_runHashParticles_0.txt"));
+		logs.put(BuffersEnum.SORTED_VELOCITY, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/02_sortedvelocity_log_runHashParticles_0.txt"));
+		logs.put(BuffersEnum.VELOCITY, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/02_velocity_log_runHashParticles_0.txt"));
+		
+		evaluateCheckpoint(KernelsEnum.HASH_PARTICLES, logs);
+	}
+	
 	private Vector3D get3DVector(String values)
 	{
 		Vector3D v = new Vector3D();
