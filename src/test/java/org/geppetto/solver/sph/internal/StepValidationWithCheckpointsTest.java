@@ -58,6 +58,7 @@ public class StepValidationWithCheckpointsTest {
 	public void testCheckpoints_780_CLEARBUFFERS() throws Exception {
 		// load reference values at various steps from C++ version
 		String density_01 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/01_density_log_runClearBuffers_0.txt").getPath());
+		String gridcell_01 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/01_gridcellindex_log_runClearBuffers_0.txt").getPath());
 		String gridcellfixedup_01 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/01_gridcellindexfixedup_log_runClearBuffers_0.txt").getPath());
 		String index_01 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/01_index_log_runClearBuffers_0.txt").getPath());
 		String indexback_01 = PCISPHTestUtilities.readFile(StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/01_indexback_log_runClearBuffers_0.txt").getPath());
@@ -70,6 +71,7 @@ public class StepValidationWithCheckpointsTest {
 		
 		Map<BuffersEnum, String[]> checkpointReferenceValuesMap = new HashMap<BuffersEnum, String[]>();
 		checkpointReferenceValuesMap.put(BuffersEnum.RHO, density_01.split(System.getProperty("line.separator")));
+		checkpointReferenceValuesMap.put(BuffersEnum.GRID_CELL_INDEX, gridcell_01.split(System.getProperty("line.separator")));
 		checkpointReferenceValuesMap.put(BuffersEnum.GRID_CELL_INDEX_FIXED, gridcellfixedup_01.split(System.getProperty("line.separator")));
 		checkpointReferenceValuesMap.put(BuffersEnum.PARTICLE_INDEX, index_01.split(System.getProperty("line.separator")));
 		checkpointReferenceValuesMap.put(BuffersEnum.PARTICLE_INDEX_BACK, indexback_01.split(System.getProperty("line.separator")));
@@ -130,6 +132,24 @@ public class StepValidationWithCheckpointsTest {
 		            break;
 		        case ELASTIC_CONNECTIONS:  
 		        	// liquid scene has no elastic connections - log files are empty
+		            break;
+		        case GRID_CELL_INDEX:  
+		        	List<Integer> grid_cell_calculatedValues = checkpoint_CLEARBUFFERS.gridCellIndex;
+	        		
+		        	// get array of values from ref values - this buffer is all on one line
+	        		Integer[] grid_cell_vector = getIntValues(checkpointReferenceValuesMap.get(entry.getKey())[0]);
+		        	
+	        		int grid_cell_fixed_mismatches = 0;
+	        		Assert.assertTrue(dimensions.get(entry.getKey()).intValue() == checkpointReferenceValuesMap.get(entry.getKey())[0].split("\t").length);
+		        	for(int i = 0; i < dimensions.get(entry.getKey()); i++)
+		        	{	
+		        		if(grid_cell_vector[i].intValue() != grid_cell_calculatedValues.get(i).intValue()) 
+		        		{
+		        			grid_cell_fixed_mismatches++;
+		        		}
+		        	}
+		        	// record mismatch
+        			mismatchingValuesPerBuffers.put(entry.getKey(), grid_cell_fixed_mismatches);
 		            break;
 		        case GRID_CELL_INDEX_FIXED:  
 		        	List<Integer> grid_idx_calculatedValues = checkpoint_CLEARBUFFERS.gridCellIndexFixedUp;
