@@ -192,7 +192,7 @@ public class StepValidationWithCheckpointsTest {
 		solver.solve(new TimeConfiguration(0.1f, 1, 1));
 		
 		// get checkpoint of interest
-		PCISPHCheckPoint checkpoint_CLEARBUFFERS = solver.getCheckpointsMap().get(checkpoint);
+		PCISPHCheckPoint checkpoint_values = solver.getCheckpointsMap().get(checkpoint);
 		
 		// get buffer sizes
 		Map<BuffersEnum, Integer> dimensions = solver.getBuffersSizeMap();
@@ -202,7 +202,7 @@ public class StepValidationWithCheckpointsTest {
 		{
 			switch (entry.getKey()) {
 		        case RHO:  
-		        	List<Float> rho_calculatedValues = checkpoint_CLEARBUFFERS.rho;
+		        	List<Float> rho_calculatedValues = checkpoint_values.rho;
 		        	int rho_mismatches = 0;
 		        	Assert.assertTrue(dimensions.get(entry.getKey()).intValue() == checkpointReferenceValuesMap.get(entry.getKey()).length *2);
 		        	int j = 0;
@@ -230,7 +230,7 @@ public class StepValidationWithCheckpointsTest {
 		        	// liquid scene has no elastic connections - log files are empty
 		            break;
 		        case GRID_CELL_INDEX:  
-		        	List<Integer> grid_cell_calculatedValues = checkpoint_CLEARBUFFERS.gridCellIndex;
+		        	List<Integer> grid_cell_calculatedValues = checkpoint_values.gridCellIndex;
 	        		
 		        	// get array of values from ref values - this buffer is all on one line
 	        		Integer[] grid_cell_vector = getIntValues(checkpointReferenceValuesMap.get(entry.getKey())[0]);
@@ -248,7 +248,7 @@ public class StepValidationWithCheckpointsTest {
         			mismatchingValuesPerBuffers.put(entry.getKey(), grid_cell_fixed_mismatches);
 		            break;
 		        case GRID_CELL_INDEX_FIXED:  
-		        	List<Integer> grid_idx_calculatedValues = checkpoint_CLEARBUFFERS.gridCellIndexFixedUp;
+		        	List<Integer> grid_idx_calculatedValues = checkpoint_values.gridCellIndexFixedUp;
 	        		
 		        	// get array of values from ref values - this buffer is all on one line
 	        		Integer[] vector = getIntValues(checkpointReferenceValuesMap.get(entry.getKey())[0]);
@@ -266,7 +266,7 @@ public class StepValidationWithCheckpointsTest {
         			mismatchingValuesPerBuffers.put(entry.getKey(), grid_idx_fixed_mismatches);
 		            break;
 		        case PARTICLE_INDEX:  
-		        	List<Integer> index_calculatedValues = checkpoint_CLEARBUFFERS.particleIndex;
+		        	List<Integer> index_calculatedValues = checkpoint_values.particleIndex;
 	        		
 		        	// get array of values from ref values - this buffer is all on one line
 	        		Integer[] index_vector = getIntValues(checkpointReferenceValuesMap.get(entry.getKey())[0]);
@@ -284,7 +284,7 @@ public class StepValidationWithCheckpointsTest {
         			mismatchingValuesPerBuffers.put(entry.getKey(), index_mismatches);
 		            break;
 		        case PARTICLE_INDEX_BACK:  
-		        	List<Integer> index_back_calculatedValues = checkpoint_CLEARBUFFERS.particleIndexBack;
+		        	List<Integer> index_back_calculatedValues = checkpoint_values.particleIndexBack;
 	        		
 		        	// get array of values from ref values - this buffer is all on one line
 	        		Integer[] index_back_vector = getIntValues(checkpointReferenceValuesMap.get(entry.getKey())[0]);
@@ -302,7 +302,7 @@ public class StepValidationWithCheckpointsTest {
         			mismatchingValuesPerBuffers.put(entry.getKey(), index_back_mismatches);
 		            break;
 		        case NEIGHBOR_MAP:  
-		        	List<Float> nm_calculatedValues = checkpoint_CLEARBUFFERS.neighborMap;
+		        	List<Float> nm_calculatedValues = checkpoint_values.neighborMap;
 		        	int nm_mismatches = 0;
 		        	Assert.assertTrue(dimensions.get(entry.getKey()).intValue() == checkpointReferenceValuesMap.get(entry.getKey()).length *2);
 		        	j=0;
@@ -327,7 +327,7 @@ public class StepValidationWithCheckpointsTest {
         			mismatchingValuesPerBuffers.put(entry.getKey(), nm_mismatches);
 		            break;
 		        case POSITION:  
-		        	List<Float> pos_calculatedValues = checkpoint_CLEARBUFFERS.position;
+		        	List<Float> pos_calculatedValues = checkpoint_values.position;
 		        	int pos_mismatches = 0;
 		        	Assert.assertTrue(dimensions.get(entry.getKey()).intValue() == checkpointReferenceValuesMap.get(entry.getKey()).length * 4);
 		        	j=0;
@@ -360,7 +360,7 @@ public class StepValidationWithCheckpointsTest {
         			mismatchingValuesPerBuffers.put(entry.getKey(), pos_mismatches);
 		            break;
 		        case PRESSURE:  
-		        	List<Float> press_calculatedValues = checkpoint_CLEARBUFFERS.pressure;
+		        	List<Float> press_calculatedValues = checkpoint_values.pressure;
 		        	int press_mismatches = 0;
 		        	Assert.assertTrue(dimensions.get(entry.getKey()).intValue() == checkpointReferenceValuesMap.get(entry.getKey()).length * 4);
 		        	j=0;
@@ -393,7 +393,7 @@ public class StepValidationWithCheckpointsTest {
         			mismatchingValuesPerBuffers.put(entry.getKey(), press_mismatches);
 		            break;
 		        case SORTED_POSITION:  
-		        	List<Float> sort_pos_calculatedValues = checkpoint_CLEARBUFFERS.sortedPosition;
+		        	List<Float> sort_pos_calculatedValues = checkpoint_values.sortedPosition;
 		        	int sort_pos_mismatches = 0;
 		        	Assert.assertTrue(dimensions.get(entry.getKey()).intValue() == checkpointReferenceValuesMap.get(entry.getKey()).length * 8);
 		        	j=0;
@@ -442,7 +442,7 @@ public class StepValidationWithCheckpointsTest {
         			mismatchingValuesPerBuffers.put(entry.getKey(), sort_pos_mismatches);
 		            break;
 		        case SORTED_VELOCITY:  
-		        	List<Float> sort_vel_calculatedValues = checkpoint_CLEARBUFFERS.sortedVelocity;
+		        	List<Float> sort_vel_calculatedValues = checkpoint_values.sortedVelocity;
 		        	int sort_vel_mismatches = 0;
 		        	Assert.assertTrue(dimensions.get(entry.getKey()).intValue() == checkpointReferenceValuesMap.get(entry.getKey()).length * 4);
 		        	j=0;
@@ -475,7 +475,7 @@ public class StepValidationWithCheckpointsTest {
         			mismatchingValuesPerBuffers.put(entry.getKey(), sort_vel_mismatches);
 		            break;
 		        case VELOCITY:  
-		        	List<Float> vel_calculatedValues = checkpoint_CLEARBUFFERS.velocity;
+		        	List<Float> vel_calculatedValues = checkpoint_values.velocity;
 		        	int vel_mismatches = 0;
 		        	Assert.assertTrue(dimensions.get(entry.getKey()).intValue() == checkpointReferenceValuesMap.get(entry.getKey()).length * 4);
 		        	j=0;
