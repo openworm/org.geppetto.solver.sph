@@ -87,11 +87,11 @@ public class SPHSolverService implements ISolver
 	private CLProgram _program;
 	private CLDevice _device;
 	public CLBuffer<Float> _acceleration;
-	public CLBuffer<Integer> _gridCellIndex;
-	public CLBuffer<Integer> _gridCellIndexFixedUp;
+	public CLBuffer<Long> _gridCellIndex;
+	public CLBuffer<Long> _gridCellIndexFixedUp;
 	public CLBuffer<Float> _neighborMap;
-	public CLBuffer<Integer> _particleIndex;
-	public CLBuffer<Integer> _particleIndexBack;
+	public CLBuffer<Long> _particleIndex;
+	public CLBuffer<Long> _particleIndexBack;
 	public CLBuffer<Float> _position;
 	public CLBuffer<Float> _pressure;
 	public CLBuffer<Float> _rho;
@@ -101,11 +101,11 @@ public class SPHSolverService implements ISolver
 	public CLBuffer<Float> _elasticConnectionsData;
 
 	public Pointer<Float> _accelerationPtr;
-	public Pointer<Integer> _gridCellIndexPtr;
-	public Pointer<Integer> _gridCellIndexFixedUpPtr;
+	public Pointer<Long> _gridCellIndexPtr;
+	public Pointer<Long> _gridCellIndexFixedUpPtr;
 	public Pointer<Float> _neighborMapPtr;
-	public Pointer<Integer> _particleIndexPtr;
-	public Pointer<Integer> _particleIndexBackPtr;
+	public Pointer<Long> _particleIndexPtr;
+	public Pointer<Long> _particleIndexBackPtr;
 	public Pointer<Float> _positionPtr;
 	public Pointer<Float> _pressurePtr;
 	public Pointer<Float> _rhoPtr;
@@ -259,11 +259,11 @@ public class SPHSolverService implements ISolver
 		
 		// allocate native device memory for all buffers
 		_acceleration = _context.createFloatBuffer(CLMem.Usage.InputOutput, _buffersSizeMap.get(BuffersEnum.ACCELERATION));
-		_gridCellIndex = _context.createIntBuffer(CLMem.Usage.InputOutput, _buffersSizeMap.get(BuffersEnum.GRID_CELL_INDEX));
-		_gridCellIndexFixedUp = _context.createIntBuffer(_recordCheckPoints ? CLMem.Usage.InputOutput : CLMem.Usage.Input, _buffersSizeMap.get(BuffersEnum.GRID_CELL_INDEX_FIXED));
+		_gridCellIndex = _context.createLongBuffer(CLMem.Usage.InputOutput, _buffersSizeMap.get(BuffersEnum.GRID_CELL_INDEX));
+		_gridCellIndexFixedUp = _context.createLongBuffer(_recordCheckPoints ? CLMem.Usage.InputOutput : CLMem.Usage.Input, _buffersSizeMap.get(BuffersEnum.GRID_CELL_INDEX_FIXED));
 		_neighborMap = _context.createFloatBuffer(_recordCheckPoints ? CLMem.Usage.InputOutput : CLMem.Usage.Input, _buffersSizeMap.get(BuffersEnum.NEIGHBOR_MAP));
-		_particleIndex = _context.createIntBuffer(CLMem.Usage.InputOutput, _buffersSizeMap.get(BuffersEnum.PARTICLE_INDEX));
-		_particleIndexBack = _context.createIntBuffer(_recordCheckPoints ? CLMem.Usage.InputOutput : CLMem.Usage.Input, _buffersSizeMap.get(BuffersEnum.PARTICLE_INDEX_BACK));
+		_particleIndex = _context.createLongBuffer(CLMem.Usage.InputOutput, _buffersSizeMap.get(BuffersEnum.PARTICLE_INDEX));
+		_particleIndexBack = _context.createLongBuffer(_recordCheckPoints ? CLMem.Usage.InputOutput : CLMem.Usage.Input, _buffersSizeMap.get(BuffersEnum.PARTICLE_INDEX_BACK));
 		_position = _context.createFloatBuffer(CLMem.Usage.InputOutput, _buffersSizeMap.get(BuffersEnum.POSITION));
 		_pressure = _context.createFloatBuffer(_recordCheckPoints ? CLMem.Usage.InputOutput : CLMem.Usage.Input, _buffersSizeMap.get(BuffersEnum.PRESSURE));
 		_rho = _context.createFloatBuffer(_recordCheckPoints ? CLMem.Usage.InputOutput : CLMem.Usage.Input, _buffersSizeMap.get(BuffersEnum.RHO));
@@ -972,11 +972,11 @@ public class SPHSolverService implements ISolver
 	    
 	    // read buffers into lists and populate checkpoint object
 	    check.acceleration = this.<Float>getBufferValues(_accelerationPtr, _acceleration, this._buffersSizeMap.get(BuffersEnum.ACCELERATION));
-	    check.gridCellIndex = this.<Integer>getBufferValues(_gridCellIndexPtr, _gridCellIndex, this._buffersSizeMap.get(BuffersEnum.GRID_CELL_INDEX));
-	    check.gridCellIndexFixedUp = this.<Integer>getBufferValues(_gridCellIndexFixedUpPtr, _gridCellIndexFixedUp, this._buffersSizeMap.get(BuffersEnum.GRID_CELL_INDEX_FIXED));
+	    check.gridCellIndex = this.<Long>getBufferValues(_gridCellIndexPtr, _gridCellIndex, this._buffersSizeMap.get(BuffersEnum.GRID_CELL_INDEX));
+	    check.gridCellIndexFixedUp = this.<Long>getBufferValues(_gridCellIndexFixedUpPtr, _gridCellIndexFixedUp, this._buffersSizeMap.get(BuffersEnum.GRID_CELL_INDEX_FIXED));
 	    check.neighborMap = this.<Float>getBufferValues(_neighborMapPtr, _neighborMap, this._buffersSizeMap.get(BuffersEnum.NEIGHBOR_MAP));
-	    check.particleIndex = this.<Integer>getBufferValues(_particleIndexPtr, _particleIndex, this._buffersSizeMap.get(BuffersEnum.PARTICLE_INDEX));
-	    check.particleIndexBack = this.<Integer>getBufferValues(_particleIndexBackPtr, _particleIndexBack, this._buffersSizeMap.get(BuffersEnum.PARTICLE_INDEX_BACK));
+	    check.particleIndex = this.<Long>getBufferValues(_particleIndexPtr, _particleIndex, this._buffersSizeMap.get(BuffersEnum.PARTICLE_INDEX));
+	    check.particleIndexBack = this.<Long>getBufferValues(_particleIndexBackPtr, _particleIndexBack, this._buffersSizeMap.get(BuffersEnum.PARTICLE_INDEX_BACK));
 	    check.position = this.<Float>getBufferValues(_positionPtr, _position, this._buffersSizeMap.get(BuffersEnum.POSITION));
 	    check.pressure = this.<Float>getBufferValues(_pressurePtr, _pressure, this._buffersSizeMap.get(BuffersEnum.PRESSURE));
 	    check.rho = this.<Float>getBufferValues(_rhoPtr, _rho, this._buffersSizeMap.get(BuffersEnum.RHO));

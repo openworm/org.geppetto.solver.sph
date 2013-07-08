@@ -181,14 +181,14 @@ public class StepValidationWithCheckpointsTest {
 		return v;
 	}
 	
-	private Integer[] getIntValues(String values)
+	private Long[] getLongValues(String values)
 	{
 		String[] series = values.split("\t");
-		Integer[] intSeries = new Integer[series.length];
+		Long[] intSeries = new Long[series.length];
 		
 		for(int i=0; i<series.length; i++)
 		{
-			intSeries[i] = Integer.parseInt(series[i]);
+			intSeries[i] = Long.parseLong(series[i]);
 		}
 		
 		return intSeries;
@@ -268,16 +268,16 @@ public class StepValidationWithCheckpointsTest {
 		        	// liquid scene has no elastic connections - log files are empty
 		            break;
 		        case GRID_CELL_INDEX:  
-		        	List<Integer> grid_cell_calculatedValues = checkpoint_values.gridCellIndex;
+		        	List<Long> grid_cell_calculatedValues = checkpoint_values.gridCellIndex;
 	        		
 		        	// get array of values from ref values - this buffer is all on one line
-	        		Integer[] grid_cell_vector = getIntValues(checkpointReferenceValuesMap.get(entry.getKey())[0]);
+	        		Long[] grid_cell_vector = getLongValues(checkpointReferenceValuesMap.get(entry.getKey())[0]);
 		        	
 	        		int grid_cell_fixed_mismatches = 0;
 	        		Assert.assertTrue(dimensions.get(entry.getKey()).intValue() == checkpointReferenceValuesMap.get(entry.getKey())[0].split("\t").length);
 		        	for(int i = 0; i < dimensions.get(entry.getKey()); i++)
 		        	{	
-		        		if(grid_cell_vector[i].intValue() != grid_cell_calculatedValues.get(i).intValue()) 
+		        		if(grid_cell_vector[i].longValue() != grid_cell_calculatedValues.get(i).longValue()) 
 		        		{
 		        			grid_cell_fixed_mismatches++;
 		        		}
@@ -286,16 +286,16 @@ public class StepValidationWithCheckpointsTest {
         			mismatchingValuesPerBuffers.put(entry.getKey(), grid_cell_fixed_mismatches);
 		            break;
 		        case GRID_CELL_INDEX_FIXED:  
-		        	List<Integer> grid_idx_calculatedValues = checkpoint_values.gridCellIndexFixedUp;
+		        	List<Long> grid_idx_calculatedValues = checkpoint_values.gridCellIndexFixedUp;
 	        		
 		        	// get array of values from ref values - this buffer is all on one line
-	        		Integer[] vector = getIntValues(checkpointReferenceValuesMap.get(entry.getKey())[0]);
+	        		Long[] vector = getLongValues(checkpointReferenceValuesMap.get(entry.getKey())[0]);
 		        	
 	        		int grid_idx_fixed_mismatches = 0;
 	        		Assert.assertTrue(dimensions.get(entry.getKey()).intValue() == checkpointReferenceValuesMap.get(entry.getKey())[0].split("\t").length);
 		        	for(int i = 0; i < dimensions.get(entry.getKey()); i++)
 		        	{	
-		        		if(vector[i].intValue() != grid_idx_calculatedValues.get(i).intValue()) 
+		        		if(vector[i].longValue() != grid_idx_calculatedValues.get(i).longValue()) 
 		        		{
 		        			grid_idx_fixed_mismatches++;
 		        		}
@@ -304,16 +304,16 @@ public class StepValidationWithCheckpointsTest {
         			mismatchingValuesPerBuffers.put(entry.getKey(), grid_idx_fixed_mismatches);
 		            break;
 		        case PARTICLE_INDEX:  
-		        	List<Integer> index_calculatedValues = checkpoint_values.particleIndex;
+		        	List<Long> index_calculatedValues = checkpoint_values.particleIndex;
 	        		
 		        	// get array of values from ref values - this buffer is all on one line
-	        		Integer[] index_vector = getIntValues(checkpointReferenceValuesMap.get(entry.getKey())[0]);
+	        		Long[] index_vector = getLongValues(checkpointReferenceValuesMap.get(entry.getKey())[0]);
 		        	
 	        		int index_mismatches = 0;
 	        		Assert.assertTrue(dimensions.get(entry.getKey()).intValue() == checkpointReferenceValuesMap.get(entry.getKey())[0].split("\t").length);
 		        	for(int i = 0; i < dimensions.get(entry.getKey()); i++)
 		        	{	
-		        		if(index_vector[i].intValue() != index_calculatedValues.get(i).intValue()) 
+		        		if(index_vector[i].longValue() != index_calculatedValues.get(i).longValue()) 
 		        		{
 		        			index_mismatches++;
 		        		}
@@ -322,16 +322,16 @@ public class StepValidationWithCheckpointsTest {
         			mismatchingValuesPerBuffers.put(entry.getKey(), index_mismatches);
 		            break;
 		        case PARTICLE_INDEX_BACK:  
-		        	List<Integer> index_back_calculatedValues = checkpoint_values.particleIndexBack;
+		        	List<Long> index_back_calculatedValues = checkpoint_values.particleIndexBack;
 	        		
 		        	// get array of values from ref values - this buffer is all on one line
-	        		Integer[] index_back_vector = getIntValues(checkpointReferenceValuesMap.get(entry.getKey())[0]);
+	        		Long[] index_back_vector = getLongValues(checkpointReferenceValuesMap.get(entry.getKey())[0]);
 		        	
 	        		int index_back_mismatches = 0;
 	        		Assert.assertTrue(dimensions.get(entry.getKey()).intValue() == checkpointReferenceValuesMap.get(entry.getKey())[0].split("\t").length);
 		        	for(int i = 0; i < dimensions.get(entry.getKey()); i++)
 		        	{	
-		        		if(index_back_vector[i].intValue() != index_back_calculatedValues.get(i).intValue()) 
+		        		if(index_back_vector[i].longValue() != index_back_calculatedValues.get(i).longValue()) 
 		        		{
 		        			index_back_mismatches++;
 		        		}
