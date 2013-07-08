@@ -181,6 +181,9 @@ public class StepValidationWithCheckpointsTest {
 		return v;
 	}
 	
+	/*
+	 * Retrieves an array of ints from a tab separated string of values
+	 * */
 	private Integer[] getIntValues(String values)
 	{
 		String[] series = values.split("\t");
@@ -194,6 +197,9 @@ public class StepValidationWithCheckpointsTest {
 		return intSeries;
 	}
 	
+	/*
+	 * Retrieves an array of floats from a tab separated string of values
+	 * */
 	private Float[] getFloatValues(String values)
 	{
 		String[] series = values.split("\t");
@@ -207,6 +213,10 @@ public class StepValidationWithCheckpointsTest {
 		return floatSeries;
 	}
 	
+	/*
+	 * Evaluates checkpoints
+	 * NOTE: this routine knows a whole about log file formats and stuff - it's ugly but it works
+	 * */
 	private void evaluateCheckpoint(KernelsEnum checkpoint, Map<BuffersEnum, URL> logs, URL modelURL) throws Exception
 	{
 		// load reference values at various steps from C++ version
