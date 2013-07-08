@@ -39,11 +39,11 @@ import java.util.List;
 public class PCISPHCheckPoint {
 	
 	public List<Float> acceleration = new ArrayList<Float>();
-	public List<Long> gridCellIndex = new ArrayList<Long>();
-	public List<Long> gridCellIndexFixedUp = new ArrayList<Long>();
+	public List<Integer> gridCellIndex = new ArrayList<Integer>();
+	public List<Integer> gridCellIndexFixedUp = new ArrayList<Integer>();
 	public List<Float> neighborMap = new ArrayList<Float>();
-	public List<Long> particleIndex = new ArrayList<Long>();
-	public List<Long> particleIndexBack = new ArrayList<Long>();
+	public List<Integer> particleIndex = new ArrayList<Integer>();
+	public List<Integer> particleIndexBack = new ArrayList<Integer>();
 	public List<Float> position = new ArrayList<Float>();
 	public List<Float> pressure = new ArrayList<Float>();
 	public List<Float> rho = new ArrayList<Float>();
