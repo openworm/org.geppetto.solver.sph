@@ -130,6 +130,44 @@ public class StepValidationWithCheckpointsTest {
 		evaluateCheckpoint(KernelsEnum.SORT_POST_PASS, logs, this.getClass().getResource("/sphModel_liquid_780.xml"));
 	}
 	
+	@Test
+	public void testCheckpoints_780_RUNINDEX() throws Exception {
+		// load reference values at various steps from C++ version
+		Map<BuffersEnum, URL> logs = new LinkedHashMap<BuffersEnum, URL>();
+		logs.put(BuffersEnum.RHO, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/05_density_log_runIndexx_0.txt"));
+		logs.put(BuffersEnum.GRID_CELL_INDEX, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/05_gridcellindex_log_runIndexx_0.txt"));
+		logs.put(BuffersEnum.GRID_CELL_INDEX_FIXED, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/05_gridcellindexfixedup_log_runIndexx_0.txt"));
+		logs.put(BuffersEnum.PARTICLE_INDEX, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/05_index_log_runIndexx_0.txt"));
+		logs.put(BuffersEnum.PARTICLE_INDEX_BACK, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/05_indexback_log_runIndexx_0.txt"));
+		logs.put(BuffersEnum.NEIGHBOR_MAP, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/05_neighbormap_log_runIndexx_0.txt"));
+		logs.put(BuffersEnum.POSITION, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/05_position_log_runIndexx_0.txt"));
+		logs.put(BuffersEnum.PRESSURE, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/05_pressure_log_runIndexx_0.txt"));
+		logs.put(BuffersEnum.SORTED_POSITION, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/05_sortedposition_log_runIndexx_0.txt"));
+		logs.put(BuffersEnum.SORTED_VELOCITY, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/05_sortedvelocity_log_runIndexx_0.txt"));
+		logs.put(BuffersEnum.VELOCITY, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/05_velocity_log_runIndexx_0.txt"));
+		
+		evaluateCheckpoint(KernelsEnum.INDEX, logs, this.getClass().getResource("/sphModel_liquid_780.xml"));
+	}
+	
+	@Test
+	public void testCheckpoints_780_RUNINDEXPOSTPASS() throws Exception {
+		// load reference values at various steps from C++ version
+		Map<BuffersEnum, URL> logs = new LinkedHashMap<BuffersEnum, URL>();
+		logs.put(BuffersEnum.RHO, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/06_density_log_runIndexPostPass_0.txt"));
+		logs.put(BuffersEnum.GRID_CELL_INDEX, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/06_gridcellindex_log_runIndexPostPass_0.txt"));
+		logs.put(BuffersEnum.GRID_CELL_INDEX_FIXED, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/06_gridcellindexfixedup_log_runIndexPostPass_0.txt"));
+		logs.put(BuffersEnum.PARTICLE_INDEX, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/06_index_log_runIndexPostPass_0.txt"));
+		logs.put(BuffersEnum.PARTICLE_INDEX_BACK, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/06_indexback_log_runIndexPostPass_0.txt"));
+		logs.put(BuffersEnum.NEIGHBOR_MAP, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/06_neighbormap_log_runIndexPostPass_0.txt"));
+		logs.put(BuffersEnum.POSITION, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/06_position_log_runIndexPostPass_0.txt"));
+		logs.put(BuffersEnum.PRESSURE, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/06_pressure_log_runIndexPostPass_0.txt"));
+		logs.put(BuffersEnum.SORTED_POSITION, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/06_sortedposition_log_runIndexPostPass_0.txt"));
+		logs.put(BuffersEnum.SORTED_VELOCITY, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/06_sortedvelocity_log_runIndexPostPass_0.txt"));
+		logs.put(BuffersEnum.VELOCITY, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/06_velocity_log_runIndexPostPass_0.txt"));
+		
+		evaluateCheckpoint(KernelsEnum.INDEX_POST_PASS, logs, this.getClass().getResource("/sphModel_liquid_780.xml"));
+	}
+	
 	private Vector3D get3DVector(String values)
 	{
 		Vector3D v = new Vector3D();
