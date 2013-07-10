@@ -237,7 +237,7 @@ public class StepValidationWithCheckpointsTest {
 		Map<BuffersEnum, Integer> mismatchingValuesPerBuffers = new LinkedHashMap<BuffersEnum, Integer>();
 
 		// calculate step
-		solver.solve(new TimeConfiguration(0.1f, 1, 1));
+		solver.solve(new TimeConfiguration(null, 1, null));
 		
 		// get checkpoint of interest
 		PCISPHCheckPoint checkpoint_values = solver.getCheckpointsMap().get(checkpoint);
