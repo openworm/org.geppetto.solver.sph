@@ -168,6 +168,25 @@ public class StepValidationWithCheckpointsTest {
 		evaluateCheckpoint(KernelsEnum.INDEX_POST_PASS, logs, this.getClass().getResource("/sphModel_liquid_780.xml"));
 	}
 	
+	@Test
+	public void testCheckpoints_780_FINDNEIGHBOR() throws Exception {
+		// load reference values at various steps from C++ version
+		Map<BuffersEnum, URL> logs = new LinkedHashMap<BuffersEnum, URL>();
+		logs.put(BuffersEnum.RHO, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/07_density_log_runFindNeighbors_0.txt"));
+		logs.put(BuffersEnum.GRID_CELL_INDEX, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/07_gridcellindex_log_runFindNeighbors_0.txt"));
+		logs.put(BuffersEnum.GRID_CELL_INDEX_FIXED, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/07_gridcellindexfixedup_log_runFindNeighbors_0.txt"));
+		logs.put(BuffersEnum.PARTICLE_INDEX, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/07_index_log_runFindNeighbors_0.txt"));
+		logs.put(BuffersEnum.PARTICLE_INDEX_BACK, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/07_indexback_log_runFindNeighbors_0.txt"));
+		logs.put(BuffersEnum.NEIGHBOR_MAP, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/07_neighbormap_log_runFindNeighbors_0.txt"));
+		logs.put(BuffersEnum.POSITION, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/07_position_log_runFindNeighbors_0.txt"));
+		logs.put(BuffersEnum.PRESSURE, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/07_pressure_log_runFindNeighbors_0.txt"));
+		logs.put(BuffersEnum.SORTED_POSITION, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/07_sortedposition_log_runFindNeighbors_0.txt"));
+		logs.put(BuffersEnum.SORTED_VELOCITY, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/07_sortedvelocity_log_runFindNeighbors_0.txt"));
+		logs.put(BuffersEnum.VELOCITY, StepValidationTest.class.getResource("/results/liquid_780/checkpoints/step1/07_velocity_log_runFindNeighbors_0.txt"));
+		
+		evaluateCheckpoint(KernelsEnum.FIND_NEIGHBORS, logs, this.getClass().getResource("/sphModel_liquid_780.xml"));
+	}
+	
 	private Vector3D get3DVector(String values)
 	{
 		Vector3D v = new Vector3D();
@@ -191,6 +210,8 @@ public class StepValidationWithCheckpointsTest {
 		
 		for(int i=0; i<series.length; i++)
 		{
+			// equivalent to -1 in C++
+			if(series[i].equals("4294967295")) series[i] = "-1";
 			intSeries[i] = Integer.parseInt(series[i]);
 		}
 		
