@@ -358,7 +358,7 @@ public class SPHSolverService implements ISolver
 				_elasticConnectionsDataPtr.set(connIndex + 1, conn.getDistance());
 				_elasticConnectionsDataPtr.set(connIndex + 2, conn.getMysteryValue());
 				_elasticConnectionsDataPtr.set(connIndex + 3, 0f); // padding
-				connIndex++;
+				connIndex += 4;
 			}
 
 			// we copied the stuff down to the device and we won't touch it again so we can unmap
@@ -543,7 +543,7 @@ public class SPHSolverService implements ISolver
 		_pcisph_computeElasticForces.setArg(8, PhysicsConstants.SIMULATION_SCALE);
 		_pcisph_computeElasticForces.setArg(9, _numOfElasticP);
 		_pcisph_computeElasticForces.setArg(10, _elasticConnectionsData);
-		_pcisph_computeElasticForces.setArg(11, _numOfBoundaryP);
+		_pcisph_computeElasticForces.setArg(11, 0);
 		_pcisph_computeElasticForces.setArg(12, _muscle_activation_signal);
 		_pcisph_computeElasticForces.setArg(13, _particleCount);
 
