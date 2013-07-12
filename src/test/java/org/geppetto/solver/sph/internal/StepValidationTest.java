@@ -36,6 +36,7 @@ package org.geppetto.solver.sph.internal;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -201,7 +202,7 @@ public class StepValidationTest {
 		for(int i = 0; i < 10; i++)
 		{
 			// calculate step
-			StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 1, 1));
+			StateTreeRoot stateSet = solver.solve(new TimeConfiguration(null, 1, null));
 			
 			// only keep latest step results
 			if (i > 0) {

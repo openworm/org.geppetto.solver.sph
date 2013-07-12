@@ -187,6 +187,66 @@ public class StepValidationWithCheckpointsTest {
 		evaluateCheckpoint(KernelsEnum.FIND_NEIGHBORS, logs, this.getClass().getResource("/sphModel_liquid_780.xml"));
 	}
 	
+	@Test
+	public void testCheckpoints_1575_CLEARBUFFERS() throws Exception {
+		// load reference values at various steps from C++ version
+		Map<BuffersEnum, URL> logs = new LinkedHashMap<BuffersEnum, URL>();
+		logs.put(BuffersEnum.RHO, StepValidationTest.class.getResource("/results/elastic_1575/checkpoints/step1/01_density_log_runClearBuffers_0.txt"));
+		logs.put(BuffersEnum.GRID_CELL_INDEX, StepValidationTest.class.getResource("/results/elastic_1575/checkpoints/step1/01_gridcellindex_log_runClearBuffers_0.txt"));
+		logs.put(BuffersEnum.GRID_CELL_INDEX_FIXED, StepValidationTest.class.getResource("/results/elastic_1575/checkpoints/step1/01_gridcellindexfixedup_log_runClearBuffers_0.txt"));
+		logs.put(BuffersEnum.PARTICLE_INDEX, StepValidationTest.class.getResource("/results/elastic_1575/checkpoints/step1/01_index_log_runClearBuffers_0.txt"));
+		logs.put(BuffersEnum.PARTICLE_INDEX_BACK, StepValidationTest.class.getResource("/results/elastic_1575/checkpoints/step1/01_indexback_log_runClearBuffers_0.txt"));
+		logs.put(BuffersEnum.NEIGHBOR_MAP, StepValidationTest.class.getResource("/results/elastic_1575/checkpoints/step1/01_neighbormap_log_runClearBuffers_0.txt"));
+		logs.put(BuffersEnum.POSITION, StepValidationTest.class.getResource("/results/elastic_1575/checkpoints/step1/01_position_log_runClearBuffers_0.txt"));
+		logs.put(BuffersEnum.PRESSURE, StepValidationTest.class.getResource("/results/elastic_1575/checkpoints/step1/01_pressure_log_runClearBuffers_0.txt"));
+		logs.put(BuffersEnum.SORTED_POSITION, StepValidationTest.class.getResource("/results/elastic_1575/checkpoints/step1/01_sortedposition_log_runClearBuffers_0.txt"));
+		logs.put(BuffersEnum.SORTED_VELOCITY, StepValidationTest.class.getResource("/results/elastic_1575/checkpoints/step1/01_sortedvelocity_log_runClearBuffers_0.txt"));
+		logs.put(BuffersEnum.VELOCITY, StepValidationTest.class.getResource("/results/elastic_1575/checkpoints/step1/01_velocity_log_runClearBuffers_0.txt"));
+		
+		evaluateCheckpoint(KernelsEnum.CLEAR_BUFFERS, logs, this.getClass().getResource("/sphModel_elastic_1575.xml"));
+	}
+	
+	@Test
+	public void testCheckpoints_1575_HASHPARTICLES() throws Exception {
+		// load reference values at various steps from C++ version
+		Map<BuffersEnum, URL> logs = new LinkedHashMap<BuffersEnum, URL>();
+		logs.put(BuffersEnum.RHO, StepValidationTest.class.getResource("/results/elastic_1575/checkpoints/step1/02_density_log_runHashParticles_0.txt"));
+		logs.put(BuffersEnum.GRID_CELL_INDEX, StepValidationTest.class.getResource("/results/elastic_1575/checkpoints/step1/02_gridcellindex_log_runHashParticles_0.txt"));
+		logs.put(BuffersEnum.GRID_CELL_INDEX_FIXED, StepValidationTest.class.getResource("/results/elastic_1575/checkpoints/step1/02_gridcellindexfixedup_log_runHashParticles_0.txt"));
+		logs.put(BuffersEnum.PARTICLE_INDEX, StepValidationTest.class.getResource("/results/elastic_1575/checkpoints/step1/02_index_log_runHashParticles_0.txt"));
+		logs.put(BuffersEnum.PARTICLE_INDEX_BACK, StepValidationTest.class.getResource("/results/elastic_1575/checkpoints/step1/02_indexback_log_runHashParticles_0.txt"));
+		logs.put(BuffersEnum.NEIGHBOR_MAP, StepValidationTest.class.getResource("/results/elastic_1575/checkpoints/step1/02_neighbormap_log_runHashParticles_0.txt"));
+		logs.put(BuffersEnum.POSITION, StepValidationTest.class.getResource("/results/elastic_1575/checkpoints/step1/02_position_log_runHashParticles_0.txt"));
+		logs.put(BuffersEnum.PRESSURE, StepValidationTest.class.getResource("/results/elastic_1575/checkpoints/step1/02_pressure_log_runHashParticles_0.txt"));
+		logs.put(BuffersEnum.SORTED_POSITION, StepValidationTest.class.getResource("/results/elastic_1575/checkpoints/step1/02_sortedposition_log_runHashParticles_0.txt"));
+		logs.put(BuffersEnum.SORTED_VELOCITY, StepValidationTest.class.getResource("/results/elastic_1575/checkpoints/step1/02_sortedvelocity_log_runHashParticles_0.txt"));
+		logs.put(BuffersEnum.VELOCITY, StepValidationTest.class.getResource("/results/elastic_1575/checkpoints/step1/02_velocity_log_runHashParticles_0.txt"));
+		
+		evaluateCheckpoint(KernelsEnum.HASH_PARTICLES, logs, this.getClass().getResource("/sphModel_elastic_1575.xml"));
+	}
+	
+	@Test
+	public void testCheckpoints_1575_COMPUTEELASTIC() throws Exception {
+		// load reference values at various steps from C++ version
+		Map<BuffersEnum, URL> logs = new LinkedHashMap<BuffersEnum, URL>();
+
+		logs.put(BuffersEnum.RHO, StepValidationTest.class.getResource("/results/elastic_1575/checkpoints/step1/10_density_log_run_pcisph_computeElasticForces_0.txt"));
+		logs.put(BuffersEnum.GRID_CELL_INDEX, StepValidationTest.class.getResource("/results/elastic_1575/checkpoints/step1/10_gridcellindex_log_run_pcisph_computeElasticForces_0.txt"));
+		logs.put(BuffersEnum.GRID_CELL_INDEX_FIXED, StepValidationTest.class.getResource("/results/elastic_1575/checkpoints/step1/10_gridcellindexfixedup_log_run_pcisph_computeElasticForces_0.txt"));
+		logs.put(BuffersEnum.PARTICLE_INDEX, StepValidationTest.class.getResource("/results/elastic_1575/checkpoints/step1/10_index_log_run_pcisph_computeElasticForces_0.txt"));
+		logs.put(BuffersEnum.PARTICLE_INDEX_BACK, StepValidationTest.class.getResource("/results/elastic_1575/checkpoints/step1/10_indexback_log_run_pcisph_computeElasticForces_0.txt"));
+		logs.put(BuffersEnum.NEIGHBOR_MAP, StepValidationTest.class.getResource("/results/elastic_1575/checkpoints/step1/10_neighbormap_log_run_pcisph_computeElasticForces_0.txt"));
+		logs.put(BuffersEnum.POSITION, StepValidationTest.class.getResource("/results/elastic_1575/checkpoints/step1/10_position_log_run_pcisph_computeElasticForces_0.txt"));
+		logs.put(BuffersEnum.PRESSURE, StepValidationTest.class.getResource("/results/elastic_1575/checkpoints/step1/10_pressure_log_run_pcisph_computeElasticForces_0.txt"));
+		logs.put(BuffersEnum.SORTED_POSITION, StepValidationTest.class.getResource("/results/elastic_1575/checkpoints/step1/10_sortedposition_log_run_pcisph_computeElasticForces_0.txt"));
+		logs.put(BuffersEnum.SORTED_VELOCITY, StepValidationTest.class.getResource("/results/elastic_1575/checkpoints/step1/10_sortedvelocity_log_run_pcisph_computeElasticForces_0.txt"));
+		logs.put(BuffersEnum.VELOCITY, StepValidationTest.class.getResource("/results/elastic_1575/checkpoints/step1/10_velocity_log_run_pcisph_computeElasticForces_0.txt"));
+		logs.put(BuffersEnum.ACCELERATION, StepValidationTest.class.getResource("/results/elastic_1575/checkpoints/step1/10_acceleration_log_run_pcisph_computeElasticForces_0.txt"));
+		logs.put(BuffersEnum.ELASTIC_CONNECTIONS, StepValidationTest.class.getResource("/results/elastic_1575/elastic_log_0.txt"));
+		
+		evaluateCheckpoint(KernelsEnum.COMPUTE_ELASTIC_FORCES, logs, this.getClass().getResource("/sphModel_elastic_1575.xml"));
+	}
+	
 	private Vector3D get3DVector(String values)
 	{
 		Vector3D v = new Vector3D();
@@ -297,6 +357,37 @@ public class StepValidationWithCheckpointsTest {
 		            break;
 		        case ELASTIC_CONNECTIONS:  
 		        	// liquid scene has no elastic connections - log files are empty
+		        	List<Float> el_calculatedValues = checkpoint_values.elasticConnections;
+		        	int el_mismatches = 0;
+		        	Assert.assertTrue(dimensions.get(entry.getKey()).intValue() == checkpointReferenceValuesMap.get(entry.getKey()).length * 4);
+		        	j=0;
+		        	for(int i = 0; i < dimensions.get(entry.getKey()); i = i + 4)
+		        	{	
+		        		// get vector from ref values
+		        		Vector3D el_vector = get3DVector(checkpointReferenceValuesMap.get(entry.getKey())[j]);
+		        		
+		        		// it sucks, but all the if statements are separate to facilitate debugging
+		        		if(el_vector.getX().floatValue() != el_calculatedValues.get(i).floatValue()) 
+		        		{
+		        			el_mismatches++;
+		        		}
+		        		if(el_vector.getY().floatValue() != el_calculatedValues.get(i + 1).floatValue()) 
+		        		{
+		        			el_mismatches++;
+		        		}
+		        		if(el_vector.getZ().floatValue() != el_calculatedValues.get(i + 2).floatValue()) 
+		        		{
+		        			el_mismatches++;
+		        		}
+		        		if(el_vector.getP().floatValue() != el_calculatedValues.get(i + 3).floatValue()) 
+		        		{
+		        			el_mismatches++;
+		        		}
+		        		
+		        		j++;
+		        	}
+		        	// record mismatch
+        			mismatchingValuesPerBuffers.put(entry.getKey(), el_mismatches);
 		            break;
 		        case GRID_CELL_INDEX:  
 		        	List<Integer> grid_cell_calculatedValues = checkpoint_values.gridCellIndex;
@@ -427,6 +518,55 @@ public class StepValidationWithCheckpointsTest {
 		        	}
 		        	// record mismatch
         			mismatchingValuesPerBuffers.put(entry.getKey(), pos_mismatches);
+		            break;
+		        case ACCELERATION:  
+		        	List<Float> acc_calculatedValues = checkpoint_values.acceleration;
+		        	int acc_mismatches = 0;
+		        	Assert.assertTrue(dimensions.get(entry.getKey()).intValue() == checkpointReferenceValuesMap.get(entry.getKey()).length * 8);
+		        	j=0;
+		        	for(int i = 0; i < dimensions.get(entry.getKey()); i = i + 8)
+		        	{	
+		        		// get vector from ref values
+		        		Float[] acc_vector = getFloatValues(checkpointReferenceValuesMap.get(entry.getKey())[j]);
+		        		
+		        		// it sucks, but all the if statements are separate to facilitate debugging
+		        		if(acc_vector[0].floatValue() != acc_calculatedValues.get(i).floatValue()) 
+		        		{
+		        			acc_mismatches++;
+		        		}
+		        		if(acc_vector[1].floatValue() != acc_calculatedValues.get(i + 1).floatValue()) 
+		        		{
+		        			acc_mismatches++;
+		        		}
+		        		if(acc_vector[2].floatValue() != acc_calculatedValues.get(i + 2).floatValue()) 
+		        		{
+		        			acc_mismatches++;
+		        		}
+		        		if(acc_vector[3].floatValue() != acc_calculatedValues.get(i + 3).floatValue()) 
+		        		{
+		        			acc_mismatches++;
+		        		}
+		        		if(acc_vector[4].floatValue() != acc_calculatedValues.get(i + 4).floatValue()) 
+		        		{
+		        			acc_mismatches++;
+		        		}
+		        		if(acc_vector[5].floatValue() != acc_calculatedValues.get(i + 5).floatValue()) 
+		        		{
+		        			acc_mismatches++;
+		        		}
+		        		if(acc_vector[6].floatValue() != acc_calculatedValues.get(i + 6).floatValue()) 
+		        		{
+		        			acc_mismatches++;
+		        		}
+		        		if(acc_vector[7].floatValue() != acc_calculatedValues.get(i + 7).floatValue()) 
+		        		{
+		        			acc_mismatches++;
+		        		}
+		        		
+		        		j++;
+		        	}
+		        	// record mismatch
+        			mismatchingValuesPerBuffers.put(entry.getKey(), acc_mismatches);
 		            break;
 		        case PRESSURE:  
 		        	List<Float> press_calculatedValues = checkpoint_values.pressure;
