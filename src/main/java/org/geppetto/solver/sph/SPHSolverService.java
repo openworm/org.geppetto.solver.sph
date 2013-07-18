@@ -80,9 +80,6 @@ public class SPHSolverService implements ISolver
 {
 
 	private static Log logger = LogFactory.getLog(SPHSolverService.class);
-	
-	public static final String CPU_PROFILE = "CPU";
-	public static final String GPU_PROFILE = "GPU";
 
 	private CLContext _context;
 	public CLQueue _queue;
@@ -177,14 +174,14 @@ public class SPHSolverService implements ISolver
 
 	public static Random RandomGenerator = new Random();
 
-	public SPHSolverService(String hardwareProfile) throws Exception
+	public SPHSolverService(HardwareProfileEnum hardwareProfile) throws Exception
 	{
 		this.onceOffInit(hardwareProfile);
 	}
 	
 	public SPHSolverService() throws Exception
 	{
-		this(GPU_PROFILE);
+		this(HardwareProfileEnum.GPU);
 	}
 	
 	public SPHSolverService(boolean recordCheckpoints) throws Exception
@@ -194,10 +191,10 @@ public class SPHSolverService implements ISolver
 		_recordCheckPoints = recordCheckpoints;
 	}
 
-	private void onceOffInit(String hwProfile) throws IOException
+	private void onceOffInit(HardwareProfileEnum hwProfile) throws IOException
 	{
 		// TODO: check if the selected profile is actually available
-		DeviceFeature feature = (hwProfile == CPU_PROFILE) ? DeviceFeature.CPU : DeviceFeature.GPU;
+		DeviceFeature feature = (hwProfile == HardwareProfileEnum.CPU) ? DeviceFeature.CPU : DeviceFeature.GPU;
 
 		_context = JavaCL.createBestContext(feature);
 
