@@ -885,9 +885,6 @@ public class SPHSolverService implements ISolver
 		if(_stateTree == null)
 		{
 			_stateTree = new StateTreeRoot(_model.getId());
-			//Update state tree after creating, timeconfiguration could be 0 
-			//and there would be no chance to do it below before returning
-			updateStateTree();
 		}
 		for(int i = 0; i < timeConfiguration.getTimeSteps(); i++)
 		{
@@ -955,11 +952,15 @@ public class SPHSolverService implements ISolver
 	}
 
 	@Override
-	public void initialize(IModel model) throws GeppettoInitializationException
+	public StateTreeRoot initialize(IModel model) throws GeppettoInitializationException
 	{
 		_model = (SPHModelX) model;
-		_stateTree=null;
 		setBuffersFromModel();
+		
+		_stateTree = new StateTreeRoot(_model.getId());
+		updateStateTree();
+
+		return _stateTree;
 	}
 
 	@Override
