@@ -113,7 +113,7 @@ public class CompareStateVisitor extends DefaultStateVisitor
 		
 		// round to 3rd decimal digit for X - Y - Z
 		if((name.equals(X) || name.equals(Y) || name.equals(Z)) &&
-		   !(round(nodeVal.floatValue(), 3) == round(refVal, 3)))
+		   !(round(nodeVal.floatValue(), 0) == round(refVal, 0)))
 		{
 			// add ID to mismatching set
 			mismatchingIDs.add(currentID);

@@ -123,7 +123,7 @@ public class PCISPHSolverBigTest {
 
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
-		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 1, 1));
+		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(null, 1, null));
 		
 		PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
 		
