@@ -6,7 +6,7 @@
 	<artifactId>solver.sph</artifactId>
 	<name>Geppetto SPH Solver Bundle</name>
 	<packaging>bundle</packaging>
-	<version>0.0.2</version>
+	<version>0.0.3</version>
 	<properties>
 		<spring.version>3.0.0.RELEASE</spring.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -77,7 +77,7 @@
 		<dependency>
 			<groupId>org.geppetto</groupId>
 			<artifactId>core</artifactId>
-			<version>0.0.2</version>
+			<version>0.0.3</version>
 		</dependency>
 		<dependency>
 			<groupId>org.geppetto</groupId>
@@ -191,6 +191,9 @@
 					<excludes>
 						<exclude>**/PCISPHSolverBigTest.java</exclude>
 						<exclude>**/StepValidationTest.java</exclude>
+						<exclude>**/RecordCheckpointsTest.java</exclude>
+						<exclude>**/StepValidationWithCheckpointsTest.java</exclude>
+						<exclude>**/PhysicsLawsTest.java</exclude>
 					</excludes>
 				</configuration>
 			</plugin>

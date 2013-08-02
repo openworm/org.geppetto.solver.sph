@@ -186,7 +186,7 @@ public class PCISPHSolverTest
 	 * 296 boundary particles + 216 liquid particles (total of 512 particles) with random position and velocity
 	 */
 	@Test
-	public void testSolve216_NoNaN() throws Exception
+	public void testSolve216_NaN() throws Exception
 	{
 		URL url = this.getClass().getResource("/sphModel_216.xml");
 		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
@@ -199,7 +199,7 @@ public class PCISPHSolverTest
 		solver.initialize(model);
 		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 10, 1));
 		
-		//PCISPHTestUtilities.checkStateTreeForNaN(stateSet, true);
+		PCISPHTestUtilities.checkStateTreeForNaN(stateSet, true);
 		
 		Assert.assertTrue("Particle count doesn't match.", stateSet.getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
 	}
