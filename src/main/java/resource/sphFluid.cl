@@ -795,7 +795,8 @@ __kernel void pcisph_computeElasticForces(
 										  int numOfElasticParticle,
 										  __global float4 * elasticConnectionsData, 
 										  int offset,
-										  float muscle_activation_signal,
+										  __global float * muscle_activation_signal,
+										  int MUSCLE_COUNT,
 										  int PARTICLE_COUNT
 								  		  )
 {
@@ -820,6 +821,7 @@ __kernel void pcisph_computeElasticForces(
 	float4 velocity_i = velocity[id];
 	float4 velocity_j;
 	int jd;
+	int i;
 	
 	do
 	{
@@ -835,15 +837,22 @@ __kernel void pcisph_computeElasticForces(
 			r_ij = sqrt(DOT(vect_r_ij,vect_r_ij));
 			delta_r_ij = r_ij - r_ij_equilibrium;
 			
-			if(r_ij!=0.f){
+			if(r_ij!=0.f)
+			{
 				acceleration[ id ] += -(vect_r_ij/r_ij) * delta_r_ij * k;
-				
-				//contractible spring = muscle
-				if(muscle_activation_signal>0.f)
-	        		if((int)(elasticConnectionsData[idx+nc].z)==1.f)
-	        		{
-	          			acceleration[ id ] += -(vect_r_ij/r_ij) * muscle_activation_signal * 500.f;
-	        		}
+	        	
+	        	//check all muscles
+	        	for(i=0;i<MUSCLE_COUNT;i++)
+				{
+		        	//contractible spring, = muscle
+		        	if((int)(elasticConnectionsData[idx+nc].z)==(i+1))
+					{
+						if(muscle_activation_signal[i]>0.f)
+						{
+							acceleration[ id ] += -(vect_r_ij/r_ij) * muscle_activation_signal[i] * 300.f;
+						}
+					}
+				}
 			}
 			
 			centerOfMassVelocity = (velocity_i + velocity_j)/2.f;
@@ -977,7 +986,7 @@ __kernel void pcisph_predictPositions(
 	int id_source_particle = PI_SERIAL_ID( particleIndex[id] );
 	float4 position_ = sortedPosition[ id ];
 	if((int)(position[ id_source_particle ].w) == 3){
-		//this line was missing (absent) and caused serions errors int further program behavior
+		//this line was missing (absent) and caused serions errors in program behavior
 		sortedPosition[PARTICLE_COUNT+id] = position_;
 		return;
 	}

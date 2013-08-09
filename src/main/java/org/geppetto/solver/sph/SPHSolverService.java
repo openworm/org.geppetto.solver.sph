@@ -85,33 +85,35 @@ public class SPHSolverService implements ISolver
 	public CLQueue _queue;
 	private CLProgram _program;
 	private CLDevice _device;
-	public CLBuffer<Float> _acceleration;
-	public CLBuffer<Integer> _gridCellIndex;
-	public CLBuffer<Integer> _gridCellIndexFixedUp;
-	public CLBuffer<Float> _neighborMap;
-	public CLBuffer<Integer> _particleIndex;
-	public CLBuffer<Integer> _particleIndexBack;
-	public CLBuffer<Float> _position;
-	public CLBuffer<Float> _pressure;
-	public CLBuffer<Float> _rho;
-	public CLBuffer<Float> _sortedPosition;
-	public CLBuffer<Float> _sortedVelocity;
-	public CLBuffer<Float> _velocity;
-	public CLBuffer<Float> _elasticConnectionsData;
+	private CLBuffer<Float> _acceleration;
+	private CLBuffer<Integer> _gridCellIndex;
+	private CLBuffer<Integer> _gridCellIndexFixedUp;
+	private CLBuffer<Float> _neighborMap;
+	private CLBuffer<Integer> _particleIndex;
+	private CLBuffer<Integer> _particleIndexBack;
+	private CLBuffer<Float> _position;
+	private CLBuffer<Float> _pressure;
+	private CLBuffer<Float> _rho;
+	private CLBuffer<Float> _sortedPosition;
+	private CLBuffer<Float> _sortedVelocity;
+	private CLBuffer<Float> _velocity;
+	private CLBuffer<Float> _elasticConnectionsData;
+	private CLBuffer<Float> _activationSignal;
 
-	public Pointer<Float> _accelerationPtr;
-	public Pointer<Integer> _gridCellIndexPtr;
-	public Pointer<Integer> _gridCellIndexFixedUpPtr;
-	public Pointer<Float> _neighborMapPtr;
-	public Pointer<Integer> _particleIndexPtr;
-	public Pointer<Integer> _particleIndexBackPtr;
-	public Pointer<Float> _positionPtr;
-	public Pointer<Float> _pressurePtr;
-	public Pointer<Float> _rhoPtr;
-	public Pointer<Float> _sortedPositionPtr;
-	public Pointer<Float> _sortedVelocityPtr;
-	public Pointer<Float> _velocityPtr;
-	public Pointer<Float> _elasticConnectionsDataPtr;
+	private Pointer<Float> _accelerationPtr;
+	private Pointer<Integer> _gridCellIndexPtr;
+	private Pointer<Integer> _gridCellIndexFixedUpPtr;
+	private Pointer<Float> _neighborMapPtr;
+	private Pointer<Integer> _particleIndexPtr;
+	private Pointer<Integer> _particleIndexBackPtr;
+	private Pointer<Float> _positionPtr;
+	private Pointer<Float> _pressurePtr;
+	private Pointer<Float> _rhoPtr;
+	private Pointer<Float> _sortedPositionPtr;
+	private Pointer<Float> _sortedVelocityPtr;
+	private Pointer<Float> _velocityPtr;
+	private Pointer<Float> _elasticConnectionsDataPtr;
+	private Pointer<Float> _activationSignalPtr;
 
 	/*
 	 * Kernel declarations
@@ -138,7 +140,7 @@ public class SPHSolverService implements ISolver
 	public float _yMin;
 	public float _zMax;
 	public float _zMin;
-	public float _muscle_activation_signal = 0.0f;
+	public int _elasticBundlesCount = 0;
 
 	public int _gridCellsX;
 	public int _gridCellsY;
@@ -255,6 +257,7 @@ public class SPHSolverService implements ISolver
 		_buffersSizeMap.put(BuffersEnum.SORTED_POSITION, _particleCount * 4 * 2);
 		_buffersSizeMap.put(BuffersEnum.SORTED_VELOCITY, _particleCount * 4);
 		_buffersSizeMap.put(BuffersEnum.VELOCITY, _particleCount * 4);
+		_buffersSizeMap.put(BuffersEnum.ELASTIC_BUNDLES, _elasticBundlesCount);
 		
 		// allocate native device memory for all buffers
 		_acceleration = _context.createFloatBuffer(CLMem.Usage.InputOutput, _buffersSizeMap.get(BuffersEnum.ACCELERATION));
@@ -280,6 +283,7 @@ public class SPHSolverService implements ISolver
 		_yMin = _model.getYMin();
 		_zMax = _model.getZMax();
 		_zMin = _model.getZMin();
+		_elasticBundlesCount = (_model.getElasticBundles() == null) ? 0 : _model.getElasticBundles().intValue();
 
 		_particleCount = _model.getNumberOfParticles();
 		_numOfElasticP = 0;
@@ -362,6 +366,18 @@ public class SPHSolverService implements ISolver
 
 			// we copied the stuff down to the device and we won't touch it again so we can unmap
 			_elasticConnectionsData.unmap(_queue, _elasticConnectionsDataPtr);
+			
+			// allocate activation signal buffers
+			if(_buffersSizeMap.get(BuffersEnum.ELASTIC_BUNDLES) > 0)
+			{
+				_activationSignal = _context.createFloatBuffer(CLMem.Usage.Input, _buffersSizeMap.get(BuffersEnum.ELASTIC_BUNDLES));
+			}
+			else
+			{
+				// allocate a buffer with 1 single element 
+				// NOTE: this is a HACK to avoid exceptions in case of having elastic particles but no contractible bundles
+				_activationSignal = _context.createFloatBuffer(CLMem.Usage.Input, 1);
+			}
 		}
 
 		// check that counts are fine
@@ -543,8 +559,9 @@ public class SPHSolverService implements ISolver
 		_pcisph_computeElasticForces.setArg(9, _numOfElasticP);
 		_pcisph_computeElasticForces.setArg(10, _elasticConnectionsData);
 		_pcisph_computeElasticForces.setArg(11, 0);
-		_pcisph_computeElasticForces.setArg(12, _muscle_activation_signal);
-		_pcisph_computeElasticForces.setArg(13, _particleCount);
+		_pcisph_computeElasticForces.setArg(12, _activationSignal);
+		_pcisph_computeElasticForces.setArg(13, _elasticBundlesCount);
+		_pcisph_computeElasticForces.setArg(14, _particleCount);
 
 		int numOfElasticPRoundedUp = (((_numOfElasticP - 1) / 256) + 1) * 256;
 
@@ -882,12 +899,16 @@ public class SPHSolverService implements ISolver
 		// TODO: extend this to use time configuration to do multiple steps in one go
 		long time = System.currentTimeMillis();
 		logger.info("SPH solver start");
+		
 		if(_stateTree == null)
 		{
 			_stateTree = new StateTreeRoot(_model.getId());
 		}
+		
 		for(int i = 0; i < timeConfiguration.getTimeSteps(); i++)
 		{
+			// TODO: setActivationSignal
+			
 			long end = 0;
 			long start = System.currentTimeMillis();
 			logger.info("SPH STEP START");
@@ -896,6 +917,7 @@ public class SPHSolverService implements ISolver
 			end = System.currentTimeMillis();
 			logger.info("SPH STEP END, took " + (end - start) + "ms");
 		}
+		
 		logger.info("SPH solver end, took: " + (System.currentTimeMillis() - time) + "ms");
 		return _stateTree;
 	}
@@ -968,6 +990,14 @@ public class SPHSolverService implements ISolver
 	{
 		// close the context and "buonanotte al secchio" (good night to the bucket)
 		cleanContext();
+	}
+	
+	private void setActivationSignal(float[] activation)
+	{
+		// put results back
+		_activationSignalPtr = _activationSignal.map(_queue, CLMem.MapFlags.Write);
+		_activationSignalPtr.setFloats(activation);
+		_activationSignal.unmap(_queue, _activationSignalPtr);
 	}
 	
 	private void recordCheckpoints(KernelsEnum kernelCheckpoint){

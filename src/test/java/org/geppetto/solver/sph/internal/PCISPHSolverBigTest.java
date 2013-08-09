@@ -200,4 +200,23 @@ public class PCISPHSolverBigTest {
 		Assert.assertTrue("Particle count doesn't match.", stateTree1.getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
 		Assert.assertTrue("Particle count doesn't match.", stateTree2.getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
 	}
+	
+	/*
+	 * Scene with a block of elastic matter plus liquid
+	 */
+	@Test
+	public void testSolveElastic_Contractible_7220_NoNaN() throws Exception
+	{
+		URL url = this.getClass().getResource("/sphModel_elastic_contractible_7220.xml");
+		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
+		IModel model = modelInterpreter.readModel(url);
+
+		SPHSolverService solver = new SPHSolverService();
+		solver.initialize(model);
+		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(null, 1, null));
+		
+		PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
+		
+		Assert.assertTrue("Particle count doesn't match.", stateSet.getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
+	}
 }
