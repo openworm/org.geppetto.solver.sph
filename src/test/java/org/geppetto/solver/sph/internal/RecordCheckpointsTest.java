@@ -192,14 +192,14 @@ public class RecordCheckpointsTest {
 	
 	@Test
 	public void testRecordCheckpointsWithElasticConnections() throws Exception {
-		URL url = this.getClass().getResource("/sphModel_Elastic.xml");
+		URL url = this.getClass().getResource("/sphModel_elastic_contractible_7220.xml");
 		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
 		IModel model = modelInterpreter.readModel(url);
 	
 		// tell the solver to record checkpoints
 		SPHSolverService solver = new SPHSolverService(true);
 		solver.initialize(model);
-		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 1, 1));
+		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(null, 1, null));
 		
 		PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
 		
