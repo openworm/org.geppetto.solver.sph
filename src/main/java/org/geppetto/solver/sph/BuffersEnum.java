@@ -47,6 +47,7 @@ public enum BuffersEnum {
     SORTED_VELOCITY("sortedVelocity"),
     VELOCITY("velocity"),
     ELASTIC_CONNECTIONS("elasticConnections"),
+    ELASTIC_BUNDLES("elasticBundles")
     ;
     
     private BuffersEnum(final String text) {
