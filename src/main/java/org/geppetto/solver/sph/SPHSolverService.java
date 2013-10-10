@@ -48,6 +48,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.bridj.Pointer;
 import org.geppetto.core.common.GeppettoInitializationException;
+import org.geppetto.core.common.Variable;
 import org.geppetto.core.model.IModel;
 import org.geppetto.core.model.state.CompositeStateNode;
 import org.geppetto.core.model.state.SimpleStateNode;
@@ -1042,6 +1043,17 @@ public class SPHSolverService implements ISolver
 		
 		return list;
 	}
-	
+
+	@Override
+	public List<Variable> getForceableVariables() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public List<Variable> getWatchableVariables() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 	
 };
