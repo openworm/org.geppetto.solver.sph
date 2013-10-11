@@ -37,6 +37,7 @@ import static java.lang.System.out;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -47,7 +48,9 @@ import java.util.Random;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.bridj.Pointer;
+import org.geppetto.core.common.ArrayVariable;
 import org.geppetto.core.common.GeppettoInitializationException;
+import org.geppetto.core.common.IVariable;
 import org.geppetto.core.common.Variable;
 import org.geppetto.core.model.IModel;
 import org.geppetto.core.model.state.CompositeStateNode;
@@ -58,6 +61,7 @@ import org.geppetto.core.model.values.ValuesFactory;
 import org.geppetto.core.simulation.IRunConfiguration;
 import org.geppetto.core.solver.ISolver;
 import org.geppetto.model.sph.Connection;
+import org.geppetto.model.sph.Vector3D;
 import org.geppetto.model.sph.common.SPHConstants;
 import org.geppetto.model.sph.services.SPHModelInterpreterService;
 import org.geppetto.model.sph.x.SPHModelX;
@@ -81,6 +85,15 @@ public class SPHSolverService implements ISolver
 {
 
 	private static Log logger = LogFactory.getLog(SPHSolverService.class);
+	
+	/*
+	 * Declaration of forceable / watchable variable
+	 * NOTE: this could be more elegantly injected via spring
+	 * TODO: move this after init method so that arrays lengths are populated
+	 * */
+	private List<IVariable> watchableVariables = Arrays.asList((IVariable)new ArrayVariable("position", ArrayList.class, 0, Vector3D.class), 
+															   (IVariable)new ArrayVariable("velocity", ArrayList.class, 0, Vector3D.class));
+	private List<IVariable> forceableVariables = Arrays.asList((IVariable)new ArrayVariable("activation", ArrayList.class, 0, Float.class));
 
 	private CLContext _context;
 	public CLQueue _queue;
@@ -1045,15 +1058,13 @@ public class SPHSolverService implements ISolver
 	}
 
 	@Override
-	public List<Variable> getForceableVariables() {
-		// TODO Auto-generated method stub
-		return null;
+	public List<IVariable> getForceableVariables() {
+		return forceableVariables;
 	}
 
 	@Override
-	public List<Variable> getWatchableVariables() {
-		// TODO Auto-generated method stub
-		return null;
+	public List<IVariable> getWatchableVariables() {
+		return watchableVariables;
 	}
 	
 };
