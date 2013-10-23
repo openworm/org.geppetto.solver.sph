@@ -995,6 +995,9 @@ public class SPHSolverService implements ISolver
 		
 		_stateTree = new StateTreeRoot(_model.getId());
 		updateStateTree();
+		
+		setWatchableVariables();
+		setForceableVariables();
 
 		return _stateTree;
 	}
@@ -1109,7 +1112,7 @@ public class SPHSolverService implements ISolver
 		ArrayVariable particles = new ArrayVariable();
 		particles.setName("particle");
 		particles.setType(particle);
-		particles.setSize(/*TODO: set number of particles*/0);
+		particles.setSize(_particleCount);
 		
 		this.watchableVariables.setEntities(vars);
 	}
