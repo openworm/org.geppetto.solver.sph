@@ -48,10 +48,7 @@ import java.util.Random;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.bridj.Pointer;
-import org.geppetto.core.common.ArrayVariable;
 import org.geppetto.core.common.GeppettoInitializationException;
-import org.geppetto.core.common.IVariable;
-import org.geppetto.core.common.Variable;
 import org.geppetto.core.model.IModel;
 import org.geppetto.core.model.state.CompositeStateNode;
 import org.geppetto.core.model.state.SimpleStateNode;
@@ -60,6 +57,15 @@ import org.geppetto.core.model.values.FloatValue;
 import org.geppetto.core.model.values.ValuesFactory;
 import org.geppetto.core.simulation.IRunConfiguration;
 import org.geppetto.core.solver.ISolver;
+import org.geppetto.core.pojo.model.AType;
+import org.geppetto.core.pojo.model.AVariable;
+import org.geppetto.core.pojo.model.ArrayType;
+import org.geppetto.core.pojo.model.ArrayVariable;
+import org.geppetto.core.pojo.model.SimpleType;
+import org.geppetto.core.pojo.model.SimpleVariable;
+import org.geppetto.core.pojo.model.StructuredType;
+import org.geppetto.core.pojo.model.VariableList;
+import org.geppetto.core.pojo.model.SimpleType.Type;
 import org.geppetto.model.sph.Connection;
 import org.geppetto.model.sph.Vector3D;
 import org.geppetto.model.sph.common.SPHConstants;
@@ -86,14 +92,8 @@ public class SPHSolverService implements ISolver
 
 	private static Log logger = LogFactory.getLog(SPHSolverService.class);
 	
-	/*
-	 * Declaration of forceable / watchable variable
-	 * NOTE: this could be more elegantly injected via spring
-	 * TODO: move this after init method so that arrays lengths are populated
-	 * */
-	private List<IVariable> watchableVariables = Arrays.asList((IVariable)new ArrayVariable("position", ArrayList.class, 0, Vector3D.class), 
-															   (IVariable)new ArrayVariable("velocity", ArrayList.class, 0, Vector3D.class));
-	private List<IVariable> forceableVariables = Arrays.asList((IVariable)new ArrayVariable("activation", ArrayList.class, 0, Float.class));
+	private VariableList watchableVariables = new VariableList();
+	private VariableList forceableVariables = new VariableList();
 
 	private CLContext _context;
 	public CLQueue _queue;
@@ -1058,13 +1058,80 @@ public class SPHSolverService implements ISolver
 	}
 
 	@Override
-	public List<IVariable> getForceableVariables() {
+	public VariableList getForceableVariables() {
 		return forceableVariables;
 	}
 
 	@Override
-	public List<IVariable> getWatchableVariables() {
+	public VariableList getWatchableVariables() {
 		return watchableVariables;
+	}
+	
+	/**
+	 * Populates state variables that can be watched
+	 * 
+	 * */
+	private void setWatchableVariables() {		
+		
+		SimpleType floatType = new SimpleType();
+		floatType.setType(Type.FLOAT);
+		
+		// structure type vector
+		StructuredType vector = new StructuredType();
+		List<AVariable> vectorVars = new ArrayList<AVariable>();
+		SimpleVariable x = new SimpleVariable();
+		SimpleVariable y = new SimpleVariable();
+		SimpleVariable z = new SimpleVariable();
+		x.setName("x");
+		x.setType(floatType);
+		y.setName("y");
+		y.setType(floatType);
+		z.setName("z");
+		z.setType(floatType);
+		vectorVars.addAll(Arrays.asList(x, y, z));
+		vector.setEntities(vectorVars);
+		
+		// structure type particle
+		StructuredType particle = new StructuredType();
+		List<AVariable> particleVars = new ArrayList<AVariable>();
+		SimpleVariable position = new SimpleVariable();
+		SimpleVariable velocity = new SimpleVariable();
+		position.setName("position");
+		position.setType(vector);
+		velocity.setName("velocity");
+		velocity.setType(vector);
+		particleVars.addAll(Arrays.asList(position, velocity));
+		particle.setEntities(particleVars);
+		
+		List<AVariable> vars = new ArrayList<AVariable>();
+		
+		// array of particles
+		ArrayVariable particles = new ArrayVariable();
+		particles.setName("particle");
+		particles.setType(particle);
+		particles.setSize(/*TODO: set number of particles*/0);
+		
+		this.watchableVariables.setEntities(vars);
+	}
+	
+	/**
+	 * Populates state variables that can be watched
+	 * 
+	 * */
+	private void setForceableVariables() {
+		List<AVariable> vars = new ArrayList<AVariable>();
+		
+		// a float type
+		SimpleType floatType = new SimpleType();
+		floatType.setType(Type.FLOAT);
+		
+		// activation signals - array of floats
+		ArrayVariable activationSignals = new ArrayVariable();
+		activationSignals.setName("activation");
+		activationSignals.setType(floatType);
+		activationSignals.setSize(_buffersSizeMap.get(BuffersEnum.ELASTIC_BUNDLES));
+		
+		this.forceableVariables.setEntities(vars);
 	}
 	
 };
