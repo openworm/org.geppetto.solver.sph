@@ -1114,6 +1114,8 @@ public class SPHSolverService implements ISolver
 		particles.setType(particle);
 		particles.setSize(_particleCount);
 		
+		vars.add(particles);
+		
 		this.watchableVariables.setEntities(vars);
 	}
 	
@@ -1133,6 +1135,8 @@ public class SPHSolverService implements ISolver
 		activationSignals.setName("activation");
 		activationSignals.setType(floatType);
 		activationSignals.setSize(_buffersSizeMap.get(BuffersEnum.ELASTIC_BUNDLES));
+		
+		vars.add(activationSignals);
 		
 		this.forceableVariables.setEntities(vars);
 	}
