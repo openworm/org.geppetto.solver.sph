@@ -49,6 +49,13 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.bridj.Pointer;
 import org.geppetto.core.common.GeppettoInitializationException;
+import org.geppetto.core.data.model.AVariable;
+import org.geppetto.core.data.model.ArrayVariable;
+import org.geppetto.core.data.model.SimpleType;
+import org.geppetto.core.data.model.SimpleType.Type;
+import org.geppetto.core.data.model.SimpleVariable;
+import org.geppetto.core.data.model.StructuredType;
+import org.geppetto.core.data.model.VariableList;
 import org.geppetto.core.model.IModel;
 import org.geppetto.core.model.state.CompositeStateNode;
 import org.geppetto.core.model.state.SimpleStateNode;
@@ -57,17 +64,7 @@ import org.geppetto.core.model.values.FloatValue;
 import org.geppetto.core.model.values.ValuesFactory;
 import org.geppetto.core.simulation.IRunConfiguration;
 import org.geppetto.core.solver.ISolver;
-import org.geppetto.core.pojo.model.AType;
-import org.geppetto.core.pojo.model.AVariable;
-import org.geppetto.core.pojo.model.ArrayType;
-import org.geppetto.core.pojo.model.ArrayVariable;
-import org.geppetto.core.pojo.model.SimpleType;
-import org.geppetto.core.pojo.model.SimpleVariable;
-import org.geppetto.core.pojo.model.StructuredType;
-import org.geppetto.core.pojo.model.VariableList;
-import org.geppetto.core.pojo.model.SimpleType.Type;
 import org.geppetto.model.sph.Connection;
-import org.geppetto.model.sph.Vector3D;
 import org.geppetto.model.sph.common.SPHConstants;
 import org.geppetto.model.sph.services.SPHModelInterpreterService;
 import org.geppetto.model.sph.x.SPHModelX;
@@ -1092,7 +1089,7 @@ public class SPHSolverService implements ISolver
 		z.setName("z");
 		z.setType(floatType);
 		vectorVars.addAll(Arrays.asList(x, y, z));
-		vector.setEntities(vectorVars);
+		vector.setVariables(vectorVars);
 		
 		// structure type particle
 		StructuredType particle = new StructuredType();
@@ -1104,7 +1101,7 @@ public class SPHSolverService implements ISolver
 		velocity.setName("velocity");
 		velocity.setType(vector);
 		particleVars.addAll(Arrays.asList(position, velocity));
-		particle.setEntities(particleVars);
+		particle.setVariables(particleVars);
 		
 		List<AVariable> vars = new ArrayList<AVariable>();
 		
@@ -1116,7 +1113,7 @@ public class SPHSolverService implements ISolver
 		
 		vars.add(particles);
 		
-		this.watchableVariables.setEntities(vars);
+		this.watchableVariables.setVariables(vars);
 	}
 	
 	/**
@@ -1138,7 +1135,7 @@ public class SPHSolverService implements ISolver
 		
 		vars.add(activationSignals);
 		
-		this.forceableVariables.setEntities(vars);
+		this.forceableVariables.setVariables(vars);
 	}
 	
 };
