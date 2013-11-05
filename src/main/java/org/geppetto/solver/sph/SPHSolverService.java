@@ -37,6 +37,7 @@ import static java.lang.System.out;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -48,6 +49,13 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.bridj.Pointer;
 import org.geppetto.core.common.GeppettoInitializationException;
+import org.geppetto.core.data.model.AVariable;
+import org.geppetto.core.data.model.ArrayVariable;
+import org.geppetto.core.data.model.SimpleType;
+import org.geppetto.core.data.model.SimpleType.Type;
+import org.geppetto.core.data.model.SimpleVariable;
+import org.geppetto.core.data.model.StructuredType;
+import org.geppetto.core.data.model.VariableList;
 import org.geppetto.core.model.IModel;
 import org.geppetto.core.model.state.CompositeStateNode;
 import org.geppetto.core.model.state.SimpleStateNode;
@@ -80,6 +88,9 @@ public class SPHSolverService implements ISolver
 {
 
 	private static Log logger = LogFactory.getLog(SPHSolverService.class);
+	
+	private VariableList watchableVariables = new VariableList();
+	private VariableList forceableVariables = new VariableList();
 
 	private CLContext _context;
 	public CLQueue _queue;
@@ -981,6 +992,9 @@ public class SPHSolverService implements ISolver
 		
 		_stateTree = new StateTreeRoot(_model.getId());
 		updateStateTree();
+		
+		setWatchableVariables();
+		setForceableVariables();
 
 		return _stateTree;
 	}
@@ -1042,6 +1056,86 @@ public class SPHSolverService implements ISolver
 		
 		return list;
 	}
+
+	@Override
+	public VariableList getForceableVariables() {
+		return forceableVariables;
+	}
+
+	@Override
+	public VariableList getWatchableVariables() {
+		return watchableVariables;
+	}
 	
+	/**
+	 * Populates state variables that can be watched
+	 * 
+	 * */
+	private void setWatchableVariables() {		
+		
+		SimpleType floatType = new SimpleType();
+		floatType.setType(Type.FLOAT);
+		
+		// structure type vector
+		StructuredType vector = new StructuredType();
+		List<AVariable> vectorVars = new ArrayList<AVariable>();
+		SimpleVariable x = new SimpleVariable();
+		SimpleVariable y = new SimpleVariable();
+		SimpleVariable z = new SimpleVariable();
+		x.setName("x");
+		x.setType(floatType);
+		y.setName("y");
+		y.setType(floatType);
+		z.setName("z");
+		z.setType(floatType);
+		vectorVars.addAll(Arrays.asList(x, y, z));
+		vector.setVariables(vectorVars);
+		
+		// structure type particle
+		StructuredType particle = new StructuredType();
+		List<AVariable> particleVars = new ArrayList<AVariable>();
+		SimpleVariable position = new SimpleVariable();
+		SimpleVariable velocity = new SimpleVariable();
+		position.setName("position");
+		position.setType(vector);
+		velocity.setName("velocity");
+		velocity.setType(vector);
+		particleVars.addAll(Arrays.asList(position, velocity));
+		particle.setVariables(particleVars);
+		
+		List<AVariable> vars = new ArrayList<AVariable>();
+		
+		// array of particles
+		ArrayVariable particles = new ArrayVariable();
+		particles.setName("particle");
+		particles.setType(particle);
+		particles.setSize(_particleCount);
+		
+		vars.add(particles);
+		
+		this.watchableVariables.setVariables(vars);
+	}
+	
+	/**
+	 * Populates state variables that can be watched
+	 * 
+	 * */
+	private void setForceableVariables() {
+		List<AVariable> vars = new ArrayList<AVariable>();
+		
+		// a float type
+		SimpleType floatType = new SimpleType();
+		floatType.setType(Type.FLOAT);
+		
+		// activation signals - array of floats
+		ArrayVariable activationSignals = new ArrayVariable();
+		activationSignals.setName("activation");
+		activationSignals.setType(floatType);
+		activationSignals.setSize(_buffersSizeMap.get(BuffersEnum.ELASTIC_BUNDLES));
+		
+		vars.add(activationSignals);
+		
+		this.forceableVariables.setVariables(vars);
+	}
 	
 };
