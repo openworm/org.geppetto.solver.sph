@@ -1,0 +1,18 @@
+language: java
+
+install:
+    - git clone https://github.com/openworm/org.geppetto.core.git -b $TRAVIS_BRANCH
+    - cd org.geppetto.core
+    - mvn install
+    - cd ..
+    - git clone https://github.com/openworm/org.geppetto.model.sph.git -b $TRAVIS_BRANCH
+    - cd org.geppetto.model.sph
+    - mvn install
+    - cd ..
+    
+    
+    
+ 
+ 
+
+
