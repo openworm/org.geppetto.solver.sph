@@ -1,5 +1,9 @@
 language: java
 
+before_install:
+    - sudo apt-get update -qq
+    - sudo apt-get install -qq fglrx opencl-headers
+    
 install:
     - git clone https://github.com/openworm/org.geppetto.core.git -b $TRAVIS_BRANCH
     - cd org.geppetto.core
@@ -9,10 +13,7 @@ install:
     - cd org.geppetto.model.sph
     - mvn install
     - cd ..
-    
-#This temporarily prevents test to be run and build to fail, we need to find a way to install
-#OpenCL drivers on the fly while running a travis buils
-script: true
+
     
     
     
