@@ -1004,11 +1004,9 @@ public class SPHSolverService implements ISolver
 		{
 			for(String varName : watchListVarNames)
 			{
-				// TODO: add stuff to watch branch of state tree
-				
-				// TODO: 1. is array?
-				// TODO: 2. if array which element?
-				// TODO: 3. resolve variable path
+				// TODO: match watchable variable path to full variable path in watchlist - if there's a match do stuff
+				// TODO: 	tokenize variable path via dot separator (handle array brackets)
+				// TODO: 	loop through tokens and build tree
 			}
 		}
 	}
