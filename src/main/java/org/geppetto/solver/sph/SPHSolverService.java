@@ -60,6 +60,7 @@ import org.geppetto.core.model.IModel;
 import org.geppetto.core.model.state.CompositeStateNode;
 import org.geppetto.core.model.state.SimpleStateNode;
 import org.geppetto.core.model.state.StateTreeRoot;
+import org.geppetto.core.model.state.StateTreeRoot.SUBTREE;
 import org.geppetto.core.model.values.FloatValue;
 import org.geppetto.core.model.values.ValuesFactory;
 import org.geppetto.core.simulation.IRunConfiguration;
@@ -91,6 +92,9 @@ public class SPHSolverService implements ISolver
 	
 	private VariableList watchableVariables = new VariableList();
 	private VariableList forceableVariables = new VariableList();
+	
+	List<String> watchListVarNames = new ArrayList<String>();
+	boolean watching = false;
 
 	private CLContext _context;
 	public CLQueue _queue;
@@ -925,6 +929,11 @@ public class SPHSolverService implements ISolver
 			logger.info("SPH STEP START");
 			step();
 			updateStateTree();
+			
+			if(watching){
+				updateStateTreeForWatch();
+			}
+			
 			end = System.currentTimeMillis();
 			logger.info("SPH STEP END, took " + (end - start) + "ms");
 		}
@@ -935,13 +944,15 @@ public class SPHSolverService implements ISolver
 
 	private void updateStateTree()
 	{
+		CompositeStateNode modelSubTree = _stateTree.getSubTree(StateTreeRoot.SUBTREE.MODEL_TREE);
+		
 		_positionPtr = _position.map(_queue, CLMem.MapFlags.Read);
 
 		// ASSUMPTION: The solver will never create new states after the first time step
 		// we can call it principle of conservation of the states; if there is a good
 		// reason to revoke this assumption we need to add code that at every cycle checks
 		// if some new states exist to eventually add them to the stateTree
-		if(_stateTree.getChildren().isEmpty())
+		if(modelSubTree.getChildren().isEmpty())
 		{
 			// the state tree is empty, let's create it
 			for(int i = 0, index = 0; i < _particleCount; i++, index = index + 4)
@@ -954,9 +965,9 @@ public class SPHSolverService implements ISolver
 
 				if(pV.getAsFloat() != SPHConstants.BOUNDARY_TYPE)
 				{
-					//we dont need to create a state for the boundary particles, they don't move.
+					// don't need to create a state for the boundary particles, they don't move.
 					CompositeStateNode particle = new CompositeStateNode(particleId);
-					_stateTree.addChild(particle);
+					modelSubTree.addChild(particle);
 					CompositeStateNode pos = new CompositeStateNode("pos");
 					particle.addChild(pos);
 					SimpleStateNode x = new SimpleStateNode("x");
@@ -977,11 +988,29 @@ public class SPHSolverService implements ISolver
 		else
 		{
 			UpdateSPHStateTreeVisitor updateSPHStateTreeVisitor = new UpdateSPHStateTreeVisitor(_positionPtr);
-			_stateTree.apply(updateSPHStateTreeVisitor);
+			modelSubTree.apply(updateSPHStateTreeVisitor);
 		}
 
 		_position.unmap(_queue, _positionPtr);
 
+	}
+	
+	private void updateStateTreeForWatch()
+	{
+		CompositeStateNode watchTree = _stateTree.getSubTree(SUBTREE.WATCH_TREE);
+		
+		// check which watchable variables are being watched
+		for(AVariable var : getWatchableVariables().getVariables())
+		{
+			for(String varName : watchListVarNames)
+			{
+				// TODO: add stuff to watch branch of state tree
+				
+				// TODO: 1. is array?
+				// TODO: 2. if array which element?
+				// TODO: 3. resolve variable path
+			}
+		}
 	}
 
 	@Override
@@ -1136,6 +1165,26 @@ public class SPHSolverService implements ISolver
 		vars.add(activationSignals);
 		
 		this.forceableVariables.setVariables(vars);
+	}
+
+	@Override
+	public void addWatchVariables(List<String> variableNames) {
+		watchListVarNames.addAll(variableNames);
+	}
+
+	@Override
+	public void startWatch() {
+		watching = true;
+	}
+
+	@Override
+	public void stopWatch() {
+		watching = false;
+	}
+
+	@Override
+	public void clearWatchVariables() {
+		watchListVarNames.clear();
 	}
 	
 };
