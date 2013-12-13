@@ -44,6 +44,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.StringTokenizer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -57,6 +60,7 @@ import org.geppetto.core.data.model.SimpleVariable;
 import org.geppetto.core.data.model.StructuredType;
 import org.geppetto.core.data.model.VariableList;
 import org.geppetto.core.model.IModel;
+import org.geppetto.core.model.state.AStateNode;
 import org.geppetto.core.model.state.CompositeStateNode;
 import org.geppetto.core.model.state.SimpleStateNode;
 import org.geppetto.core.model.state.StateTreeRoot;
@@ -65,6 +69,7 @@ import org.geppetto.core.model.values.FloatValue;
 import org.geppetto.core.model.values.ValuesFactory;
 import org.geppetto.core.simulation.IRunConfiguration;
 import org.geppetto.core.solver.ISolver;
+import org.geppetto.core.utilities.VariablePathSerializer;
 import org.geppetto.model.sph.Connection;
 import org.geppetto.model.sph.common.SPHConstants;
 import org.geppetto.model.sph.services.SPHModelInterpreterService;
@@ -999,16 +1004,121 @@ public class SPHSolverService implements ISolver
 	{
 		CompositeStateNode watchTree = _stateTree.getSubTree(SUBTREE.WATCH_TREE);
 		
+		// map watchable buffers
+		_positionPtr = _position.map(_queue, CLMem.MapFlags.Read);
+		_velocityPtr = _velocity.map(_queue, CLMem.MapFlags.Read);
+		
 		// check which watchable variables are being watched
 		for(AVariable var : getWatchableVariables().getVariables())
 		{
 			for(String varName : watchListVarNames)
 			{
-				// TODO: match watchable variable path to full variable path in watchlist - if there's a match do stuff
-				// TODO: 	tokenize variable path via dot separator (handle array brackets)
-				// TODO: 	loop through tokens and build tree
+				// get watchable variables path
+				List<String> watchableVarsPaths = new ArrayList<String>();
+				VariablePathSerializer.GetFullVariablePath(var, "", watchableVarsPaths);
+				
+				// remove array bracket arguments from variable paths
+				String watchableVarNoBrackets = var.getName();
+				String varNameNoBrackets = varName;
+				String particleID = null;
+				if(varName.contains("["))
+				{
+					varNameNoBrackets = varName.replaceAll("/[(.*?)]/", "");
+					
+					Pattern pattern = Pattern.compile("/[(.*?)]/");
+					Matcher matcher = pattern.matcher(varName);
+					if (matcher.find())
+					{
+						particleID = matcher.group(1);
+					}
+				}
+				
+				// loop through paths and look for matching paths
+				for(String s : watchableVarsPaths)
+				{
+					if(s.equals(varNameNoBrackets))
+					{
+						// we have a match
+						
+						Integer ID = null;
+						if(particleID != null)
+						{
+							// check that paticleID is valid
+							ID = Integer.parseInt(particleID);
+							if(!(ID<_particleCount))
+							{
+								throw new IllegalArgumentException("SPHSolverService:updateStateTreeForWatch - particle index is out of boundaries");
+							}
+						}
+						
+						// tokenize variable path in watch list via dot separator (handle array brackets)
+						StringTokenizer tokenizer = new StringTokenizer(s, ".");
+						CompositeStateNode node = watchTree;
+						while(tokenizer.hasMoreElements())
+						{
+							// loop through tokens and build tree
+							String current = tokenizer.nextToken();
+							boolean found = false;
+							for(AStateNode child : node.getChildren())
+							{
+								if(child.getName().equals(current))
+								{
+									if(child instanceof CompositeStateNode)
+									{
+										node = (CompositeStateNode) child;
+									}
+									found = true;
+									break;
+								}
+							}
+							if(found)
+							{
+								continue;
+							}
+							else
+							{
+								if(tokenizer.hasMoreElements())
+								{
+									// not a leaf, create a composite state node
+									CompositeStateNode newNode = new CompositeStateNode(current);
+									node.addChild(newNode);
+									node = newNode;
+								}
+								else
+								{
+									// it's a leaf node
+									SimpleStateNode newNode = new SimpleStateNode(current);
+									
+									FloatValue val = null;
+									
+									// get value
+									switch(current)
+									{
+										case "x":
+											val = ValuesFactory.getFloatValue(_positionPtr.get(ID));
+											break;
+										case "y":
+											val = ValuesFactory.getFloatValue(_positionPtr.get(ID + 1));
+											break;
+										case "z":
+											val = ValuesFactory.getFloatValue(_positionPtr.get(ID + 2));
+											break;
+									}
+									
+									newNode.addValue(val);
+									
+									node.addChild(newNode);
+								}
+							}
+						}
+					}
+				}
 			}
 		}
+		
+		// unmap watchable buffers
+		_position.unmap(_queue, _positionPtr);
+		_velocity.unmap(_queue, _velocityPtr);
 	}
 
 	@Override
