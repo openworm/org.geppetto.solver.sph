@@ -1133,8 +1133,7 @@ public class SPHSolverService implements ISolver {
 										node = newNode;
 									} else {
 										// it's a leaf node
-										SimpleStateNode newNode = new SimpleStateNode(
-												current);
+										SimpleStateNode newNode = new SimpleStateNode(current);
 
 										FloatValue val = null;
 
