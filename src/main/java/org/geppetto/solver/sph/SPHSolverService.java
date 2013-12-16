@@ -1125,10 +1125,14 @@ public class SPHSolverService implements ISolver {
 									continue;
 								} else {
 									if (tokenizer.hasMoreElements()) {
-										// not a leaf, create a composite state
-										// node
-										CompositeStateNode newNode = new CompositeStateNode(
-												current);
+										// not a leaf, create a composite statenode
+										String nodeName = current;
+										if(current.equals("particle"))
+										{
+											nodeName = current + "[" + particleID + "]";
+										}
+										
+										CompositeStateNode newNode = new CompositeStateNode(nodeName);										
 										node.addChild(newNode);
 										node = newNode;
 									} else {

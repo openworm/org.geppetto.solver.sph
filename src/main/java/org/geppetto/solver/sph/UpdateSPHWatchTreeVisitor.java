@@ -33,10 +33,14 @@
 package org.geppetto.solver.sph;
 
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.bridj.Pointer;
 import org.geppetto.core.model.state.SimpleStateNode;
 import org.geppetto.core.model.state.visitors.DefaultStateVisitor;
+import org.geppetto.core.model.values.FloatValue;
+import org.geppetto.core.model.values.ValuesFactory;
 
 public class UpdateSPHWatchTreeVisitor extends DefaultStateVisitor {
 
@@ -54,9 +58,39 @@ public class UpdateSPHWatchTreeVisitor extends DefaultStateVisitor {
 	@Override
 	public boolean visitSimpleStateNode(SimpleStateNode node)
 	{
-		// TODO: 1. figure out which of the variables being watched this node represents
-		// TODO: 2. get value of interest (Nth particle from relevant results arrays)
-		// TODO: 3. node.addValue
+		// 1. figure out which of the variables being watched this node represents
+		String fullName = node.getFullName();
+		
+		// 2. get value of interest (Nth particle from relevant results arrays)
+		// extract index from string
+		Integer particleIndex = null;
+		if (fullName.contains("[")) {
+			Pattern pattern = Pattern.compile("/[(.*?)]/");
+			Matcher matcher = pattern.matcher(fullName);
+			if (matcher.find()) {
+				String particleID = matcher.group(1);
+				particleIndex = Integer.parseInt(particleID);
+			}
+		}
+		
+		// use index to retrieve values
+		FloatValue _xV = ValuesFactory.getFloatValue(_positionPtr.get(particleIndex));
+		FloatValue _yV = ValuesFactory.getFloatValue(_positionPtr.get(particleIndex + 1));
+		FloatValue _zV = ValuesFactory.getFloatValue(_positionPtr.get(particleIndex + 2));
+		
+		// 3. node.addValue
+		if(node.getName()=="x")
+		{
+			node.addValue(_xV);
+		}
+		else if(node.getName()=="y")
+		{
+			node.addValue(_yV);
+		}
+		else if(node.getName()=="z")
+		{
+			node.addValue(_zV);
+		}
 		
 		return super.visitSimpleStateNode(node);
 	}
