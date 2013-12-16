@@ -1078,16 +1078,12 @@ public class SPHSolverService implements ISolver {
 					VariablePathSerializer.GetFullVariablePath(var, "", watchableVarsPaths);
 
 					// remove array bracket arguments from variable paths
-					String watchableVarNoBrackets = var.getName();
 					String varNameNoBrackets = varName;
 					String particleID = null;
-					if (varName.contains("[")) {
-						varNameNoBrackets = varName.replaceAll("/[(.*?)]/", "");
-						Pattern pattern = Pattern.compile("/[(.*?)]/");
-						Matcher matcher = pattern.matcher(varName);
-						if (matcher.find()) {
-							particleID = matcher.group(1);
-						}
+					if(varName.indexOf("[")!=-1)
+					{
+						varNameNoBrackets = varName.substring(0,varName.indexOf("["))+varName.substring(varName.indexOf("]")+1,varName.length());
+						particleID = varName.substring(varName.indexOf("[")+1, varName.indexOf("]"));
 					}
 
 					// loop through paths and look for matching paths

@@ -64,13 +64,9 @@ public class UpdateSPHWatchTreeVisitor extends DefaultStateVisitor {
 		// 2. get value of interest (Nth particle from relevant results arrays)
 		// extract index from string
 		Integer particleIndex = null;
-		if (fullName.contains("[")) {
-			Pattern pattern = Pattern.compile("/[(.*?)]/");
-			Matcher matcher = pattern.matcher(fullName);
-			if (matcher.find()) {
-				String particleID = matcher.group(1);
-				particleIndex = Integer.parseInt(particleID);
-			}
+		if (fullName.indexOf("[")!=-1) {
+			String particleID = fullName.substring(fullName.indexOf("[")+1, fullName.indexOf("]"));
+			particleIndex = Integer.parseInt(particleID);
 		}
 		
 		// use index to retrieve values
@@ -79,15 +75,15 @@ public class UpdateSPHWatchTreeVisitor extends DefaultStateVisitor {
 		FloatValue _zV = ValuesFactory.getFloatValue(_positionPtr.get(particleIndex + 2));
 		
 		// 3. node.addValue
-		if(node.getName()=="x")
+		if(node.getName().equals("x"))
 		{
 			node.addValue(_xV);
 		}
-		else if(node.getName()=="y")
+		else if(node.getName().equals("y"))
 		{
 			node.addValue(_yV);
 		}
-		else if(node.getName()=="z")
+		else if(node.getName().equals("z"))
 		{
 			node.addValue(_zV);
 		}
