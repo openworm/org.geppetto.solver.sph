@@ -980,8 +980,7 @@ public class SPHSolverService implements ISolver {
 
 	@Override
 	public StateTreeRoot solve(IRunConfiguration timeConfiguration) {
-		// TODO: extend this to use time configuration to do multiple steps in
-		// one go
+		// TODO: extend this to use time configuration to do multiple steps in one go
 		long time = System.currentTimeMillis();
 		logger.info("SPH solver start");
 
@@ -998,16 +997,11 @@ public class SPHSolverService implements ISolver {
 			step();
 			updateStateTree();
 
-			if (watching) {
-				updateStateTreeForWatch();
-			}
-
 			end = System.currentTimeMillis();
 			logger.info("SPH STEP END, took " + (end - start) + "ms");
 		}
 
-		logger.info("SPH solver end, took: "
-				+ (System.currentTimeMillis() - time) + "ms");
+		logger.info("SPH solver end, took: " + (System.currentTimeMillis() - time) + "ms");
 		return _stateTree;
 	}
 
@@ -1057,7 +1051,11 @@ public class SPHSolverService implements ISolver {
 			UpdateSPHStateTreeVisitor updateSPHStateTreeVisitor = new UpdateSPHStateTreeVisitor(_positionPtr);
 			modelSubTree.apply(updateSPHStateTreeVisitor);
 		}
-
+		
+		if (watching) {
+			updateStateTreeForWatch();
+		}
+		
 		_position.unmap(_queue, _positionPtr);
 
 	}
@@ -1065,8 +1063,8 @@ public class SPHSolverService implements ISolver {
 	private void updateStateTreeForWatch() {
 		CompositeStateNode watchTree = _stateTree.getSubTree(SUBTREE.WATCH_TREE);
 
-		// map watchable buffers
-		_positionPtr = _position.map(_queue, CLMem.MapFlags.Read);
+		// map watchable buffers that are not already mapped
+		// NOTE: position is mapped for scene generation - improving performance by not mapping it again
 		_velocityPtr = _velocity.map(_queue, CLMem.MapFlags.Read);
 
 		if (watchTree.getChildren().isEmpty()) {
@@ -1167,7 +1165,6 @@ public class SPHSolverService implements ISolver {
 		}
 
 		// unmap watchable buffers
-		_position.unmap(_queue, _positionPtr);
 		_velocity.unmap(_queue, _positionPtr);
 	}
 
