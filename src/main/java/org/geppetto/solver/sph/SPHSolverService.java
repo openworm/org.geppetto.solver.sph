@@ -44,6 +44,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.StringTokenizer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -57,13 +60,16 @@ import org.geppetto.core.data.model.SimpleVariable;
 import org.geppetto.core.data.model.StructuredType;
 import org.geppetto.core.data.model.VariableList;
 import org.geppetto.core.model.IModel;
+import org.geppetto.core.model.state.AStateNode;
 import org.geppetto.core.model.state.CompositeStateNode;
 import org.geppetto.core.model.state.SimpleStateNode;
 import org.geppetto.core.model.state.StateTreeRoot;
+import org.geppetto.core.model.state.StateTreeRoot.SUBTREE;
 import org.geppetto.core.model.values.FloatValue;
 import org.geppetto.core.model.values.ValuesFactory;
 import org.geppetto.core.simulation.IRunConfiguration;
 import org.geppetto.core.solver.ISolver;
+import org.geppetto.core.utilities.VariablePathSerializer;
 import org.geppetto.model.sph.Connection;
 import org.geppetto.model.sph.common.SPHConstants;
 import org.geppetto.model.sph.services.SPHModelInterpreterService;
@@ -84,13 +90,15 @@ import com.nativelibs4java.opencl.JavaCL;
 import com.nativelibs4java.util.IOUtils;
 
 @Service
-public class SPHSolverService implements ISolver
-{
+public class SPHSolverService implements ISolver {
 
 	private static Log logger = LogFactory.getLog(SPHSolverService.class);
-	
+
 	private VariableList watchableVariables = new VariableList();
 	private VariableList forceableVariables = new VariableList();
+
+	List<String> watchListVarNames = new ArrayList<String>();
+	boolean watching = false;
 
 	private CLContext _context;
 	public CLQueue _queue;
@@ -164,50 +172,50 @@ public class SPHSolverService implements ISolver
 
 	private SPHModelX _model;
 	private StateTreeRoot _stateTree;
-	
+
 	private boolean _recordCheckPoints = false;
-	
+
 	/*
-	 * Checkpoints for the last computed step
-	 * NOTE: stores all buffer values after each kernel execution for troubleshooting purposes
+	 * Checkpoints for the last computed step NOTE: stores all buffer values
+	 * after each kernel execution for troubleshooting purposes
 	 */
 	private Map<KernelsEnum, PCISPHCheckPoint> _checkpointsMap = new LinkedHashMap<KernelsEnum, PCISPHCheckPoint>();
+
 	public Map<KernelsEnum, PCISPHCheckPoint> getCheckpointsMap() {
 		return _checkpointsMap;
 	}
 
 	/*
-	 * A map of buffer sizes
-	 * NOTE: these values are used in multiple places so storing them here reduces potential for error
+	 * A map of buffer sizes NOTE: these values are used in multiple places so
+	 * storing them here reduces potential for error
 	 */
 	private Map<BuffersEnum, Integer> _buffersSizeMap = new LinkedHashMap<BuffersEnum, Integer>();
+
 	public Map<BuffersEnum, Integer> getBuffersSizeMap() {
 		return _buffersSizeMap;
 	}
 
 	public static Random RandomGenerator = new Random();
 
-	public SPHSolverService(HardwareProfileEnum hardwareProfile) throws Exception
-	{
+	public SPHSolverService(HardwareProfileEnum hardwareProfile)
+			throws Exception {
 		this.onceOffInit(hardwareProfile);
 	}
-	
-	public SPHSolverService() throws Exception
-	{
+
+	public SPHSolverService() throws Exception {
 		this(HardwareProfileEnum.GPU);
 	}
-	
-	public SPHSolverService(boolean recordCheckpoints) throws Exception
-	{
+
+	public SPHSolverService(boolean recordCheckpoints) throws Exception {
 		this();
-		
+
 		_recordCheckPoints = recordCheckpoints;
 	}
 
-	private void onceOffInit(HardwareProfileEnum hwProfile) throws IOException
-	{
+	private void onceOffInit(HardwareProfileEnum hwProfile) throws IOException {
 		// TODO: check if the selected profile is actually available
-		DeviceFeature feature = (hwProfile == HardwareProfileEnum.CPU) ? DeviceFeature.CPU : DeviceFeature.GPU;
+		DeviceFeature feature = (hwProfile == HardwareProfileEnum.CPU) ? DeviceFeature.CPU
+				: DeviceFeature.GPU;
 
 		_context = JavaCL.createBestContext(feature);
 
@@ -215,8 +223,7 @@ public class SPHSolverService implements ISolver
 		// an array with available devices
 		CLDevice[] devices = _context.getDevices();
 
-		for(int i = 0; i < devices.length; i++)
-		{
+		for (int i = 0; i < devices.length; i++) {
 			out.println("device - " + i + ": " + devices[i]);
 		}
 
@@ -232,61 +239,103 @@ public class SPHSolverService implements ISolver
 		_queue = _context.createDefaultQueue();// device.createCommandQueue();
 
 		// load sources, create and build program
-		String src = IOUtils.readText(SPHSolverService.class.getResourceAsStream("/resource/sphFluid.cl"));
+		String src = IOUtils.readText(SPHSolverService.class
+				.getResourceAsStream("/resource/sphFluid.cl"));
 		_program = _context.createProgram(src);
 
 		// kernels
-		_clearBuffers = _program.createKernel(KernelsEnum.CLEAR_BUFFERS.toString());
-		_findNeighbors = _program.createKernel(KernelsEnum.FIND_NEIGHBORS.toString());
-		_hashParticles = _program.createKernel(KernelsEnum.HASH_PARTICLES.toString());
+		_clearBuffers = _program.createKernel(KernelsEnum.CLEAR_BUFFERS
+				.toString());
+		_findNeighbors = _program.createKernel(KernelsEnum.FIND_NEIGHBORS
+				.toString());
+		_hashParticles = _program.createKernel(KernelsEnum.HASH_PARTICLES
+				.toString());
 		_indexx = _program.createKernel(KernelsEnum.INDEX.toString());
-		_sortPostPass = _program.createKernel(KernelsEnum.SORT_POST_PASS.toString());
+		_sortPostPass = _program.createKernel(KernelsEnum.SORT_POST_PASS
+				.toString());
 
 		// PCI-SPH specific
-		_pcisph_computeForcesAndInitPressure = _program.createKernel(KernelsEnum.COMPUTE_FORCES_INIT_PRESSURE.toString());
-		_pcisph_integrate = _program.createKernel(KernelsEnum.INTEGRATE.toString());
-		_pcisph_predictPositions = _program.createKernel(KernelsEnum.PREDICT_POSITION.toString());
-		_pcisph_predictDensity = _program.createKernel(KernelsEnum.PREDICT_DENSITY.toString());
-		_pcisph_correctPressure = _program.createKernel(KernelsEnum.CORRECT_PRESSURE.toString());
-		_pcisph_computePressureForceAcceleration = _program.createKernel(KernelsEnum.COMPUTE_PRESSURE_FORCE_ACCELERATION.toString());
-		_pcisph_computeDensity = _program.createKernel(KernelsEnum.COMPUTE_DENSITY.toString());
-		_pcisph_computeElasticForces = _program.createKernel(KernelsEnum.COMPUTE_ELASTIC_FORCES.toString());
+		_pcisph_computeForcesAndInitPressure = _program
+				.createKernel(KernelsEnum.COMPUTE_FORCES_INIT_PRESSURE
+						.toString());
+		_pcisph_integrate = _program.createKernel(KernelsEnum.INTEGRATE
+				.toString());
+		_pcisph_predictPositions = _program
+				.createKernel(KernelsEnum.PREDICT_POSITION.toString());
+		_pcisph_predictDensity = _program
+				.createKernel(KernelsEnum.PREDICT_DENSITY.toString());
+		_pcisph_correctPressure = _program
+				.createKernel(KernelsEnum.CORRECT_PRESSURE.toString());
+		_pcisph_computePressureForceAcceleration = _program
+				.createKernel(KernelsEnum.COMPUTE_PRESSURE_FORCE_ACCELERATION
+						.toString());
+		_pcisph_computeDensity = _program
+				.createKernel(KernelsEnum.COMPUTE_DENSITY.toString());
+		_pcisph_computeElasticForces = _program
+				.createKernel(KernelsEnum.COMPUTE_ELASTIC_FORCES.toString());
 	}
 
-	private void allocateBuffers()
-	{
+	private void allocateBuffers() {
 		// init buffer size map
 		_buffersSizeMap.put(BuffersEnum.ACCELERATION, _particleCount * 4 * 2);
 		_buffersSizeMap.put(BuffersEnum.GRID_CELL_INDEX, _gridCellCount + 1);
-		_buffersSizeMap.put(BuffersEnum.GRID_CELL_INDEX_FIXED, _gridCellCount + 1);
-		_buffersSizeMap.put(BuffersEnum.NEIGHBOR_MAP, _particleCount * SPHConstants.NEIGHBOR_COUNT * 2);
+		_buffersSizeMap.put(BuffersEnum.GRID_CELL_INDEX_FIXED,
+				_gridCellCount + 1);
+		_buffersSizeMap.put(BuffersEnum.NEIGHBOR_MAP, _particleCount
+				* SPHConstants.NEIGHBOR_COUNT * 2);
 		_buffersSizeMap.put(BuffersEnum.PARTICLE_INDEX, _particleCount * 2);
 		_buffersSizeMap.put(BuffersEnum.PARTICLE_INDEX_BACK, _particleCount);
 		_buffersSizeMap.put(BuffersEnum.POSITION, _particleCount * 4);
 		_buffersSizeMap.put(BuffersEnum.PRESSURE, _particleCount * 4);
 		_buffersSizeMap.put(BuffersEnum.RHO, _particleCount * 2);
-		_buffersSizeMap.put(BuffersEnum.SORTED_POSITION, _particleCount * 4 * 2);
+		_buffersSizeMap
+				.put(BuffersEnum.SORTED_POSITION, _particleCount * 4 * 2);
 		_buffersSizeMap.put(BuffersEnum.SORTED_VELOCITY, _particleCount * 4);
 		_buffersSizeMap.put(BuffersEnum.VELOCITY, _particleCount * 4);
 		_buffersSizeMap.put(BuffersEnum.ELASTIC_BUNDLES, _elasticBundlesCount);
-		
+
 		// allocate native device memory for all buffers
-		_acceleration = _context.createFloatBuffer(CLMem.Usage.InputOutput, _buffersSizeMap.get(BuffersEnum.ACCELERATION));
-		_gridCellIndex = _context.createIntBuffer(CLMem.Usage.InputOutput, _buffersSizeMap.get(BuffersEnum.GRID_CELL_INDEX));
-		_gridCellIndexFixedUp = _context.createIntBuffer(_recordCheckPoints ? CLMem.Usage.InputOutput : CLMem.Usage.Input, _buffersSizeMap.get(BuffersEnum.GRID_CELL_INDEX_FIXED));
-		_neighborMap = _context.createFloatBuffer(_recordCheckPoints ? CLMem.Usage.InputOutput : CLMem.Usage.Input, _buffersSizeMap.get(BuffersEnum.NEIGHBOR_MAP));
-		_particleIndex = _context.createIntBuffer(CLMem.Usage.InputOutput, _buffersSizeMap.get(BuffersEnum.PARTICLE_INDEX));
-		_particleIndexBack = _context.createIntBuffer(_recordCheckPoints ? CLMem.Usage.InputOutput : CLMem.Usage.Input, _buffersSizeMap.get(BuffersEnum.PARTICLE_INDEX_BACK));
-		_position = _context.createFloatBuffer(CLMem.Usage.InputOutput, _buffersSizeMap.get(BuffersEnum.POSITION));
-		_pressure = _context.createFloatBuffer(_recordCheckPoints ? CLMem.Usage.InputOutput : CLMem.Usage.Input, _buffersSizeMap.get(BuffersEnum.PRESSURE));
-		_rho = _context.createFloatBuffer(_recordCheckPoints ? CLMem.Usage.InputOutput : CLMem.Usage.Input, _buffersSizeMap.get(BuffersEnum.RHO));
-		_sortedPosition = _context.createFloatBuffer(_recordCheckPoints ? CLMem.Usage.InputOutput : CLMem.Usage.Input, _buffersSizeMap.get(BuffersEnum.SORTED_POSITION));
-		_sortedVelocity = _context.createFloatBuffer(_recordCheckPoints ? CLMem.Usage.InputOutput : CLMem.Usage.Input, _buffersSizeMap.get(BuffersEnum.SORTED_VELOCITY));
-		_velocity = _context.createFloatBuffer(CLMem.Usage.InputOutput, _buffersSizeMap.get(BuffersEnum.VELOCITY));
+		_acceleration = _context.createFloatBuffer(CLMem.Usage.InputOutput,
+				_buffersSizeMap.get(BuffersEnum.ACCELERATION));
+		_gridCellIndex = _context.createIntBuffer(CLMem.Usage.InputOutput,
+				_buffersSizeMap.get(BuffersEnum.GRID_CELL_INDEX));
+		_gridCellIndexFixedUp = _context.createIntBuffer(
+				_recordCheckPoints ? CLMem.Usage.InputOutput
+						: CLMem.Usage.Input, _buffersSizeMap
+						.get(BuffersEnum.GRID_CELL_INDEX_FIXED));
+		_neighborMap = _context.createFloatBuffer(
+				_recordCheckPoints ? CLMem.Usage.InputOutput
+						: CLMem.Usage.Input, _buffersSizeMap
+						.get(BuffersEnum.NEIGHBOR_MAP));
+		_particleIndex = _context.createIntBuffer(CLMem.Usage.InputOutput,
+				_buffersSizeMap.get(BuffersEnum.PARTICLE_INDEX));
+		_particleIndexBack = _context.createIntBuffer(
+				_recordCheckPoints ? CLMem.Usage.InputOutput
+						: CLMem.Usage.Input, _buffersSizeMap
+						.get(BuffersEnum.PARTICLE_INDEX_BACK));
+		_position = _context.createFloatBuffer(CLMem.Usage.InputOutput,
+				_buffersSizeMap.get(BuffersEnum.POSITION));
+		_pressure = _context.createFloatBuffer(
+				_recordCheckPoints ? CLMem.Usage.InputOutput
+						: CLMem.Usage.Input, _buffersSizeMap
+						.get(BuffersEnum.PRESSURE));
+		_rho = _context.createFloatBuffer(
+				_recordCheckPoints ? CLMem.Usage.InputOutput
+						: CLMem.Usage.Input, _buffersSizeMap
+						.get(BuffersEnum.RHO));
+		_sortedPosition = _context.createFloatBuffer(
+				_recordCheckPoints ? CLMem.Usage.InputOutput
+						: CLMem.Usage.Input, _buffersSizeMap
+						.get(BuffersEnum.SORTED_POSITION));
+		_sortedVelocity = _context.createFloatBuffer(
+				_recordCheckPoints ? CLMem.Usage.InputOutput
+						: CLMem.Usage.Input, _buffersSizeMap
+						.get(BuffersEnum.SORTED_VELOCITY));
+		_velocity = _context.createFloatBuffer(CLMem.Usage.InputOutput,
+				_buffersSizeMap.get(BuffersEnum.VELOCITY));
 	}
 
-	private void setBuffersFromModel()
-	{
+	private void setBuffersFromModel() {
 		// set dimensions
 		_xMax = _model.getXMax();
 		_xMin = _model.getXMin();
@@ -294,7 +343,8 @@ public class SPHSolverService implements ISolver
 		_yMin = _model.getYMin();
 		_zMax = _model.getZMax();
 		_zMin = _model.getZMin();
-		_elasticBundlesCount = (_model.getElasticBundles() == null) ? 0 : _model.getElasticBundles().intValue();
+		_elasticBundlesCount = (_model.getElasticBundles() == null) ? 0
+				: _model.getElasticBundles().intValue();
 
 		_particleCount = _model.getNumberOfParticles();
 		_numOfElasticP = 0;
@@ -307,21 +357,21 @@ public class SPHSolverService implements ISolver
 
 		// set grid dimensions
 		_gridCellCount = _gridCellsX * _gridCellsY * _gridCellsZ;
-		
+
 		// allocate buffers - requires global dimensions of the grid
 		this.allocateBuffers();
 
 		int index = 0;
 
-		for(int i = 0; i < _particleCount; i++)
-		{
-			if(i != 0)
-			{
+		for (int i = 0; i < _particleCount; i++) {
+			if (i != 0) {
 				index = index + 4;
 			}
 
-			Vector3DX positionVector = (Vector3DX) _model.getParticles().get(i).getPositionVector();
-			Vector3DX velocityVector = (Vector3DX) _model.getParticles().get(i).getVelocityVector();
+			Vector3DX positionVector = (Vector3DX) _model.getParticles().get(i)
+					.getPositionVector();
+			Vector3DX velocityVector = (Vector3DX) _model.getParticles().get(i)
+					.getVelocityVector();
 
 			// map for writing
 			_positionPtr = _position.map(_queue, CLMem.MapFlags.Write);
@@ -342,78 +392,77 @@ public class SPHSolverService implements ISolver
 			_velocity.unmap(_queue, _velocityPtr);
 
 			// particle counts
-			if(positionVector.getP() == SPHConstants.BOUNDARY_TYPE)
-			{
+			if (positionVector.getP() == SPHConstants.BOUNDARY_TYPE) {
 				_numOfBoundaryP++;
-			}
-			else if(positionVector.getP() == SPHConstants.ELASTIC_TYPE)
-			{
+			} else if (positionVector.getP() == SPHConstants.ELASTIC_TYPE) {
 				_numOfElasticP++;
-			}
-			else if(positionVector.getP() == SPHConstants.LIQUID_TYPE)
-			{
+			} else if (positionVector.getP() == SPHConstants.LIQUID_TYPE) {
 				_numOfLiquidP++;
 			}
 		}
 
 		// populate elastic connection buffers if we have any
-		if(_numOfElasticP > 0 && _model.getConnections().size() > 0)
-		{
+		if (_numOfElasticP > 0 && _model.getConnections().size() > 0) {
 			// init elastic connections buffers
 			// TODO: move this back with the other buffers init stuff
-			_buffersSizeMap.put(BuffersEnum.ELASTIC_CONNECTIONS, _numOfElasticP * SPHConstants.NEIGHBOR_COUNT * 4);
-			_elasticConnectionsData = _context.createFloatBuffer(CLMem.Usage.InputOutput, _buffersSizeMap.get(BuffersEnum.ELASTIC_CONNECTIONS));
-			_elasticConnectionsDataPtr = _elasticConnectionsData.map(_queue, CLMem.MapFlags.Write);
+			_buffersSizeMap.put(BuffersEnum.ELASTIC_CONNECTIONS, _numOfElasticP
+					* SPHConstants.NEIGHBOR_COUNT * 4);
+			_elasticConnectionsData = _context.createFloatBuffer(
+					CLMem.Usage.InputOutput,
+					_buffersSizeMap.get(BuffersEnum.ELASTIC_CONNECTIONS));
+			_elasticConnectionsDataPtr = _elasticConnectionsData.map(_queue,
+					CLMem.MapFlags.Write);
 
 			int connIndex = 0;
-			for(Connection conn : _model.getConnections())
-			{
+			for (Connection conn : _model.getConnections()) {
 				_elasticConnectionsDataPtr.set(connIndex, conn.getP1());
-				_elasticConnectionsDataPtr.set(connIndex + 1, conn.getDistance());
-				_elasticConnectionsDataPtr.set(connIndex + 2, conn.getMysteryValue());
+				_elasticConnectionsDataPtr.set(connIndex + 1,
+						conn.getDistance());
+				_elasticConnectionsDataPtr.set(connIndex + 2,
+						conn.getMysteryValue());
 				_elasticConnectionsDataPtr.set(connIndex + 3, 0f); // padding
 				connIndex += 4;
 			}
 
-			// we copied the stuff down to the device and we won't touch it again so we can unmap
+			// we copied the stuff down to the device and we won't touch it
+			// again so we can unmap
 			_elasticConnectionsData.unmap(_queue, _elasticConnectionsDataPtr);
-			
+
 			// allocate activation signal buffers
-			if(_buffersSizeMap.get(BuffersEnum.ELASTIC_BUNDLES) > 0)
-			{
-				_activationSignal = _context.createFloatBuffer(CLMem.Usage.Input, _buffersSizeMap.get(BuffersEnum.ELASTIC_BUNDLES));
-			}
-			else
-			{
-				// allocate a buffer with 1 single element 
-				// NOTE: this is a HACK to avoid exceptions in case of having elastic particles but no contractible bundles
-				_activationSignal = _context.createFloatBuffer(CLMem.Usage.Input, 1);
+			if (_buffersSizeMap.get(BuffersEnum.ELASTIC_BUNDLES) > 0) {
+				_activationSignal = _context.createFloatBuffer(
+						CLMem.Usage.Input,
+						_buffersSizeMap.get(BuffersEnum.ELASTIC_BUNDLES));
+			} else {
+				// allocate a buffer with 1 single element
+				// NOTE: this is a HACK to avoid exceptions in case of having
+				// elastic particles but no contractible bundles
+				_activationSignal = _context.createFloatBuffer(
+						CLMem.Usage.Input, 1);
 			}
 		}
 
 		// check that counts are fine
-		if(_particleCount != (_numOfBoundaryP + _numOfElasticP + _numOfLiquidP))
-		{
-			throw new IllegalArgumentException("SPHSolverService:setModels - particle counts do not add up");
+		if (_particleCount != (_numOfBoundaryP + _numOfElasticP + _numOfLiquidP)) {
+			throw new IllegalArgumentException(
+					"SPHSolverService:setModels - particle counts do not add up");
 		}
 	}
 
-	public void cleanContext()
-	{
+	public void cleanContext() {
 		_stateTree = null;
 		_context.release();
 	}
 
-	private int runClearBuffers()
-	{
+	private int runClearBuffers() {
 		_clearBuffers.setArg(0, _neighborMap);
 		_clearBuffers.setArg(1, _particleCount);
-		_clearBuffers.enqueueNDRange(_queue, new int[] { getParticleCountRoundedUp() });
+		_clearBuffers.enqueueNDRange(_queue,
+				new int[] { getParticleCountRoundedUp() });
 		return 0;
 	}
 
-	private int runFindNeighbors()
-	{
+	private int runFindNeighbors() {
 		_findNeighbors.setArg(0, _gridCellIndexFixedUp);
 		_findNeighbors.setArg(1, _sortedPosition);
 		_gridCellCount = ((_gridCellsX) * (_gridCellsY)) * (_gridCellsZ);
@@ -430,12 +479,12 @@ public class SPHSolverService implements ISolver
 		_findNeighbors.setArg(12, _zMin);
 		_findNeighbors.setArg(13, _neighborMap);
 		_findNeighbors.setArg(14, _particleCount);
-		_findNeighbors.enqueueNDRange(_queue, new int[] { getParticleCountRoundedUp() });
+		_findNeighbors.enqueueNDRange(_queue,
+				new int[] { getParticleCountRoundedUp() });
 		return 0;
 	}
 
-	private CLEvent runHashParticles()
-	{
+	private CLEvent runHashParticles() {
 		// Stage HashParticles
 		_hashParticles.setArg(0, _position);
 		_hashParticles.setArg(1, _gridCellsX);
@@ -447,41 +496,37 @@ public class SPHSolverService implements ISolver
 		_hashParticles.setArg(7, _zMin);
 		_hashParticles.setArg(8, _particleIndex);
 		_hashParticles.setArg(9, _particleCount);
-		CLEvent event = _hashParticles.enqueueNDRange(_queue, new int[] { getParticleCountRoundedUp() });
+		CLEvent event = _hashParticles.enqueueNDRange(_queue,
+				new int[] { getParticleCountRoundedUp() });
 
 		return event;
 	}
 
-	private int runIndexPostPass()
-	{
+	private int runIndexPostPass() {
 		// get values out of buffer
 		_gridCellIndexPtr = _gridCellIndex.map(_queue, CLMem.MapFlags.Read);
 		int[] gridNextNonEmptyCellBuffer = _gridCellIndexPtr.getInts();
 		_gridCellIndex.unmap(_queue, _gridCellIndexPtr);
 
 		int recentNonEmptyCell = _gridCellCount;
-		for(int i = _gridCellCount; i >= 0; i--)
-		{
-			if(gridNextNonEmptyCellBuffer[i] == SPHConstants.NO_CELL_ID)
-			{
+		for (int i = _gridCellCount; i >= 0; i--) {
+			if (gridNextNonEmptyCellBuffer[i] == SPHConstants.NO_CELL_ID) {
 				gridNextNonEmptyCellBuffer[i] = recentNonEmptyCell;
-			}
-			else
-			{
+			} else {
 				recentNonEmptyCell = gridNextNonEmptyCellBuffer[i];
 			}
 		}
 
 		// put results back
-		_gridCellIndexFixedUpPtr = _gridCellIndexFixedUp.map(_queue, CLMem.MapFlags.Write);
+		_gridCellIndexFixedUpPtr = _gridCellIndexFixedUp.map(_queue,
+				CLMem.MapFlags.Write);
 		_gridCellIndexFixedUpPtr.setInts(gridNextNonEmptyCellBuffer);
 		_gridCellIndexFixedUp.unmap(_queue, _gridCellIndexFixedUpPtr);
 
 		return 0;
 	}
 
-	private CLEvent runIndexx()
-	{
+	private CLEvent runIndexx() {
 		// Stage Indexx
 		_indexx.setArg(0, _particleIndex);
 		_gridCellCount = ((_gridCellsX) * (_gridCellsY)) * (_gridCellsZ);
@@ -489,13 +534,13 @@ public class SPHSolverService implements ISolver
 		_indexx.setArg(2, _gridCellIndex);
 		_indexx.setArg(3, _particleCount);
 		int gridCellCountRoundedUp = (((_gridCellCount - 1) / 256) + 1) * 256;
-		CLEvent event = _indexx.enqueueNDRange(_queue, new int[] { gridCellCountRoundedUp });
+		CLEvent event = _indexx.enqueueNDRange(_queue,
+				new int[] { gridCellCountRoundedUp });
 
 		return event;
 	}
 
-	private int runSortPostPass()
-	{
+	private int runSortPostPass() {
 		// Stage SortPostPass
 		_sortPostPass.setArg(0, _particleIndex);
 		_sortPostPass.setArg(1, _particleIndexBack);
@@ -504,12 +549,12 @@ public class SPHSolverService implements ISolver
 		_sortPostPass.setArg(4, _sortedPosition);
 		_sortPostPass.setArg(5, _sortedVelocity);
 		_sortPostPass.setArg(6, _particleCount);
-		_sortPostPass.enqueueNDRange(_queue, new int[] { getParticleCountRoundedUp() });
+		_sortPostPass.enqueueNDRange(_queue,
+				new int[] { getParticleCountRoundedUp() });
 		return 0;
 	}
 
-	private int run_pcisph_computeDensity()
-	{
+	private int run_pcisph_computeDensity() {
 		// Stage ComputeDensityPressure
 		_pcisph_computeDensity.setArg(0, _neighborMap);
 		_pcisph_computeDensity.setArg(1, SPHConstants.W_POLY_6_COEFFICIENT);
@@ -523,15 +568,17 @@ public class SPHSolverService implements ISolver
 		_pcisph_computeDensity.setArg(9, _pressure);
 		_pcisph_computeDensity.setArg(10, _rho);
 		_pcisph_computeDensity.setArg(11, _particleIndexBack);
-		_pcisph_computeDensity.setArg(12, SPHConstants.DELTA); // calculated from constants
+		_pcisph_computeDensity.setArg(12, SPHConstants.DELTA); // calculated
+																// from
+																// constants
 		_pcisph_computeDensity.setArg(13, _particleCount);
-		_pcisph_computeDensity.enqueueNDRange(_queue, new int[] { getParticleCountRoundedUp() });
+		_pcisph_computeDensity.enqueueNDRange(_queue,
+				new int[] { getParticleCountRoundedUp() });
 
 		return 0;
 	}
 
-	private int run_pcisph_computeForcesAndInitPressure()
-	{
+	private int run_pcisph_computeForcesAndInitPressure() {
 		_pcisph_computeForcesAndInitPressure.setArg(0, _neighborMap);
 		_pcisph_computeForcesAndInitPressure.setArg(1, _rho);
 		_pcisph_computeForcesAndInitPressure.setArg(2, _pressure);
@@ -539,25 +586,28 @@ public class SPHSolverService implements ISolver
 		_pcisph_computeForcesAndInitPressure.setArg(4, _sortedVelocity);
 		_pcisph_computeForcesAndInitPressure.setArg(5, _acceleration);
 		_pcisph_computeForcesAndInitPressure.setArg(6, _particleIndexBack);
-		_pcisph_computeForcesAndInitPressure.setArg(7, SPHConstants.W_POLY_6_COEFFICIENT);
-		_pcisph_computeForcesAndInitPressure.setArg(8, SPHConstants.DEL_2_W_VISCOSITY_COEFFICIENT);
+		_pcisph_computeForcesAndInitPressure.setArg(7,
+				SPHConstants.W_POLY_6_COEFFICIENT);
+		_pcisph_computeForcesAndInitPressure.setArg(8,
+				SPHConstants.DEL_2_W_VISCOSITY_COEFFICIENT);
 		_pcisph_computeForcesAndInitPressure.setArg(9, SPHConstants.H);
 		_pcisph_computeForcesAndInitPressure.setArg(10, SPHConstants.MASS);
 		_pcisph_computeForcesAndInitPressure.setArg(11, SPHConstants.MU);
-		_pcisph_computeForcesAndInitPressure.setArg(12, SPHConstants.SIMULATION_SCALE);
+		_pcisph_computeForcesAndInitPressure.setArg(12,
+				SPHConstants.SIMULATION_SCALE);
 		_pcisph_computeForcesAndInitPressure.setArg(13, SPHConstants.GRAVITY_X);
 		_pcisph_computeForcesAndInitPressure.setArg(14, SPHConstants.GRAVITY_Y);
 		_pcisph_computeForcesAndInitPressure.setArg(15, SPHConstants.GRAVITY_Z);
 		_pcisph_computeForcesAndInitPressure.setArg(16, _position);
 		_pcisph_computeForcesAndInitPressure.setArg(17, _particleIndex);
 		_pcisph_computeForcesAndInitPressure.setArg(18, _particleCount);
-		_pcisph_computeForcesAndInitPressure.enqueueNDRange(_queue, new int[] { getParticleCountRoundedUp() });
+		_pcisph_computeForcesAndInitPressure.enqueueNDRange(_queue,
+				new int[] { getParticleCountRoundedUp() });
 
 		return 0;
 	}
 
-	private int run_pcisph_computeElasticForces()
-	{
+	private int run_pcisph_computeElasticForces() {
 		_pcisph_computeElasticForces.setArg(0, _neighborMap);
 		_pcisph_computeElasticForces.setArg(1, _sortedPosition);
 		_pcisph_computeElasticForces.setArg(2, _sortedVelocity);
@@ -576,13 +626,13 @@ public class SPHSolverService implements ISolver
 
 		int numOfElasticPRoundedUp = (((_numOfElasticP - 1) / 256) + 1) * 256;
 
-		_pcisph_computeElasticForces.enqueueNDRange(_queue, new int[] { numOfElasticPRoundedUp });
+		_pcisph_computeElasticForces.enqueueNDRange(_queue,
+				new int[] { numOfElasticPRoundedUp });
 
 		return 0;
 	}
 
-	private int run_pcisph_predictPositions()
-	{
+	private int run_pcisph_predictPositions() {
 		_pcisph_predictPositions.setArg(0, _acceleration);
 		_pcisph_predictPositions.setArg(1, _sortedPosition);
 		_pcisph_predictPositions.setArg(2, _sortedVelocity);
@@ -605,13 +655,13 @@ public class SPHSolverService implements ISolver
 		_pcisph_predictPositions.setArg(19, SPHConstants.R0);
 		_pcisph_predictPositions.setArg(20, _neighborMap);
 		_pcisph_predictPositions.setArg(21, _particleCount);
-		_pcisph_predictPositions.enqueueNDRange(_queue, new int[] { getParticleCountRoundedUp() });
+		_pcisph_predictPositions.enqueueNDRange(_queue,
+				new int[] { getParticleCountRoundedUp() });
 
 		return 0;
 	}
 
-	private int run_pcisph_predictDensity()
-	{
+	private int run_pcisph_predictDensity() {
 		// Stage predict density
 		_pcisph_predictDensity.setArg(0, _neighborMap);
 		_pcisph_predictDensity.setArg(1, _particleIndexBack);
@@ -627,18 +677,19 @@ public class SPHSolverService implements ISolver
 		_pcisph_predictDensity.setArg(11, _rho);
 		_pcisph_predictDensity.setArg(12, SPHConstants.DELTA);
 		_pcisph_predictDensity.setArg(13, _particleCount);
-		_pcisph_predictDensity.enqueueNDRange(_queue, new int[] { getParticleCountRoundedUp() });
+		_pcisph_predictDensity.enqueueNDRange(_queue,
+				new int[] { getParticleCountRoundedUp() });
 
 		return 0;
 	}
 
-	private int run_pcisph_correctPressure()
-	{
+	private int run_pcisph_correctPressure() {
 		// Stage correct pressure
 		_pcisph_correctPressure.setArg(0, _neighborMap);
 		_pcisph_correctPressure.setArg(1, _particleIndexBack);
 		_pcisph_correctPressure.setArg(2, SPHConstants.W_POLY_6_COEFFICIENT);
-		_pcisph_correctPressure.setArg(3, SPHConstants.GRAD_W_SPIKY_COEFFICIENT);
+		_pcisph_correctPressure
+				.setArg(3, SPHConstants.GRAD_W_SPIKY_COEFFICIENT);
 		_pcisph_correctPressure.setArg(4, SPHConstants.H);
 		_pcisph_correctPressure.setArg(5, SPHConstants.MASS);
 		_pcisph_correctPressure.setArg(6, SPHConstants.RHO0);
@@ -651,13 +702,13 @@ public class SPHSolverService implements ISolver
 		_pcisph_correctPressure.setArg(13, _position);
 		_pcisph_correctPressure.setArg(14, _particleIndex);
 		_pcisph_correctPressure.setArg(15, _particleCount);
-		_pcisph_correctPressure.enqueueNDRange(_queue, new int[] { getParticleCountRoundedUp() });
+		_pcisph_correctPressure.enqueueNDRange(_queue,
+				new int[] { getParticleCountRoundedUp() });
 
 		return 0;
 	}
 
-	private int run_pcisph_computePressureForceAcceleration()
-	{
+	private int run_pcisph_computePressureForceAcceleration() {
 		// Stage ComputeAcceleration
 		_pcisph_computePressureForceAcceleration.setArg(0, _neighborMap);
 		_pcisph_computePressureForceAcceleration.setArg(1, _pressure);
@@ -665,25 +716,29 @@ public class SPHSolverService implements ISolver
 		_pcisph_computePressureForceAcceleration.setArg(3, _sortedPosition);
 		_pcisph_computePressureForceAcceleration.setArg(4, _sortedVelocity);
 		_pcisph_computePressureForceAcceleration.setArg(5, _particleIndexBack);
-		_pcisph_computePressureForceAcceleration.setArg(6, SPHConstants.CFLLimit);
-		_pcisph_computePressureForceAcceleration.setArg(7, SPHConstants.DEL_2_W_VISCOSITY_COEFFICIENT);
-		_pcisph_computePressureForceAcceleration.setArg(8, SPHConstants.GRAD_W_SPIKY_COEFFICIENT);
+		_pcisph_computePressureForceAcceleration.setArg(6,
+				SPHConstants.CFLLimit);
+		_pcisph_computePressureForceAcceleration.setArg(7,
+				SPHConstants.DEL_2_W_VISCOSITY_COEFFICIENT);
+		_pcisph_computePressureForceAcceleration.setArg(8,
+				SPHConstants.GRAD_W_SPIKY_COEFFICIENT);
 		_pcisph_computePressureForceAcceleration.setArg(9, SPHConstants.H);
 		_pcisph_computePressureForceAcceleration.setArg(10, SPHConstants.MASS);
 		_pcisph_computePressureForceAcceleration.setArg(11, SPHConstants.MU);
-		_pcisph_computePressureForceAcceleration.setArg(12, SPHConstants.SIMULATION_SCALE);
+		_pcisph_computePressureForceAcceleration.setArg(12,
+				SPHConstants.SIMULATION_SCALE);
 		_pcisph_computePressureForceAcceleration.setArg(13, _acceleration);
 		_pcisph_computePressureForceAcceleration.setArg(14, SPHConstants.RHO0);
 		_pcisph_computePressureForceAcceleration.setArg(15, _position);
 		_pcisph_computePressureForceAcceleration.setArg(16, _particleIndex);
 		_pcisph_computePressureForceAcceleration.setArg(17, _particleCount);
-		_pcisph_computePressureForceAcceleration.enqueueNDRange(_queue, new int[] { getParticleCountRoundedUp() });
+		_pcisph_computePressureForceAcceleration.enqueueNDRange(_queue,
+				new int[] { getParticleCountRoundedUp() });
 
 		return 0;
 	}
 
-	private CLEvent run_pcisph_integrate()
-	{
+	private CLEvent run_pcisph_integrate() {
 		// Stage Integrate
 		_pcisph_integrate.setArg(0, _acceleration);
 		_pcisph_integrate.setArg(1, _sortedPosition);
@@ -708,31 +763,29 @@ public class SPHSolverService implements ISolver
 		_pcisph_integrate.setArg(20, SPHConstants.R0);
 		_pcisph_integrate.setArg(21, _neighborMap);
 		_pcisph_integrate.setArg(22, _particleCount);
-		CLEvent event = _pcisph_integrate.enqueueNDRange(_queue, new int[] { getParticleCountRoundedUp() });
+		CLEvent event = _pcisph_integrate.enqueueNDRange(_queue,
+				new int[] { getParticleCountRoundedUp() });
 
 		return event;
 	}
 
-	private int runSort()
-	{
+	private int runSort() {
 		// this version work with qsort
 		int index = 0;
 		List<int[]> particleIndex = new ArrayList<int[]>();
 
 		// get values out of buffer
-		_particleIndexPtr = _particleIndex.map(_queue, CLMem.MapFlags.ReadWrite);
+		_particleIndexPtr = _particleIndex
+				.map(_queue, CLMem.MapFlags.ReadWrite);
 		int[] particleInd = _particleIndexPtr.getInts();
 
-		for(int i = 0; i < _particleCount * 2; i += 2)
-		{
+		for (int i = 0; i < _particleCount * 2; i += 2) {
 			int[] element = { particleInd[i], particleInd[i + 1] };
 			particleIndex.add(element);
 		}
 		Collections.sort(particleIndex, new MyCompare());
-		for(int i = 0; i < particleIndex.size(); i++)
-		{
-			for(int j = 0; j < 2; j++)
-			{
+		for (int i = 0; i < particleIndex.size(); i++) {
+			for (int j = 0; j < 2; j++) {
 				particleInd[index] = particleIndex.get(i)[j];
 				index++;
 			}
@@ -745,18 +798,17 @@ public class SPHSolverService implements ISolver
 		return 0;
 	}
 
-	class MyCompare implements Comparator<int[]>
-	{
-		public int compare(int[] o1, int[] o2)
-		{
-			if(o1[0] < o2[0]) return -1;
-			if(o1[0] > o2[0]) return +1;
+	class MyCompare implements Comparator<int[]> {
+		public int compare(int[] o1, int[] o2) {
+			if (o1[0] < o2[0])
+				return -1;
+			if (o1[0] > o2[0])
+				return +1;
 			return 0;
 		}
 	}
 
-	private void step()
-	{
+	private void step() {
 		long endStep = 0;
 		long startStep = System.currentTimeMillis();
 		long end = 0;
@@ -764,14 +816,18 @@ public class SPHSolverService implements ISolver
 
 		logger.info("SPH clear buffer");
 		runClearBuffers();
-		if(_recordCheckPoints) {recordCheckpoints(KernelsEnum.CLEAR_BUFFERS);}
+		if (_recordCheckPoints) {
+			recordCheckpoints(KernelsEnum.CLEAR_BUFFERS);
+		}
 		end = System.currentTimeMillis();
 		logger.info("SPH clear buffer end, took " + (end - start) + "ms");
 		start = end;
 
 		logger.info("SPH hash particles");
 		CLEvent hashParticles = runHashParticles();
-		if(_recordCheckPoints) {recordCheckpoints(KernelsEnum.HASH_PARTICLES);}
+		if (_recordCheckPoints) {
+			recordCheckpoints(KernelsEnum.HASH_PARTICLES);
+		}
 		end = System.currentTimeMillis();
 		logger.info("SPH hash particles end, took " + (end - start) + "ms");
 		start = end;
@@ -781,21 +837,27 @@ public class SPHSolverService implements ISolver
 
 		logger.info("SPH sort");
 		runSort();
-		if(_recordCheckPoints) {recordCheckpoints(KernelsEnum.SORT);}
+		if (_recordCheckPoints) {
+			recordCheckpoints(KernelsEnum.SORT);
+		}
 		end = System.currentTimeMillis();
 		logger.info("SPH sort end, took " + (end - start) + "ms");
 		start = end;
 
 		logger.info("SPH sort post pass");
 		runSortPostPass();
-		if(_recordCheckPoints) {recordCheckpoints(KernelsEnum.SORT_POST_PASS);}
+		if (_recordCheckPoints) {
+			recordCheckpoints(KernelsEnum.SORT_POST_PASS);
+		}
 		end = System.currentTimeMillis();
 		logger.info("SPH sort post pass end, took " + (end - start) + "ms");
 		start = end;
 
 		logger.info("SPH index");
 		CLEvent runIndexx = runIndexx();
-		if(_recordCheckPoints) {recordCheckpoints(KernelsEnum.INDEX);}
+		if (_recordCheckPoints) {
+			recordCheckpoints(KernelsEnum.INDEX);
+		}
 		end = System.currentTimeMillis();
 		logger.info("SPH index end, took " + (end - start) + "ms");
 		start = end;
@@ -805,14 +867,18 @@ public class SPHSolverService implements ISolver
 
 		logger.info("SPH index post pass");
 		runIndexPostPass();
-		if(_recordCheckPoints) {recordCheckpoints(KernelsEnum.INDEX_POST_PASS);}
+		if (_recordCheckPoints) {
+			recordCheckpoints(KernelsEnum.INDEX_POST_PASS);
+		}
 		end = System.currentTimeMillis();
 		logger.info("SPH index post pass end, took " + (end - start) + "ms");
 		start = end;
 
 		logger.info("SPH find neighbors");
 		runFindNeighbors();
-		if(_recordCheckPoints) {recordCheckpoints(KernelsEnum.FIND_NEIGHBORS);}
+		if (_recordCheckPoints) {
+			recordCheckpoints(KernelsEnum.FIND_NEIGHBORS);
+		}
 		end = System.currentTimeMillis();
 		logger.info("SPH find neighbors end, took " + (end - start) + "ms");
 		start = end;
@@ -820,26 +886,33 @@ public class SPHSolverService implements ISolver
 		// PCISPH stuff starts here
 		logger.info("PCI-SPH compute density");
 		run_pcisph_computeDensity();
-		if(_recordCheckPoints) {recordCheckpoints(KernelsEnum.COMPUTE_DENSITY);}
+		if (_recordCheckPoints) {
+			recordCheckpoints(KernelsEnum.COMPUTE_DENSITY);
+		}
 		end = System.currentTimeMillis();
 		logger.info("PCI-SPH compute density end, took " + (end - start) + "ms");
 		start = end;
 
 		logger.info("PCI-SPH compute forces and init pressure");
 		run_pcisph_computeForcesAndInitPressure();
-		if(_recordCheckPoints) {recordCheckpoints(KernelsEnum.COMPUTE_FORCES_INIT_PRESSURE);}
+		if (_recordCheckPoints) {
+			recordCheckpoints(KernelsEnum.COMPUTE_FORCES_INIT_PRESSURE);
+		}
 		end = System.currentTimeMillis();
-		logger.info("PCI-SPH compute forces and init pressure end, took " + (end - start) + "ms");
+		logger.info("PCI-SPH compute forces and init pressure end, took "
+				+ (end - start) + "ms");
 		start = end;
 
 		// Do elastic stuff only if we have elastic particles
-		if(_numOfElasticP > 0)
-		{
+		if (_numOfElasticP > 0) {
 			logger.info("PCI-SPH compute elastic forces");
 			run_pcisph_computeElasticForces();
-			if(_recordCheckPoints) {recordCheckpoints(KernelsEnum.COMPUTE_ELASTIC_FORCES);}
+			if (_recordCheckPoints) {
+				recordCheckpoints(KernelsEnum.COMPUTE_ELASTIC_FORCES);
+			}
 			end = System.currentTimeMillis();
-			logger.info("PCI-SPH compute elastic forces end, took " + (end - start) + "ms");
+			logger.info("PCI-SPH compute elastic forces end, took "
+					+ (end - start) + "ms");
 			start = end;
 		}
 
@@ -847,24 +920,27 @@ public class SPHSolverService implements ISolver
 		// LOOP: 3 times or until "error" becomes less than 2%
 		int iter = 0;
 		int maxIterations = 3;
-		do
-		{
+		do {
 			run_pcisph_predictPositions();
 			run_pcisph_predictDensity();
 			run_pcisph_correctPressure();
 			run_pcisph_computePressureForceAcceleration();
 
 			iter++;
+		} while ((iter < maxIterations));
+		if (_recordCheckPoints) {
+			recordCheckpoints(KernelsEnum.PREDICTIVE_LOOP);
 		}
-		while((iter < maxIterations));
-		if(_recordCheckPoints) {recordCheckpoints(KernelsEnum.PREDICTIVE_LOOP);}
 		end = System.currentTimeMillis();
-		logger.info("PCI-SPH predict/correct loop end, took " + (end - start) + "ms");
+		logger.info("PCI-SPH predict/correct loop end, took " + (end - start)
+				+ "ms");
 		start = end;
 
 		logger.info("PCI-SPH integrate");
 		CLEvent event = run_pcisph_integrate();
-		if(_recordCheckPoints) {recordCheckpoints(KernelsEnum.INTEGRATE);}
+		if (_recordCheckPoints) {
+			recordCheckpoints(KernelsEnum.INTEGRATE);
+		}
 		end = System.currentTimeMillis();
 		logger.info("PCI-SPH integrate end, took " + (end - start) + "ms");
 		start = end;
@@ -880,83 +956,81 @@ public class SPHSolverService implements ISolver
 		start = end;
 
 		endStep = System.currentTimeMillis();
-		logger.info("SPH computation step done, took " + (endStep - startStep) + "ms");
+		logger.info("SPH computation step done, took " + (endStep - startStep)
+				+ "ms");
 	}
 
-	public void finishQueue()
-	{
+	public void finishQueue() {
 		_queue.finish();
 	}
 
-	private int getParticleCountRoundedUp()
-	{
+	private int getParticleCountRoundedUp() {
 		return (((_particleCount - 1) / 256) + 1) * 256;
 	}
-	
-	//XXX: for debug only, remove
+
+	// XXX: for debug only, remove
 	public StateTreeRoot getStateTree() {
-		if(_stateTree == null)
-		{
+		if (_stateTree == null) {
 			_stateTree = new StateTreeRoot(_model.getId());
 			updateStateTree();
 		}
-		
+
 		return _stateTree;
 	}
 
 	@Override
-	public StateTreeRoot solve(IRunConfiguration timeConfiguration)
-	{
+	public StateTreeRoot solve(IRunConfiguration timeConfiguration) {
 		// TODO: extend this to use time configuration to do multiple steps in one go
 		long time = System.currentTimeMillis();
 		logger.info("SPH solver start");
-		
-		if(_stateTree == null)
-		{
+
+		if (_stateTree == null) {
 			_stateTree = new StateTreeRoot(_model.getId());
 		}
-		
-		for(int i = 0; i < timeConfiguration.getTimeSteps(); i++)
-		{
+
+		for (int i = 0; i < timeConfiguration.getTimeSteps(); i++) {
 			// TODO: setActivationSignal
-			
+
 			long end = 0;
 			long start = System.currentTimeMillis();
 			logger.info("SPH STEP START");
 			step();
 			updateStateTree();
+
 			end = System.currentTimeMillis();
 			logger.info("SPH STEP END, took " + (end - start) + "ms");
 		}
-		
+
 		logger.info("SPH solver end, took: " + (System.currentTimeMillis() - time) + "ms");
 		return _stateTree;
 	}
 
-	private void updateStateTree()
-	{
+	private void updateStateTree() {
+		CompositeStateNode modelSubTree = _stateTree.getSubTree(StateTreeRoot.SUBTREE.MODEL_TREE);
+
 		_positionPtr = _position.map(_queue, CLMem.MapFlags.Read);
 
-		// ASSUMPTION: The solver will never create new states after the first time step
-		// we can call it principle of conservation of the states; if there is a good
-		// reason to revoke this assumption we need to add code that at every cycle checks
+		// ASSUMPTION: The solver will never create new states after the first
+		// time step
+		// we can call it principle of conservation of the states; if there is a
+		// good
+		// reason to revoke this assumption we need to add code that at every
+		// cycle checks
 		// if some new states exist to eventually add them to the stateTree
-		if(_stateTree.getChildren().isEmpty())
-		{
+		if (modelSubTree.getChildren().isEmpty()) {
 			// the state tree is empty, let's create it
-			for(int i = 0, index = 0; i < _particleCount; i++, index = index + 4)
-			{
+			for (int i = 0, index = 0; i < _particleCount; i++, index = index + 4) {
 				String particleId = SPHModelInterpreterService.getParticleId(i);
 				FloatValue xV = ValuesFactory.getFloatValue(_positionPtr.get(index));
 				FloatValue yV = ValuesFactory.getFloatValue(_positionPtr.get(index + 1));
 				FloatValue zV = ValuesFactory.getFloatValue(_positionPtr.get(index + 2));
 				FloatValue pV = ValuesFactory.getFloatValue(_positionPtr.get(index + 3));
 
-				if(pV.getAsFloat() != SPHConstants.BOUNDARY_TYPE)
-				{
-					//we dont need to create a state for the boundary particles, they don't move.
+				if (pV.getAsFloat() != SPHConstants.BOUNDARY_TYPE) {
+					// don't need to create a state for the boundary particles,
+					// they don't move.
 					CompositeStateNode particle = new CompositeStateNode(particleId);
-					_stateTree.addChild(particle);
+					modelSubTree.addChild(particle);
 					CompositeStateNode pos = new CompositeStateNode("pos");
 					particle.addChild(pos);
 					SimpleStateNode x = new SimpleStateNode("x");
@@ -973,26 +1047,135 @@ public class SPHSolverService implements ISolver
 					pos.addChild(p);
 				}
 			}
-		}
-		else
-		{
+		} else {
 			UpdateSPHStateTreeVisitor updateSPHStateTreeVisitor = new UpdateSPHStateTreeVisitor(_positionPtr);
-			_stateTree.apply(updateSPHStateTreeVisitor);
+			modelSubTree.apply(updateSPHStateTreeVisitor);
 		}
-
+		
+		if (watching) {
+			updateStateTreeForWatch();
+		}
+		
 		_position.unmap(_queue, _positionPtr);
 
 	}
 
+	private void updateStateTreeForWatch() {
+		CompositeStateNode watchTree = _stateTree.getSubTree(SUBTREE.WATCH_TREE);
+
+		// map watchable buffers that are not already mapped
+		// NOTE: position is mapped for scene generation - improving performance by not mapping it again
+		_velocityPtr = _velocity.map(_queue, CLMem.MapFlags.Read);
+
+		if (watchTree.getChildren().isEmpty()) {
+			// check which watchable variables are being watched
+			for (AVariable var : getWatchableVariables().getVariables()) {
+				for (String varName : watchListVarNames) {
+					// get watchable variables path
+					List<String> watchableVarsPaths = new ArrayList<String>();
+					VariablePathSerializer.GetFullVariablePath(var, "", watchableVarsPaths);
+
+					// remove array bracket arguments from variable paths
+					String varNameNoBrackets = varName;
+					String particleID = null;
+					if(varName.indexOf("[")!=-1)
+					{
+						varNameNoBrackets = varName.substring(0,varName.indexOf("["))+varName.substring(varName.indexOf("]")+1,varName.length());
+						particleID = varName.substring(varName.indexOf("[")+1, varName.indexOf("]"));
+					}
+
+					// loop through paths and look for matching paths
+					for (String s : watchableVarsPaths) {
+						if (s.equals(varNameNoBrackets)) {
+							// we have a match
+
+							Integer ID = null;
+							if (particleID != null) {
+								// check that paticleID is valid
+								ID = Integer.parseInt(particleID);
+								if (!(ID < _particleCount)) {
+									throw new IllegalArgumentException("SPHSolverService:updateStateTreeForWatch - particle index is out of boundaries");
+								}
+							}
+
+							// tokenize variable path in watch list via dot
+							// separator (handle array brackets)
+							StringTokenizer tokenizer = new StringTokenizer(s,".");
+							CompositeStateNode node = watchTree;
+							while (tokenizer.hasMoreElements()) {
+								// loop through tokens and build tree
+								String current = tokenizer.nextToken();
+								boolean found = false;
+								for (AStateNode child : node.getChildren()) {
+									if (child.getName().equals(current)) {
+										if (child instanceof CompositeStateNode) {
+											node = (CompositeStateNode) child;
+										}
+										found = true;
+										break;
+									}
+								}
+								if (found) {
+									continue;
+								} else {
+									if (tokenizer.hasMoreElements()) {
+										// not a leaf, create a composite statenode
+										String nodeName = current;
+										if(current.equals("particle"))
+										{
+											nodeName = current + "[" + particleID + "]";
+										}
+										
+										CompositeStateNode newNode = new CompositeStateNode(nodeName);										
+										node.addChild(newNode);
+										node = newNode;
+									} else {
+										// it's a leaf node
+										SimpleStateNode newNode = new SimpleStateNode(current);
+
+										FloatValue val = null;
+
+										// get value
+										switch (current) {
+										case "x":
+											val = ValuesFactory.getFloatValue(_positionPtr.get(ID));
+											break;
+										case "y":
+											val = ValuesFactory.getFloatValue(_positionPtr.get(ID + 1));
+											break;
+										case "z":
+											val = ValuesFactory.getFloatValue(_positionPtr.get(ID + 2));
+											break;
+										}
+
+										newNode.addValue(val);
+
+										node.addChild(newNode);
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		} else {
+			// watch tree not empty populate new values
+			UpdateSPHWatchTreeVisitor visitor = new UpdateSPHWatchTreeVisitor(_positionPtr, _positionPtr, this.watchListVarNames);
+			watchTree.apply(visitor);
+		}
+
+		// unmap watchable buffers
+		_velocity.unmap(_queue, _positionPtr);
+	}
+
 	@Override
-	public StateTreeRoot initialize(IModel model) throws GeppettoInitializationException
-	{
+	public StateTreeRoot initialize(IModel model) throws GeppettoInitializationException {
 		_model = (SPHModelX) model;
 		setBuffersFromModel();
-		
+
 		_stateTree = new StateTreeRoot(_model.getId());
 		updateStateTree();
-		
+
 		setWatchableVariables();
 		setForceableVariables();
 
@@ -1000,60 +1183,80 @@ public class SPHSolverService implements ISolver
 	}
 
 	@Override
-	public void dispose()
-	{
-		// close the context and "buonanotte al secchio" (good night to the bucket)
+	public void dispose() {
+		// close the context and "buonanotte al secchio" (good night to the
+		// bucket)
 		cleanContext();
 	}
-	
-	private void setActivationSignal(float[] activation)
-	{
+
+	private void setActivationSignal(float[] activation) {
 		// put results back
-		_activationSignalPtr = _activationSignal.map(_queue, CLMem.MapFlags.Write);
+		_activationSignalPtr = _activationSignal.map(_queue,
+				CLMem.MapFlags.Write);
 		_activationSignalPtr.setFloats(activation);
 		_activationSignal.unmap(_queue, _activationSignalPtr);
 	}
-	
-	private void recordCheckpoints(KernelsEnum kernelCheckpoint){
-	    PCISPHCheckPoint check = new PCISPHCheckPoint();
-	    
-	    // read buffers into lists and populate checkpoint object
-	    check.acceleration = this.<Float>getBufferValues(_accelerationPtr, _acceleration, this._buffersSizeMap.get(BuffersEnum.ACCELERATION));
-	    check.gridCellIndex = this.<Integer>getBufferValues(_gridCellIndexPtr, _gridCellIndex, this._buffersSizeMap.get(BuffersEnum.GRID_CELL_INDEX));
-	    check.gridCellIndexFixedUp = this.<Integer>getBufferValues(_gridCellIndexFixedUpPtr, _gridCellIndexFixedUp, this._buffersSizeMap.get(BuffersEnum.GRID_CELL_INDEX_FIXED));
-	    check.neighborMap = this.<Float>getBufferValues(_neighborMapPtr, _neighborMap, this._buffersSizeMap.get(BuffersEnum.NEIGHBOR_MAP));
-	    check.particleIndex = this.<Integer>getBufferValues(_particleIndexPtr, _particleIndex, this._buffersSizeMap.get(BuffersEnum.PARTICLE_INDEX));
-	    check.particleIndexBack = this.<Integer>getBufferValues(_particleIndexBackPtr, _particleIndexBack, this._buffersSizeMap.get(BuffersEnum.PARTICLE_INDEX_BACK));
-	    check.position = this.<Float>getBufferValues(_positionPtr, _position, this._buffersSizeMap.get(BuffersEnum.POSITION));
-	    check.pressure = this.<Float>getBufferValues(_pressurePtr, _pressure, this._buffersSizeMap.get(BuffersEnum.PRESSURE));
-	    check.rho = this.<Float>getBufferValues(_rhoPtr, _rho, this._buffersSizeMap.get(BuffersEnum.RHO));
-	    check.sortedPosition = this.<Float>getBufferValues(_sortedPositionPtr, _sortedPosition, this._buffersSizeMap.get(BuffersEnum.SORTED_POSITION));
-	    check.sortedVelocity = this.<Float>getBufferValues(_sortedVelocityPtr, _sortedVelocity, this._buffersSizeMap.get(BuffersEnum.SORTED_VELOCITY));
-	    check.velocity = this.<Float>getBufferValues(_velocityPtr, _velocity, this._buffersSizeMap.get(BuffersEnum.VELOCITY));
-	    if(_numOfElasticP > 0)
-	    {
-	    	check.elasticConnections = this.<Float>getBufferValues(_elasticConnectionsDataPtr, _elasticConnectionsData, this._buffersSizeMap.get(BuffersEnum.ELASTIC_CONNECTIONS));
-	    }
-		
+
+	private void recordCheckpoints(KernelsEnum kernelCheckpoint) {
+		PCISPHCheckPoint check = new PCISPHCheckPoint();
+
+		// read buffers into lists and populate checkpoint object
+		check.acceleration = this.<Float> getBufferValues(_accelerationPtr,
+				_acceleration,
+				this._buffersSizeMap.get(BuffersEnum.ACCELERATION));
+		check.gridCellIndex = this.<Integer> getBufferValues(_gridCellIndexPtr,
+				_gridCellIndex,
+				this._buffersSizeMap.get(BuffersEnum.GRID_CELL_INDEX));
+		check.gridCellIndexFixedUp = this.<Integer> getBufferValues(
+				_gridCellIndexFixedUpPtr, _gridCellIndexFixedUp,
+				this._buffersSizeMap.get(BuffersEnum.GRID_CELL_INDEX_FIXED));
+		check.neighborMap = this.<Float> getBufferValues(_neighborMapPtr,
+				_neighborMap,
+				this._buffersSizeMap.get(BuffersEnum.NEIGHBOR_MAP));
+		check.particleIndex = this.<Integer> getBufferValues(_particleIndexPtr,
+				_particleIndex,
+				this._buffersSizeMap.get(BuffersEnum.PARTICLE_INDEX));
+		check.particleIndexBack = this.<Integer> getBufferValues(
+				_particleIndexBackPtr, _particleIndexBack,
+				this._buffersSizeMap.get(BuffersEnum.PARTICLE_INDEX_BACK));
+		check.position = this.<Float> getBufferValues(_positionPtr, _position,
+				this._buffersSizeMap.get(BuffersEnum.POSITION));
+		check.pressure = this.<Float> getBufferValues(_pressurePtr, _pressure,
+				this._buffersSizeMap.get(BuffersEnum.PRESSURE));
+		check.rho = this.<Float> getBufferValues(_rhoPtr, _rho,
+				this._buffersSizeMap.get(BuffersEnum.RHO));
+		check.sortedPosition = this.<Float> getBufferValues(_sortedPositionPtr,
+				_sortedPosition,
+				this._buffersSizeMap.get(BuffersEnum.SORTED_POSITION));
+		check.sortedVelocity = this.<Float> getBufferValues(_sortedVelocityPtr,
+				_sortedVelocity,
+				this._buffersSizeMap.get(BuffersEnum.SORTED_VELOCITY));
+		check.velocity = this.<Float> getBufferValues(_velocityPtr, _velocity,
+				this._buffersSizeMap.get(BuffersEnum.VELOCITY));
+		if (_numOfElasticP > 0) {
+			check.elasticConnections = this.<Float> getBufferValues(
+					_elasticConnectionsDataPtr, _elasticConnectionsData,
+					this._buffersSizeMap.get(BuffersEnum.ELASTIC_CONNECTIONS));
+		}
+
 		_checkpointsMap.put(kernelCheckpoint, check);
 	}
-	
+
 	/*
 	 * A method to retrieve buffer values into simple lists
-	 * */
-	private <T> List<T> getBufferValues(Pointer<T> pointer, CLBuffer<T> buffer, int size)
-	{
+	 */
+	private <T> List<T> getBufferValues(Pointer<T> pointer, CLBuffer<T> buffer,
+			int size) {
 		List<T> list = new ArrayList<T>();
-		
+
 		pointer = buffer.map(_queue, CLMem.MapFlags.Read);
-		
-		for(int i = 0; i < size; i++)
-		{
+
+		for (int i = 0; i < size; i++) {
 			list.add(pointer.get(i));
 		}
-		
+
 		buffer.unmap(_queue, pointer);
-		
+
 		return list;
 	}
 
@@ -1066,16 +1269,16 @@ public class SPHSolverService implements ISolver
 	public VariableList getWatchableVariables() {
 		return watchableVariables;
 	}
-	
+
 	/**
 	 * Populates state variables that can be watched
 	 * 
 	 * */
-	private void setWatchableVariables() {		
-		
+	private void setWatchableVariables() {
+
 		SimpleType floatType = new SimpleType();
 		floatType.setType(Type.FLOAT);
-		
+
 		// structure type vector
 		StructuredType vector = new StructuredType();
 		List<AVariable> vectorVars = new ArrayList<AVariable>();
@@ -1090,7 +1293,7 @@ public class SPHSolverService implements ISolver
 		z.setType(floatType);
 		vectorVars.addAll(Arrays.asList(x, y, z));
 		vector.setVariables(vectorVars);
-		
+
 		// structure type particle
 		StructuredType particle = new StructuredType();
 		List<AVariable> particleVars = new ArrayList<AVariable>();
@@ -1102,40 +1305,61 @@ public class SPHSolverService implements ISolver
 		velocity.setType(vector);
 		particleVars.addAll(Arrays.asList(position, velocity));
 		particle.setVariables(particleVars);
-		
+
 		List<AVariable> vars = new ArrayList<AVariable>();
-		
+
 		// array of particles
 		ArrayVariable particles = new ArrayVariable();
 		particles.setName("particle");
 		particles.setType(particle);
 		particles.setSize(_particleCount);
-		
+
 		vars.add(particles);
-		
+
 		this.watchableVariables.setVariables(vars);
 	}
-	
+
 	/**
 	 * Populates state variables that can be watched
 	 * 
 	 * */
 	private void setForceableVariables() {
 		List<AVariable> vars = new ArrayList<AVariable>();
-		
+
 		// a float type
 		SimpleType floatType = new SimpleType();
 		floatType.setType(Type.FLOAT);
-		
+
 		// activation signals - array of floats
 		ArrayVariable activationSignals = new ArrayVariable();
 		activationSignals.setName("activation");
 		activationSignals.setType(floatType);
-		activationSignals.setSize(_buffersSizeMap.get(BuffersEnum.ELASTIC_BUNDLES));
-		
+		activationSignals.setSize(_buffersSizeMap
+				.get(BuffersEnum.ELASTIC_BUNDLES));
+
 		vars.add(activationSignals);
-		
+
 		this.forceableVariables.setVariables(vars);
 	}
-	
+
+	@Override
+	public void addWatchVariables(List<String> variableNames) {
+		watchListVarNames.addAll(variableNames);
+	}
+
+	@Override
+	public void startWatch() {
+		watching = true;
+	}
+
+	@Override
+	public void stopWatch() {
+		watching = false;
+	}
+
+	@Override
+	public void clearWatchVariables() {
+		watchListVarNames.clear();
+	}
+
 };
