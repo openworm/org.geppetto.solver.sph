@@ -71,6 +71,8 @@ import org.geppetto.core.simulation.IRunConfiguration;
 import org.geppetto.core.solver.ISolver;
 import org.geppetto.core.utilities.VariablePathSerializer;
 import org.geppetto.model.sph.Connection;
+import org.geppetto.model.sph.Membrane;
+import org.geppetto.model.sph.MembraneIndex;
 import org.geppetto.model.sph.common.SPHConstants;
 import org.geppetto.model.sph.services.SPHModelInterpreterService;
 import org.geppetto.model.sph.x.SPHModelX;
@@ -118,6 +120,8 @@ public class SPHSolverService implements ISolver {
 	private CLBuffer<Float> _velocity;
 	private CLBuffer<Float> _elasticConnectionsData;
 	private CLBuffer<Float> _activationSignal;
+	private CLBuffer<Integer> _particleMembranesList;
+	private CLBuffer<Integer> _membraneData;
 
 	private Pointer<Float> _accelerationPtr;
 	private Pointer<Integer> _gridCellIndexPtr;
@@ -133,6 +137,8 @@ public class SPHSolverService implements ISolver {
 	private Pointer<Float> _velocityPtr;
 	private Pointer<Float> _elasticConnectionsDataPtr;
 	private Pointer<Float> _activationSignalPtr;
+	private Pointer<Integer> _particleMembranesListPtr;
+	private Pointer<Integer> _membraneDataPtr;
 
 	/*
 	 * Kernel declarations
@@ -169,6 +175,7 @@ public class SPHSolverService implements ISolver {
 	public int _numOfLiquidP;
 	public int _numOfElasticP;
 	public int _numOfBoundaryP;
+	public int _numOfMembranes;
 
 	private SPHModelX _model;
 	private StateTreeRoot _stateTree;
@@ -439,6 +446,40 @@ public class SPHSolverService implements ISolver {
 				// elastic particles but no contractible bundles
 				_activationSignal = _context.createFloatBuffer(
 						CLMem.Usage.Input, 1);
+			}
+			if( _model.getMembranes().size() > 0 ) {
+				//init membranes data buffer
+				_buffersSizeMap.put(BuffersEnum.MEMBRANES_DATA, _numOfMembranes * 3);
+				_membraneData = _context.createIntBuffer(
+						CLMem.Usage.InputOutput,
+						_buffersSizeMap.get(BuffersEnum.MEMBRANES_DATA));
+				_membraneDataPtr = _membraneData.map(_queue,
+						CLMem.MapFlags.Write);
+				int memIndex = 0;
+				for (Membrane m: _model.getMembranes()){
+					_membraneDataPtr.set(memIndex, m.getParticleI());
+					_membraneDataPtr.set(memIndex + 1,
+							m.getParticleJ());
+					_membraneDataPtr.set(memIndex + 2,
+							m.getParticleK());
+					memIndex += 3;
+				}
+				_membraneData.unmap(_queue, _membraneDataPtr);
+	
+				//init membranes particle buffer it contains indexes of membranes which contains particle
+				_buffersSizeMap.put(BuffersEnum.MEMBRANES_PARTICLE_INDEX_LIST, _numOfElasticP
+						* SPHConstants.MAX_MEMBRANES_INCLUDING_SAME_PARTICLE);
+				_particleMembranesList = _context.createIntBuffer(
+						CLMem.Usage.InputOutput,
+						_buffersSizeMap.get(BuffersEnum.MEMBRANES_PARTICLE_INDEX_LIST));
+				_particleMembranesListPtr = _particleMembranesList.map(_queue,
+						CLMem.MapFlags.Write);
+				int _index = 0;
+				for (MembraneIndex particleMembraneIndex : _model.getParticleMembranesList()) {
+					_particleMembranesListPtr.set(_index,particleMembraneIndex.getIndex());
+					++_index;
+				}
+				_particleMembranesList.unmap(_queue, _particleMembranesListPtr);
 			}
 		}
 
