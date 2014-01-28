@@ -50,6 +50,9 @@ public enum KernelsEnum {
 	    COMPUTE_PRESSURE_FORCE_ACCELERATION("pcisph_computePressureForceAcceleration"),
 	    PREDICTIVE_LOOP("predictiveLoop"),
 	    INTEGRATE("pcisph_integrate"),
+	    CLEAR_MEMBRANE_BUFFERS("clearMembraneBuffers"),
+	    COMPUTE_INTERACTION_WITH_MEMBRANES("computeInteractionWithMembranes"),
+	    COMPUTE_INTERACTION_WITH_MEMBRANES_FINALIZE("computeInteractionWithMembranes_finalize"),
 	    ;
 	    
 	    private KernelsEnum(final String text) {

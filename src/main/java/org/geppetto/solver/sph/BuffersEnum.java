@@ -49,7 +49,8 @@ public enum BuffersEnum {
     ELASTIC_CONNECTIONS("elasticConnections"),
     ELASTIC_BUNDLES("elasticBundles"),
     MEMBRANES_PARTICLE_INDEX_LIST("particleMembranesList"),
-    MEMBRANES_DATA("membraneData")
+    MEMBRANES_DATA("membraneData"),
+    ACTIVATION_SIGNAL("activationSignal")
     ;
     
     private BuffersEnum(final String text) {
