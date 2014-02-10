@@ -207,7 +207,7 @@ public class PCISPHSolverTest
 	@Test
 	public void testMembranesScene() throws Exception
 	{
-		URL url = this.getClass().getResource("/cube_with_membranes.xml");
+		URL url = this.getClass().getResource("/cube_with_membranes_cube_water_inside.xml");
 		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
 		IModel model = modelInterpreter.readModel(url);
 		// check that we don't have particles with overlapping positions

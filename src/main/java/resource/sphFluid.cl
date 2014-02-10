@@ -87,11 +87,9 @@ __kernel void clearBuffers(
 {
 	int id = get_global_id( 0 );
 	if( id >= PARTICLE_COUNT )return;
-	
 	__global float4 * nm = (__global float4 *)neighborMap;
 	int outIdx = ( id * MAX_NEIGHBOR_COUNT ) >> 1;//int4 versus int2 addressing
 	float4 fdata = (float4)( -1, -1, -1, -1 );
-	
 	int i,j,k,mnl;//mnl = membrane number in the list. 0..MAX_MEMBRANES_INCLUDING_SAME_PARTICLE-1
 
 	nm[ outIdx++ ] = fdata;
@@ -111,7 +109,6 @@ __kernel void clearBuffers(
 	nm[ outIdx++ ] = fdata;
 	nm[ outIdx++ ] = fdata;
 }
-
 
 int searchCell( 
 			   int cellId,
@@ -482,7 +479,6 @@ __kernel void sortPostPass(
 		id = id;
 	}
 	if( id >= PARTICLE_COUNT ) return;
-	
 	uint2 spi = particleIndex[ id ];//contains id of cell and id of particle it has sorted 
 	int serialId = PI_SERIAL_ID( spi );//get a particle Index
 	int cellId = PI_CELL_ID( spi );//get a cell Index
@@ -491,7 +487,6 @@ __kernel void sortPostPass(
 	float4 velocity_ = velocity[ serialId ];
 	sortedVelocity[ id ] = velocity_;//put velocity to sortedVelocity for right order according to particleIndex
 	sortedPosition[ id ] = position_;//put position to sortedVelocity for right order according to particleIndex
-	
 	particleIndexBack[ serialId ] = id;
 }
 
@@ -517,7 +512,6 @@ __kernel void pcisph_computeDensity(
 {
 	int id = get_global_id( 0 );
 	if( id >= PARTICLE_COUNT ) return;
-	
 	id = particleIndexBack[id];//track selected particle (indices are not shuffled anymore)
 	int idx = id * MAX_NEIGHBOR_COUNT;
 	int nc=0;//neighbor counter
@@ -651,7 +645,6 @@ __kernel void pcisph_computeForcesAndInitPressure(
 		pressure[id] = 0.f;//initialize pressure with 0
 		return;
 	}
-	
 	int idx = id * MAX_NEIGHBOR_COUNT;
 	float hScaled = h * simulationScale;
 	float hScaled2 = hScaled*hScaled;//29aug_A.Palyanov
@@ -738,7 +731,6 @@ __kernel void pcisph_computeForcesAndInitPressure(
 	pressure[id] = 0.f;//initialize pressure with 0
 
 }
-
 __kernel void pcisph_computeElasticForces(
 								  __global float2 * neighborMap,
 								  __global float4 * sortedPosition,
@@ -764,7 +756,6 @@ __kernel void pcisph_computeElasticForces(
 	if(index>=numOfElasticP) {
 		return;
 	}
-	
 	int nc = 0;
 
 	float4 p_xyzw = position[index];
@@ -813,16 +804,13 @@ __kernel void pcisph_computeElasticForces(
 					if((int)(elasticConnectionsData[idx+nc].z)==(i+1))//contractible spring, = muscle
 					{
 						if(muscle_activation_signal[i]>0.f)
-						{
 							acceleration[ id ] += -(vect_r_ij/r_ij) * muscle_activation_signal[i] * 800.f;
-						}
 					}
 				}
 			}
 
 			centerOfMassVelocity = (velocity_i + velocity_j)/2.f;
 			velocity_i_cm = velocity_i - centerOfMassVelocity;
-			
 			velocity_i_cm.w = 0.f;
 			v_i_cm_length = sqrt( DOT (velocity_i_cm,velocity_i_cm) );
 
@@ -850,7 +838,6 @@ __kernel void pcisph_computeElasticForces(
 
 	return;
 }
-
 // Boundary handling, according to the following article:
 // M. Ihmsen, N. Akinci, M. Gissler, M. Teschner, Boundary Handling and Adaptive Time-stepping for PCISPH Proc. VRIPHYS, Copenhagen, Denmark, pp. 79-88, Nov 11-12, 2010.
 // short citation: Ihmsen et. al., 2010
@@ -1036,7 +1023,6 @@ __kernel void pcisph_predictDensity(
 {
 	int id = get_global_id( 0 );
 	if( id >= PARTICLE_COUNT ) return;
-	
 	id = particleIndexBack[id];//track selected particle (indices are not shuffled anymore)
 	int idx = id * MAX_NEIGHBOR_COUNT;
 	int nc=0;//neighbor counter
@@ -1272,57 +1258,76 @@ float calcDeterminant3x3(float4 c1, float4 c2, float4 c3)
 //  [c3]: c31  c32  c33
 //  by the way, result for transposed matrix will be equal to the original one
 
-	return  c1[1]*c2[2]*c3[3] + c1[2]*c2[3]*c3[1] + c1[3]*c2[1]*c3[2]  
-		  - c1[3]*c2[2]*c3[1] - c1[1]*c2[3]*c3[2] - c1[2]*c2[1]*c3[3];
+	//return  c1[1]*c2[2]*c3[3] + c1[2]*c2[3]*c3[1] + c1[3]*c2[1]*c3[2]  
+	//	  - c1[3]*c2[2]*c3[1] - c1[1]*c2[3]*c3[2] - c1[2]*c2[1]*c3[3];
 
-//	return  c1.x*c2.y*c3.z + c1.y*c2.z*c3.x + c1.z*c2.x*c3.y  
-//		  - c1.z*c2.y*c3.x - c1.x*c2.z*c3.y - c1.y*c2.x*c3.z;
+    //return  c1.x*c2.y*c3.z + c1.y*c2.z*c3.x + c1.z*c2.x*c3.y  
+              - c1.z*c2.y*c3.x - c1.x*c2.z*c3.y - c1.y*c2.x*c3.z;
+	return  c1.x*c2.y*c3.z + c1.y*c2.z*c3.x + c1.z*c2.x*c3.y  
+		  - c1.z*c2.y*c3.x - c1.x*c2.z*c3.y - c1.y*c2.x*c3.z;
 }
 
 float4 calculateProjectionOfPointToPlane(float4 ps, float4 pa, float4 pb, float4 pc)
 {// ps - point to project on the plane; pa-pb-pc - vertices of the triangle defining the plane
-	float4 a_1,a_2,a_3,b; 
 	float4 pm = (float4)(0,0,0,0);//projection of ps on pa-pb-pc plane
 	float denominator;
 	//  b  a_2 a_3   a_1
 	// |b1 a12 a13|  a11
 	// |b2 a22 a23|  a21
 	// |b3 a32 a33|  a31
-
-	b[1] = pa.x*((pb.y-pa.y)*(pc.z-pa.z)-(pb.z-pa.z)*(pc.y-pa.y))
-		 + pa.y*((pb.z-pa.z)*(pc.x-pa.x)-(pb.x-pa.x)*(pc.z-pa.z))
-		 + pa.z*((pb.x-pa.x)*(pc.y-pa.y)-(pb.y-pa.y)*(pc.x-pa.x));
-	b[2] = ps.x*(pb.x-pa.x)+ps.y*(pb.y-pa.y)+ps.z*(pb.z-pa.z);
-	b[3] = ps.x*(pc.x-pa.x)+ps.y*(pc.y-pa.y)+ps.z*(pc.z-pa.z);
-
-	a_1[1] = (pb.y-pa.y)*(pc.z-pa.z)-(pb.z-pa.z)*(pc.y-pa.y);
-	a_1[2] = pb.x - pa.x;
-	a_1[3] = pc.x - pa.x;
-
-	a_2[1] = (pb.z-pa.z)*(pc.x-pa.x)-(pb.x-pa.x)*(pc.z-pa.z);
-	a_2[2] = pb.y - pa.y;
-	a_2[3] = pc.y - pa.y;
-
-	a_3[1] = (pb.x-pa.x)*(pc.y-pa.y)-(pb.y-pa.y)*(pc.x-pa.x);
-	a_3[2] = pb.z - pa.z;
-	a_3[3] = pc.z - pa.z;
-
+	
+	float b_1 = pa.x*((pb.y-pa.y)*(pc.z-pa.z)-(pb.z-pa.z)*(pc.y-pa.y))
+			 + pa.y*((pb.z-pa.z)*(pc.x-pa.x)-(pb.x-pa.x)*(pc.z-pa.z))
+			 + pa.z*((pb.x-pa.x)*(pc.y-pa.y)-(pb.y-pa.y)*(pc.x-pa.x));
+	float b_2 = ps.x*(pb.x-pa.x)+ps.y*(pb.y-pa.y)+ps.z*(pb.z-pa.z);
+	float b_3 = ps.x*(pc.x-pa.x)+ps.y*(pc.y-pa.y)+ps.z*(pc.z-pa.z);
+	
+	float a_1_1 = (pb.y-pa.y)*(pc.z-pa.z)-(pb.z-pa.z)*(pc.y-pa.y);
+	float a_1_2 = pb.x - pa.x;
+	float a_1_3 = pc.x - pa.x;
+	
+	float a_2_1 = (pb.z-pa.z)*(pc.x-pa.x)-(pb.x-pa.x)*(pc.z-pa.z);
+	float a_2_2 = pb.y - pa.y;
+	float a_2_3 = pc.y - pa.y;
+	
+	float a_3_1 = (pb.x-pa.x)*(pc.y-pa.y)-(pb.y-pa.y)*(pc.x-pa.x);
+	float a_3_2 = pb.z - pa.z;
+	float a_3_3 = pc.z - pa.z;
+	
+	float4 a_1 = (float4)(a_1_1, a_1_2, a_1_3, 0);
+	float4 a_2 = (float4)(a_2_1, a_2_2, a_2_3, 0);
+	float4 a_3 = (float4)(a_3_1, a_3_2, a_3_3, 0);
+	float4 b = (float4)(b_1, b_2, b_3, 0);
+	
 	denominator = calcDeterminant3x3(a_1,a_2,a_3);
-
+	
+	//        printf("\na_1 = %2.2v4hlf", a_1);
+	//        printf("\na_2 = %2.2v4hlf", a_2);
+	//        printf("\na_3 = %2.2v4hlf", a_3);
+	//        printf("\ndenominator = %f", denominator);
+	//
 	if(denominator!=0)
 	{
-		pm.x = calcDeterminant3x3(b  ,a_2,a_3)/denominator;
-		pm.y = calcDeterminant3x3(a_1,b  ,a_3)/denominator;
-		pm.z = calcDeterminant3x3(a_1,a_2,b  )/denominator;
+			pm.x = calcDeterminant3x3(b  ,a_2,a_3)/denominator;
+			pm.y = calcDeterminant3x3(a_1,b  ,a_3)/denominator;
+			pm.z = calcDeterminant3x3(a_1,a_2,b  )/denominator;
 	}
-	else pm.w = -1;//indicates error
-
+	else {
+			printf("\ndenominator equal to zero\n");        
+			pm.w = -1;//indicates error  
+			printf("%f\t%f\t%f\n",a_1_1, a_1_2, a_1_3);
+			printf("%f\t%f\t%f\n",a_2_1, a_2_2, a_2_3);
+			printf("%f\t%f\t%f\n",a_3_1, a_3_2, a_3_3);
+			printf("\n{{%f,%f,%f},{%f,%f,%f},{%f,%f,%f}}\n", a_1.x, a_1.y, a_1.z, a_2.x, a_2.y, a_2.z,a_3.x, a_3.y, a_3.z);
+			printf("\n");     
+	}
+	
 	//printf("\npa=(%f,%f,%f)",pa.x,pa.y,pa.z);
 	//printf("\npb=(%f,%f,%f)",pb.x,pb.y,pb.z);
 	//printf("\npc=(%f,%f,%f)",pc.x,pc.y,pc.z);
 	//printf("\nps=(%f,%f,%f)",ps.x,ps.y,ps.z);
 	//printf("\npm=(%f,%f,%f)",pm.x,pm.y,pm.z);
-
+	
 	return pm;
 }
 
@@ -1389,7 +1394,7 @@ __kernel void computeInteractionWithMembranes(
 		membrane_jd_normal_vector[i] = (float4)(0,0,0,0);
 		//membrane_jd[i] = -1;
 	}
-
+	
 	//check all neighbours of each particle to find those which belong to membranes.
 	//particleMembranesList(size:numOfElasticP*MAX_MEMBRANES_INCLUDING_SAME_PARTICLE)
 	//was introduced to provide this possibility. The same order of indexes as in <position> buffer
@@ -1440,13 +1445,14 @@ __kernel void computeInteractionWithMembranes(
 						if(pos_p.w==-1)
 						{
 							printf("calculateProjectionOfPointToPlane() returned error");
+							printf("\n membran ID: %d\n",mdi + 1);
 							return;
 						}
 
 						// two points: 'position[ jd_source_particle ]' and its projection on i-j-k plane 'pos_p'
 						// are enough to calc normal vector to i-j-k plane:
 
-						normal_to_ijk_plane = position[ id_source_particle ] - pos_p;
+						/*normal_to_ijk_plane = position[ id_source_particle ] - pos_p;
 						normal_to_ijk_plane_length =   sqrt(normal_to_ijk_plane.x*normal_to_ijk_plane.x + 
 															normal_to_ijk_plane.y*normal_to_ijk_plane.y +
 															normal_to_ijk_plane.z*normal_to_ijk_plane.z); 
@@ -1474,7 +1480,7 @@ __kernel void computeInteractionWithMembranes(
 						{
 							printf("computeInteractionWithMembranes error #001");
 							return;
-						}
+						}*/
 
 
 						// ok, we finally have projection of considered particle on the plane of i-j-k triangle.
@@ -1522,7 +1528,6 @@ __kernel void computeInteractionWithMembranes(
 				}
 
 				//here for pair id - jd summary normal vector for jd particle (if it belongs to membrane) is already calculated and we can use it
-
 		
 				//r_ij = NEIGHBOR_MAP_DISTANCE( neighborMap[ idx + nc] );
 			}

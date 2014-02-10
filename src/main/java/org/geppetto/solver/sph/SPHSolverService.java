@@ -779,7 +779,7 @@ public class SPHSolverService implements ISolver {
 		_pcisph_computePressureForceAcceleration.setArg(4, _sortedVelocity);
 		_pcisph_computePressureForceAcceleration.setArg(5, _particleIndexBack);
 		_pcisph_computePressureForceAcceleration.setArg(6,
-				SPHConstants.CFLLimit);
+				SPHConstants.DELTA);
 		_pcisph_computePressureForceAcceleration.setArg(7,
 				SPHConstants.GRAD_W_SPIKY_COEFFICIENT);
 		_pcisph_computePressureForceAcceleration.setArg(8, SPHConstants.H);
@@ -1097,7 +1097,10 @@ public class SPHSolverService implements ISolver {
 			updateStateTree();
 
 			end = System.currentTimeMillis();
+			logger.info("Step count " + iterationNumber);
 			logger.info("SPH STEP END, took " + (end - start) + "ms");
+			
+			
 		}
 
 		logger.info("SPH solver end, took: " + (System.currentTimeMillis() - time) + "ms");
