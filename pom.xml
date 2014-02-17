@@ -154,7 +154,7 @@
 							resource=src/main/java/resource
 						</Include-Resource>
 						<Import-Package>
-							org.geppetto.scope,org.aopalliance.aop,org.springframework.aop,,org.springframework.aop.scope,org.springframework.aop.framework,*
+							org.geppetto.core.scope,org.aopalliance.aop,org.springframework.aop,,org.springframework.aop.scope,org.springframework.aop.framework,*
 						</Import-Package>
 					</instructions>
 				</configuration>
