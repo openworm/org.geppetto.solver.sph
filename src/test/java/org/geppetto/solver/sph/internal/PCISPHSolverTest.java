@@ -215,7 +215,7 @@ public class PCISPHSolverTest
 		
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
-		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 10, 1));
+		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 1000, 1));
 		Assert.assertTrue(true);
 		/*PCISPHTestUtilities.checkStateTreeForNaN(stateSet, true);
 		

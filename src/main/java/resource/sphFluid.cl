@@ -172,7 +172,7 @@ int searchForNeighbors(
 			{
 				float4 d = position_ - sortedPosition[ neighborParticleId ];
 				d.w = 0.0f;
-				_distanceSquared = DOT( d, d );
+				_distanceSquared = d.x*d.x + d.y*d.y + d.z*d.z; // inlined openCL dot(d,d)
 				if( _distanceSquared <= r_thr_Squared )
 				{
 					_distance = SQRT( _distanceSquared );
@@ -404,17 +404,17 @@ __kernel void hashParticles(
 
 __kernel void indexx(
 					 __global uint2 * particleIndex,
-					 int gridCellCount,
-					 __global uint * gridCellIndex,
-					 int PARTICLE_COUNT
-					 )
+			 		int gridCellCount,
+			 		__global uint * gridCellIndex,
+			 		int PARTICLE_COUNT
+			 		)
 {
 	//fill up gridCellIndex
 	int id = get_global_id( 0 );
 	if( id > gridCellCount  ){
 		return;
 	}
-
+ 
 	if( id == gridCellCount ){
 		// add the nth+1 index value
 		gridCellIndex[ id ] = PARTICLE_COUNT;
@@ -424,12 +424,12 @@ __kernel void indexx(
 		gridCellIndex[ id ] = 0;
 		return;
 	}
-
+ 
 	// binary search for the starting position in sortedParticleIndex
 	int low = 0;
 	int high = PARTICLE_COUNT - 1;
 	bool converged = false;
-
+ 
 	int cellIndex = NO_PARTICLE_ID;
 	while( !converged ){
 		if( low > high ){
@@ -437,29 +437,25 @@ __kernel void indexx(
 			cellIndex = NO_PARTICLE_ID;
 			continue;
 		}
-
-		int idx = ( high - low ) * 0.5f + low;
+ 
+		int idx = (( high - low )>>1) + low;
+		uint2 sampleMinus1 = particleIndex[ idx - 1 ];
 		uint2 sample = particleIndex[ idx ];
 		int sampleCellId = PI_CELL_ID( sample );
 		bool isHigh = ( sampleCellId > id );
-		high = SELECT( high, idx - 1, isHigh );
+		high = isHigh ? idx - 1 : high;
 		bool isLow = ( sampleCellId < id );
-		low = SELECT( low, idx + 1, isLow );
+		low = isLow ? idx + 1 : low;
 		bool isMiddle = !( isHigh || isLow );
-
-		uint2 zero2 = (uint2)( 0, 0 );
-		uint2 sampleMinus1;
-		int sampleM1CellId = 0;
-		bool zeroCase = ( idx == 0 && isMiddle ); //it means that we in middle or 
-		sampleMinus1 = SELECT( (uint2)particleIndex[ idx - 1 ], zero2, (uint2)zeroCase );//if we in middle this return zero2 else (uint2)particleIndex[ idx - 1 ]
-		sampleM1CellId = SELECT( PI_CELL_ID( sampleMinus1 ), (uint)(-1), zeroCase );//if we in middle this return (uint)(-1) else sampleMinus1.x (index of cell)
-		bool convergedCondition = isMiddle && ( zeroCase || sampleM1CellId < sampleCellId );
-		converged = convergedCondition;
-		cellIndex = SELECT( cellIndex, idx, convergedCondition );
-		high = SELECT( high, idx - 1, ( isMiddle && !convergedCondition ) );
+ 
+		bool zeroCase = ( idx == 0 && isMiddle );
+		int sampleM1CellId = zeroCase ? -1 : PI_CELL_ID( sampleMinus1 );
+		converged = isMiddle && ( zeroCase || sampleM1CellId < sampleCellId );
+		cellIndex = converged ? idx : cellIndex;
+		high = ( isMiddle && !converged ) ? idx - 1 : high;
 	}//while
-
-	gridCellIndex[ id ] = cellIndex;//
+ 
+	gridCellIndex[ id ] = cellIndex;
 }
 
 
@@ -684,7 +680,7 @@ __kernel void pcisph_computeForcesAndInitPressure(
 				//0.09 for experiments with water drops
 				//-0.0133
 				// surface tension force
-				accel_surfTensForce += ( -1.5e-09f * 0.3* (float)(Wpoly6Coefficient * pow(hScaled2/2.0,3.0)) * simulationScale ) * (sortedPosition[id]-sortedPosition[jd]);
+				accel_surfTensForce += ( -1.5e-09f * 0.3f* (float)(Wpoly6Coefficient * pow(hScaled2/2.0,3.0)) * simulationScale ) * (sortedPosition[id]-sortedPosition[jd]);
 			}
 		}
 		
@@ -1258,77 +1254,83 @@ float calcDeterminant3x3(float4 c1, float4 c2, float4 c3)
 //  [c3]: c31  c32  c33
 //  by the way, result for transposed matrix will be equal to the original one
 
-	//return  c1[1]*c2[2]*c3[3] + c1[2]*c2[3]*c3[1] + c1[3]*c2[1]*c3[2]  
-	//	  - c1[3]*c2[2]*c3[1] - c1[1]*c2[3]*c3[2] - c1[2]*c2[1]*c3[3];
+//	return c1[1]*c2[2]*c3[3] + c1[2]*c2[3]*c3[1] + c1[3]*c2[1]*c3[2]  
+//		  - c1[3]*c2[2]*c3[1] - c1[1]*c2[3]*c3[2] - c1[2]*c2[1]*c3[3];
 
-    //return  c1.x*c2.y*c3.z + c1.y*c2.z*c3.x + c1.z*c2.x*c3.y  
-              - c1.z*c2.y*c3.x - c1.x*c2.z*c3.y - c1.y*c2.x*c3.z;
-	return  c1.x*c2.y*c3.z + c1.y*c2.z*c3.x + c1.z*c2.x*c3.y  
-		  - c1.z*c2.y*c3.x - c1.x*c2.z*c3.y - c1.y*c2.x*c3.z;
+//        printf("\nx %f",c1.x);
+//        printf("\ny %f",c1.y);
+//        printf("\nz %f",c1.z);
+//
+
+        return  c1.x*c2.y*c3.z + c1.y*c2.z*c3.x + c1.z*c2.x*c3.y  
+                  - c1.z*c2.y*c3.x - c1.x*c2.z*c3.y - c1.y*c2.x*c3.z;
+
 }
+
 
 float4 calculateProjectionOfPointToPlane(float4 ps, float4 pa, float4 pb, float4 pc)
 {// ps - point to project on the plane; pa-pb-pc - vertices of the triangle defining the plane
-	float4 pm = (float4)(0,0,0,0);//projection of ps on pa-pb-pc plane
-	float denominator;
-	//  b  a_2 a_3   a_1
-	// |b1 a12 a13|  a11
-	// |b2 a22 a23|  a21
-	// |b3 a32 a33|  a31
-	
-	float b_1 = pa.x*((pb.y-pa.y)*(pc.z-pa.z)-(pb.z-pa.z)*(pc.y-pa.y))
-			 + pa.y*((pb.z-pa.z)*(pc.x-pa.x)-(pb.x-pa.x)*(pc.z-pa.z))
-			 + pa.z*((pb.x-pa.x)*(pc.y-pa.y)-(pb.y-pa.y)*(pc.x-pa.x));
-	float b_2 = ps.x*(pb.x-pa.x)+ps.y*(pb.y-pa.y)+ps.z*(pb.z-pa.z);
-	float b_3 = ps.x*(pc.x-pa.x)+ps.y*(pc.y-pa.y)+ps.z*(pc.z-pa.z);
-	
-	float a_1_1 = (pb.y-pa.y)*(pc.z-pa.z)-(pb.z-pa.z)*(pc.y-pa.y);
-	float a_1_2 = pb.x - pa.x;
-	float a_1_3 = pc.x - pa.x;
-	
-	float a_2_1 = (pb.z-pa.z)*(pc.x-pa.x)-(pb.x-pa.x)*(pc.z-pa.z);
-	float a_2_2 = pb.y - pa.y;
-	float a_2_3 = pc.y - pa.y;
-	
-	float a_3_1 = (pb.x-pa.x)*(pc.y-pa.y)-(pb.y-pa.y)*(pc.x-pa.x);
-	float a_3_2 = pb.z - pa.z;
-	float a_3_3 = pc.z - pa.z;
-	
-	float4 a_1 = (float4)(a_1_1, a_1_2, a_1_3, 0);
-	float4 a_2 = (float4)(a_2_1, a_2_2, a_2_3, 0);
-	float4 a_3 = (float4)(a_3_1, a_3_2, a_3_3, 0);
-	float4 b = (float4)(b_1, b_2, b_3, 0);
-	
-	denominator = calcDeterminant3x3(a_1,a_2,a_3);
-	
-	//        printf("\na_1 = %2.2v4hlf", a_1);
-	//        printf("\na_2 = %2.2v4hlf", a_2);
-	//        printf("\na_3 = %2.2v4hlf", a_3);
-	//        printf("\ndenominator = %f", denominator);
-	//
-	if(denominator!=0)
-	{
-			pm.x = calcDeterminant3x3(b  ,a_2,a_3)/denominator;
-			pm.y = calcDeterminant3x3(a_1,b  ,a_3)/denominator;
-			pm.z = calcDeterminant3x3(a_1,a_2,b  )/denominator;
-	}
-	else {
-			printf("\ndenominator equal to zero\n");        
-			pm.w = -1;//indicates error  
-			printf("%f\t%f\t%f\n",a_1_1, a_1_2, a_1_3);
-			printf("%f\t%f\t%f\n",a_2_1, a_2_2, a_2_3);
-			printf("%f\t%f\t%f\n",a_3_1, a_3_2, a_3_3);
-			printf("\n{{%f,%f,%f},{%f,%f,%f},{%f,%f,%f}}\n", a_1.x, a_1.y, a_1.z, a_2.x, a_2.y, a_2.z,a_3.x, a_3.y, a_3.z);
-			printf("\n");     
-	}
-	
-	//printf("\npa=(%f,%f,%f)",pa.x,pa.y,pa.z);
-	//printf("\npb=(%f,%f,%f)",pb.x,pb.y,pb.z);
-	//printf("\npc=(%f,%f,%f)",pc.x,pc.y,pc.z);
-	//printf("\nps=(%f,%f,%f)",ps.x,ps.y,ps.z);
-	//printf("\npm=(%f,%f,%f)",pm.x,pm.y,pm.z);
-	
-	return pm;
+
+        float4 pm = (float4)(0,0,0,0);//projection of ps on pa-pb-pc plane
+        float denominator;
+        //  b  a_2 a_3   a_1
+        // |b1 a12 a13|  a11
+        // |b2 a22 a23|  a21
+        // |b3 a32 a33|  a31
+
+        float b_1 = pa.x*((pb.y-pa.y)*(pc.z-pa.z)-(pb.z-pa.z)*(pc.y-pa.y))
+                 + pa.y*((pb.z-pa.z)*(pc.x-pa.x)-(pb.x-pa.x)*(pc.z-pa.z))
+                 + pa.z*((pb.x-pa.x)*(pc.y-pa.y)-(pb.y-pa.y)*(pc.x-pa.x));
+        float b_2 = ps.x*(pb.x-pa.x)+ps.y*(pb.y-pa.y)+ps.z*(pb.z-pa.z);
+        float b_3 = ps.x*(pc.x-pa.x)+ps.y*(pc.y-pa.y)+ps.z*(pc.z-pa.z);
+
+        float a_1_1 = (pb.y-pa.y)*(pc.z-pa.z)-(pb.z-pa.z)*(pc.y-pa.y);
+        float a_1_2 = pb.x - pa.x;
+        float a_1_3 = pc.x - pa.x;
+
+        float a_2_1 = (pb.z-pa.z)*(pc.x-pa.x)-(pb.x-pa.x)*(pc.z-pa.z);
+        float a_2_2 = pb.y - pa.y;
+        float a_2_3 = pc.y - pa.y;
+
+        float a_3_1 = (pb.x-pa.x)*(pc.y-pa.y)-(pb.y-pa.y)*(pc.x-pa.x);
+        float a_3_2 = pb.z - pa.z;
+        float a_3_3 = pc.z - pa.z;
+
+        float4 a_1 = (float4)(a_1_1, a_1_2, a_1_3, 0);
+        float4 a_2 = (float4)(a_2_1, a_2_2, a_2_3, 0);
+        float4 a_3 = (float4)(a_3_1, a_3_2, a_3_3, 0);
+        float4 b = (float4)(b_1, b_2, b_3, 0);
+
+        denominator = calcDeterminant3x3(a_1,a_2,a_3);
+
+//        printf("\na_1 = %2.2v4hlf", a_1);
+//        printf("\na_2 = %2.2v4hlf", a_2);
+//        printf("\na_3 = %2.2v4hlf", a_3);
+//        printf("\ndenominator = %f", denominator);
+//
+        if(denominator!=0)
+        {
+                pm.x = calcDeterminant3x3(b  ,a_2,a_3)/denominator;
+                pm.y = calcDeterminant3x3(a_1,b  ,a_3)/denominator;
+                pm.z = calcDeterminant3x3(a_1,a_2,b  )/denominator;
+        }
+        else {
+                printf("\ndenominator equal to zero\n");        
+                pm.w = -1;//indicates error 
+				printf("%f\t%f\t%f\n",a_1_1, a_1_2, a_1_3);
+				printf("%f\t%f\t%f\n",a_2_1, a_2_2, a_2_3);
+				printf("%f\t%f\t%f\n",a_3_1, a_3_2, a_3_3);
+				printf("\n{{%f,%f,%f},{%f,%f,%f},{%f,%f,%f}}\n", a_1.x, a_1.y, a_1.z, a_2.x, a_2.y, a_2.z,a_3.x, a_3.y, a_3.z);
+				printf("\n");       
+        }
+
+        //printf("\npa=(%f,%f,%f)",pa.x,pa.y,pa.z);
+        //printf("\npb=(%f,%f,%f)",pb.x,pb.y,pb.z);
+        //printf("\npc=(%f,%f,%f)",pc.x,pc.y,pc.z);
+        //printf("\nps=(%f,%f,%f)",ps.x,ps.y,ps.z);
+        //printf("\npm=(%f,%f,%f)",pm.x,pm.y,pm.z);
+
+        return pm;
 }
 
 float calculateTriangleSquare(float4 v1, float4 v2, float4 v3)
@@ -1394,7 +1396,7 @@ __kernel void computeInteractionWithMembranes(
 		membrane_jd_normal_vector[i] = (float4)(0,0,0,0);
 		//membrane_jd[i] = -1;
 	}
-	
+
 	//check all neighbours of each particle to find those which belong to membranes.
 	//particleMembranesList(size:numOfElasticP*MAX_MEMBRANES_INCLUDING_SAME_PARTICLE)
 	//was introduced to provide this possibility. The same order of indexes as in <position> buffer
@@ -1411,7 +1413,7 @@ __kernel void computeInteractionWithMembranes(
 			{																//matter particles can compose membranes
 				membrane_ijk_counter = 0;
 				vector_id_jd = position[id_source_particle] - position[jd_source_particle];
-				vector_id_jd[3] = 0;
+				vector_id_jd.z = 0; //mv change from subscripting
 				_distance_id_jd = sqrt(dot(vector_id_jd,vector_id_jd));
 				// elastic matter particles have no information 
 				// about participation in membrane composition
@@ -1452,7 +1454,7 @@ __kernel void computeInteractionWithMembranes(
 						// two points: 'position[ jd_source_particle ]' and its projection on i-j-k plane 'pos_p'
 						// are enough to calc normal vector to i-j-k plane:
 
-						/*normal_to_ijk_plane = position[ id_source_particle ] - pos_p;
+						normal_to_ijk_plane = position[ id_source_particle ] - pos_p;
 						normal_to_ijk_plane_length =   sqrt(normal_to_ijk_plane.x*normal_to_ijk_plane.x + 
 															normal_to_ijk_plane.y*normal_to_ijk_plane.y +
 															normal_to_ijk_plane.z*normal_to_ijk_plane.z); 
@@ -1480,7 +1482,7 @@ __kernel void computeInteractionWithMembranes(
 						{
 							printf("computeInteractionWithMembranes error #001");
 							return;
-						}*/
+						}
 
 
 						// ok, we finally have projection of considered particle on the plane of i-j-k triangle.
@@ -1535,6 +1537,8 @@ __kernel void computeInteractionWithMembranes(
 		else break;
 	}//11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111
 
+//        barrier(CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE);
+        //barrier(CLK_GLOBAL_MEM_FENCE);
 	if(membrane_jd_counter>0)
 	{
 		//normal_vector_final /= membrane_jd_counter;
@@ -1782,4 +1786,5 @@ __kernel void pcisph_integrate(
 	
 	// position[0..2] stores x,y,z; position[3] - for particle type
 }
+
 
