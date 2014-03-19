@@ -66,7 +66,7 @@ public class UpdateSPHWatchTreeVisitor extends DefaultStateVisitor {
 		Integer particleIndex = null;
 		if (fullName.indexOf("[")!=-1) {
 			String particleID = fullName.substring(fullName.indexOf("[")+1, fullName.indexOf("]"));
-			particleIndex = Integer.parseInt(particleID);
+			particleIndex = Integer.parseInt(particleID)*4;
 		}
 		
 		// use index to retrieve values
