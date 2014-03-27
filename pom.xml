@@ -193,10 +193,6 @@
 				<configuration>
 					<excludes>
 						<exclude>**/PCISPHSolverBigTest.java</exclude>
-						<exclude>**/StepValidationTest.java</exclude>
-						<exclude>**/RecordCheckpointsTest.java</exclude>
-						<exclude>**/StepValidationWithCheckpointsTest.java</exclude>
-						<exclude>**/PhysicsLawsTest.java</exclude>
 					</excludes>
 				</configuration>
 			</plugin>
