@@ -1253,9 +1253,17 @@ public class SPHSolverService implements ISolver {
 											nodeName = current + "[" + particleID + "]";
 										}
 										
-										CompositeStateNode newNode = new CompositeStateNode(nodeName);										
-										node.addChild(newNode);
-										node = newNode;
+										CompositeStateNode newNode = new CompositeStateNode(nodeName);
+										
+										boolean addNewNode = containsNode(node, newNode.getName());
+										
+										if(addNewNode){
+											node.addChild(newNode);
+											node = newNode;
+										}
+										else{
+											node = getNode(node, newNode.getName());
+										}
 									} else {
 										// it's a leaf node
 										SimpleStateNode newNode = new SimpleStateNode(current);
@@ -1295,6 +1303,48 @@ public class SPHSolverService implements ISolver {
 		_velocity.unmap(_queue, _positionPtr);
 	}
 
+	private boolean containsNode(CompositeStateNode node, String name){
+		List<AStateNode> children = node.getChildren();
+		
+		boolean addNewNode = true;
+		for(AStateNode child : children){
+			if(child.getName().equals(name)){
+				addNewNode = false;
+				return addNewNode;
+			}
+			if(child instanceof CompositeStateNode){
+				if(((CompositeStateNode)child).getChildren() != null){
+					addNewNode = containsNode((CompositeStateNode) child, name);
+				}
+			}
+
+		}
+		
+		return addNewNode;
+	}
+	
+	private CompositeStateNode getNode(CompositeStateNode node, String name){
+		CompositeStateNode newNode = null;
+		
+		List<AStateNode> children = node.getChildren();
+		
+		boolean addNewNode = true;
+		for(AStateNode child : children){
+			if(child.getName().equals(name)){
+				newNode = (CompositeStateNode) child;
+				return newNode;
+			}
+			if(child instanceof CompositeStateNode){
+				if(((CompositeStateNode)child).getChildren() != null){
+					newNode = getNode((CompositeStateNode) child, name);
+				}
+			}
+
+		}
+		
+		return newNode;
+	}
+	
 	@Override
 	public StateTreeRoot initialize(IModel model) throws GeppettoInitializationException {
 		_model = (SPHModelX) model;

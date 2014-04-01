@@ -216,6 +216,8 @@ public class PCISPHSolverTest
 		solver.setRecordCheckpoint(false);
 		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 100, 1));
 		Assert.assertTrue(true);
+		PCISPHTestUtilities.checkStateTreeForNaN(stateSet, true);
 		
+		Assert.assertTrue("Particle count doesn't match.", stateSet.getSubTree(StateTreeRoot.SUBTREE.MODEL_TREE).getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
 	}
 }
