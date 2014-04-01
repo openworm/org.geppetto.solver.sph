@@ -489,7 +489,7 @@ public class StepValidationWithCheckpointsTest {
 		        case POSITION:  
 		        	List<Float> pos_calculatedValues = checkpoint_values.position;
 		        	int pos_mismatches = 0;
-		        	Assert.assertTrue(dimensions.get(entry.getKey()).intValue() == checkpointReferenceValuesMap.get(entry.getKey()).length * 4);
+		        	Assert.assertTrue(dimensions.get(entry.getKey()).intValue() == checkpointReferenceValuesMap.get(entry.getKey()).length * 4 * 2);
 		        	j=0;
 		        	for(int i = 0; i < dimensions.get(entry.getKey()); i = i + 4)
 		        	{	
@@ -686,7 +686,7 @@ public class StepValidationWithCheckpointsTest {
 		        case VELOCITY:  
 		        	List<Float> vel_calculatedValues = checkpoint_values.velocity;
 		        	int vel_mismatches = 0;
-		        	Assert.assertTrue(dimensions.get(entry.getKey()).intValue() == checkpointReferenceValuesMap.get(entry.getKey()).length * 4);
+		        	Assert.assertTrue(dimensions.get(entry.getKey()).intValue() == checkpointReferenceValuesMap.get(entry.getKey()).length * 4 * 2);
 		        	j=0;
 		        	for(int i = 0; i < dimensions.get(entry.getKey()); i = i + 4)
 		        	{	

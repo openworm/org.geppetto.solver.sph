@@ -200,7 +200,8 @@ public class SPHSolverService implements ISolver {
 	private StateTreeRoot _stateTree;
 	
 	private int iterationNumber;
-	private boolean _recordCheckPoints = false;
+	private boolean _recordCheckPoints = true;
+	
 
 	/*
 	 * Checkpoints for the last computed step NOTE: stores all buffer values
@@ -211,7 +212,9 @@ public class SPHSolverService implements ISolver {
 	public Map<KernelsEnum, PCISPHCheckPoint> getCheckpointsMap() {
 		return _checkpointsMap;
 	}
-
+	public void setRecordCheckpoint(boolean value){
+		this._recordCheckPoints = value;
+	}
 	/*
 	 * A map of buffer sizes NOTE: these values are used in multiple places so
 	 * storing them here reduces potential for error

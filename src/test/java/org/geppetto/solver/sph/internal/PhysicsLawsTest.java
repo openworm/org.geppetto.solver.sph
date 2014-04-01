@@ -32,6 +32,7 @@ public class PhysicsLawsTest {
 		
 		SPHSolverService solver = new SPHSolverService(true);
 		solver.initialize(model);
+		solver.setRecordCheckpoint(true);
 		
 		SPHParticleX p = null;
 		for(int i=0; i<model.getNumberOfParticles(); i++){
@@ -50,9 +51,9 @@ public class PhysicsLawsTest {
 		// velocity at time t1
 		Vector3D v1 = new Vector3D();
 		float t = steps*SPHConstants.TIME_STEP;
-		v1.setX((float) (v0.getX() + SPHConstants.GRAVITY_X*t) * SPHConstants.SIMULATION_SCALE);
-		v1.setY((float) (v0.getY() + SPHConstants.GRAVITY_Y*t) * SPHConstants.SIMULATION_SCALE);
-		v1.setZ((float) (v0.getZ() + SPHConstants.GRAVITY_Z*t) * SPHConstants.SIMULATION_SCALE);
+		v1.setX((float) (v0.getX() + SPHConstants.GRAVITY_X*t));
+		v1.setY((float) (v0.getY() + SPHConstants.GRAVITY_Y*t));
+		v1.setZ((float) (v0.getZ() + SPHConstants.GRAVITY_Z*t));
 		
 		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(null, steps, null));
 		

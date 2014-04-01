@@ -213,6 +213,7 @@ public class PCISPHSolverTest
 		
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
+		solver.setRecordCheckpoint(false);
 		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 100, 1));
 		Assert.assertTrue(true);
 		
