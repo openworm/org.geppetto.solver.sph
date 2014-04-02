@@ -1073,7 +1073,8 @@ public class SPHSolverService implements ISolver {
 				for (String varName : watchListVarNames) {
 					// get watchable variables path
 					List<String> watchableVarsPaths = new ArrayList<String>();
-					VariablePathSerializer.GetFullVariablePath(var, "", watchableVarsPaths);
+					//FIXME Matteo: functions where the parameters is changed/populated are difficult to read
+					VariablePathSerializer.GetFullVariablePath(var, _model.getInstancePath(), watchableVarsPaths);
 
 					// remove array bracket arguments from variable paths
 					String varNameNoBrackets = varName;
