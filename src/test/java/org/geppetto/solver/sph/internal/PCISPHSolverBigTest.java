@@ -56,7 +56,7 @@ public class PCISPHSolverBigTest {
 	{
 		URL url = this.getClass().getResource("/sphModel_PureLiquid.xml");
 		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
-		IModel model = modelInterpreter.readModel(url);
+		IModel model = modelInterpreter.readModel(url,null,"");
 		
 		// NOTE: commenting out as it takes a while for big scenes
 		//checkModelForOverlappingParticles((SPHModelX)model, false);
@@ -79,7 +79,7 @@ public class PCISPHSolverBigTest {
 	{
 		URL url = this.getClass().getResource("/sphModel_PureLiquid.xml");
 		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
-		IModel model = modelInterpreter.readModel(url);
+		IModel model = modelInterpreter.readModel(url,null,"");
 		
 		// check that we don't have particles with overlapping positions
 		//checkModelForOverlappingParticles((SPHModelX)model, false);
@@ -117,7 +117,7 @@ public class PCISPHSolverBigTest {
 	{
 		URL url = this.getClass().getResource("/sphModel_Elastic.xml");
 		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
-		IModel model = modelInterpreter.readModel(url);
+		IModel model = modelInterpreter.readModel(url,null,"");
 		
 		//checkModelForOverlappingParticles((SPHModelX)model, false);
 
@@ -139,7 +139,7 @@ public class PCISPHSolverBigTest {
 	{
 		URL url = this.getClass().getResource("/sphModel_Elastic.xml");
 		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
-		IModel model = modelInterpreter.readModel(url);
+		IModel model = modelInterpreter.readModel(url,null,"");
 		
 		// check that we don't have particles with overlapping positions
 		//checkModelForOverlappingParticles((SPHModelX)model, false);
@@ -171,7 +171,7 @@ public class PCISPHSolverBigTest {
 	{
 		URL url = this.getClass().getResource("/sphModel_Elastic.xml");
 		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
-		IModel model = modelInterpreter.readModel(url);
+		IModel model = modelInterpreter.readModel(url,null,"");
 		
 		// check that we don't have particles with overlapping positions
 		//checkModelForOverlappingParticles((SPHModelX)model, false);
@@ -209,7 +209,7 @@ public class PCISPHSolverBigTest {
 	{
 		URL url = this.getClass().getResource("/sphModel_elastic_contractible_7220.xml");
 		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
-		IModel model = modelInterpreter.readModel(url);
+		IModel model = modelInterpreter.readModel(url,null,"");
 
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);

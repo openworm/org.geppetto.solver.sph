@@ -56,7 +56,7 @@ public class RecordCheckpointsTest {
 	public void testRecordCheckpointsIsEmpty() throws Exception {
 		URL url = this.getClass().getResource("/sphModel_15.xml");
 		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
-		IModel model = modelInterpreter.readModel(url);
+		IModel model = modelInterpreter.readModel(url,null,"");
 		
 		// check that we don't have particles with overlapping positions
 		PCISPHTestUtilities.checkModelForOverlappingParticles((SPHModelX)model, false);
@@ -77,7 +77,7 @@ public class RecordCheckpointsTest {
 	public void testRecordCheckpoints() throws Exception {
 		URL url = this.getClass().getResource("/sphModel_15.xml");
 		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
-		IModel model = modelInterpreter.readModel(url);
+		IModel model = modelInterpreter.readModel(url,null,"");
 		
 		// check that we don't have particles with overlapping positions
 		PCISPHTestUtilities.checkModelForOverlappingParticles((SPHModelX)model, false);
@@ -135,7 +135,7 @@ public class RecordCheckpointsTest {
 	public void testRecordCheckpointsMultiStep() throws Exception {
 		URL url = this.getClass().getResource("/sphModel_15.xml");
 		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
-		IModel model = modelInterpreter.readModel(url);
+		IModel model = modelInterpreter.readModel(url,null,"");
 		
 		// check that we don't have particles with overlapping positions
 		PCISPHTestUtilities.checkModelForOverlappingParticles((SPHModelX)model, false);
@@ -194,7 +194,7 @@ public class RecordCheckpointsTest {
 	public void testRecordCheckpointsWithElasticConnections() throws Exception {
 		URL url = this.getClass().getResource("/sphModel_elastic_contractible_7220.xml");
 		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
-		IModel model = modelInterpreter.readModel(url);
+		IModel model = modelInterpreter.readModel(url,null,"");
 	
 		// tell the solver to record checkpoints
 		SPHSolverService solver = new SPHSolverService(true);
