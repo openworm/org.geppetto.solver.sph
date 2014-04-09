@@ -62,7 +62,7 @@ public class MultipleThreadsTests {
 	{
 		URL url = this.getClass().getResource("/sphModel_1.xml");
 		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
-		IModel model = modelInterpreter.readModel(url);
+		IModel model = modelInterpreter.readModel(url,null,"");
 		
 		// check that we don't have particles with overlapping positions
 		PCISPHTestUtilities.checkModelForOverlappingParticles((SPHModelX)model, false);
