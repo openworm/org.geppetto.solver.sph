@@ -28,7 +28,7 @@ public class PhysicsLawsTest {
 		// load Java generated scene
 		URL url = this.getClass().getResource("/single-elastic-particle.xml");
 		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
-		SPHModelX model = (SPHModelX)modelInterpreter.readModel(url);
+		SPHModelX model = (SPHModelX)modelInterpreter.readModel(url,null,"");
 		
 		SPHSolverService solver = new SPHSolverService(true);
 		solver.initialize(model);
@@ -79,7 +79,7 @@ public class PhysicsLawsTest {
 		// load Java generated scene
 		URL url = this.getClass().getResource("/gravity_test_one_particle.xml");
 		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
-		SPHModelX model = (SPHModelX)modelInterpreter.readModel(url);
+		SPHModelX model = (SPHModelX)modelInterpreter.readModel(url,null,"");
 		
 		SPHSolverService solver = new SPHSolverService(false);
 		solver.initialize(model);
@@ -120,7 +120,7 @@ public class PhysicsLawsTest {
 		float s_b = 0.f;
 		URL url = this.getClass().getResource("/gravity_test_many_particle.xml");
 		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
-		SPHModelX model = (SPHModelX)modelInterpreter.readModel(url);
+		SPHModelX model = (SPHModelX)modelInterpreter.readModel(url,null,"");
 		
 		SPHSolverService solver = new SPHSolverService(false);
 		solver.initialize(model);
@@ -157,7 +157,7 @@ public class PhysicsLawsTest {
 		int particleId = 100;
 		URL url = this.getClass().getResource("/friction_test_1.xml");
 		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
-		SPHModelX model = (SPHModelX)modelInterpreter.readModel(url);
+		SPHModelX model = (SPHModelX)modelInterpreter.readModel(url,null,"");
 		SPHSolverService solver = new SPHSolverService(false);
 		solver.initialize(model);
 		Vector3DX initPosition = new Vector3DX(0.f,0.f,0.f);

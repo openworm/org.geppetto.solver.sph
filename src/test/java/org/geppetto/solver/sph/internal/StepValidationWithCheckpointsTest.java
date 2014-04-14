@@ -310,7 +310,7 @@ public class StepValidationWithCheckpointsTest {
 		
 		// load Java generated scene
 		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
-		SPHModelX model = (SPHModelX)modelInterpreter.readModel(modelURL);
+		SPHModelX model = (SPHModelX)modelInterpreter.readModel(modelURL,null,"");
 		
 		SPHSolverService solver = new SPHSolverService(true);
 		solver.initialize(model);
