@@ -209,7 +209,7 @@ public class PCISPHSolverTest
 	{
 		URL url = this.getClass().getResource("/cube_with_membranes.xml");
 		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
-		IModel model = modelInterpreter.readModel(url);
+		IModel model = modelInterpreter.readModel(url,null,"");
 		
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
