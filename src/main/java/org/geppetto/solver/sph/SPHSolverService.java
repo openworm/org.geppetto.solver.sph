@@ -384,6 +384,7 @@ public class SPHSolverService implements ISolver {
 		_simulationScaleInv = 1 / _simulationScale;
 		_surfTensCoeff = ( _model.getSurfTensionCoeff() != null) ? _model.getSurfTensionCoeff(): SPHConstants.SURFACE_TENSION_COEFFICIENT;
 		_elasticityCoeff = ( _model.getElasticitiCoeff() != null) ? _model.getElasticitiCoeff(): SPHConstants.ELASTICITY_COEFFICIENT;
+		_elasticityCoeff /= _mass;
 		_viscosityCoeff = ( _model.getViscosityCoeff() != null) ? _model.getViscosityCoeff(): SPHConstants.viscosity;
 		_elasticBundlesCount = (_model.getElasticBundles() == null) ? 0
 				: _model.getElasticBundles().intValue();
@@ -672,8 +673,7 @@ public class SPHSolverService implements ISolver {
 		_pcisph_computeForcesAndInitPressure.setArg(4, _sortedVelocity);
 		_pcisph_computeForcesAndInitPressure.setArg(5, _acceleration);
 		_pcisph_computeForcesAndInitPressure.setArg(6, _particleIndexBack);
-		_pcisph_computeForcesAndInitPressure.setArg(7,
-				SPHConstants.W_POLY_6_COEFFICIENT);
+		_pcisph_computeForcesAndInitPressure.setArg(7, _surfTensCoeff);
 		_pcisph_computeForcesAndInitPressure.setArg(8,
 				SPHConstants.DEL_2_W_VISCOSITY_COEFFICIENT);
 		_pcisph_computeForcesAndInitPressure.setArg(9, SPHConstants.H);
@@ -687,7 +687,6 @@ public class SPHSolverService implements ISolver {
 		_pcisph_computeForcesAndInitPressure.setArg(16, _position);
 		_pcisph_computeForcesAndInitPressure.setArg(17, _particleIndex);
 		_pcisph_computeForcesAndInitPressure.setArg(18, _particleCount);
-		_pcisph_computeForcesAndInitPressure.setArg(19, _surfTensCoeff);
 		_pcisph_computeForcesAndInitPressure.enqueueNDRange(_queue,
 				new int[] { getParticleCountRoundedUp() });
 
@@ -706,12 +705,11 @@ public class SPHSolverService implements ISolver {
 		_pcisph_computeElasticForces.setArg(8, _simulationScale);
 		_pcisph_computeElasticForces.setArg(9, _numOfElasticP);
 		_pcisph_computeElasticForces.setArg(10, _elasticConnectionsData);
-		_pcisph_computeElasticForces.setArg(11, 0);
-		_pcisph_computeElasticForces.setArg(12, _particleCount);
-		_pcisph_computeElasticForces.setArg(13, SPHConstants.MUSCLE_COUNT);
-		_pcisph_computeElasticForces.setArg(14, _activationSignal);
-		_pcisph_computeElasticForces.setArg(15, _position);
-		_pcisph_computeElasticForces.setArg(16, _elasticityCoeff);
+		_pcisph_computeElasticForces.setArg(11, _particleCount);
+		_pcisph_computeElasticForces.setArg(12, SPHConstants.MUSCLE_COUNT);
+		_pcisph_computeElasticForces.setArg(13, _activationSignal);
+		_pcisph_computeElasticForces.setArg(14, _position);
+		_pcisph_computeElasticForces.setArg(15, _elasticityCoeff);
 		
 		int numOfElasticPRoundedUp = (((_numOfElasticP - 1) / 256) + 1) * 256;
 
@@ -929,15 +927,15 @@ public class SPHSolverService implements ISolver {
 		long startStep = System.currentTimeMillis();
 		long end = 0;
 		long start = System.currentTimeMillis();
-
-		logger.info("SPH clear buffer");
+		//DEPRICATED FUNCTION
+		/*logger.info("SPH clear buffer");
 		runClearBuffers();
 		if (_recordCheckPoints) {
 			recordCheckpoints(KernelsEnum.CLEAR_BUFFERS);
 		}
 		end = System.currentTimeMillis();
 		logger.info("SPH clear buffer end, took " + (end - start) + "ms");
-		start = end;
+		start = end;*/
 
 		logger.info("SPH hash particles");
 		CLEvent hashParticles = runHashParticles();
@@ -1063,12 +1061,17 @@ public class SPHSolverService implements ISolver {
 		// wait for the end of the run_pcisph_integrate on device
 		event.waitFor();
 		if(_numOfMembranes!=0){
+		   logger.info("PCI-SPH membrane interaction calculating");
 		   run_clearMembraneBuffers();
 		   run_computeInteractionWithMembranes();
 		   // compute change of coordinates due to interactions with membranes
 		   event = run_computeInteractionWithMembranes_finalize();
 		   // wait for the end of the run_pcisph_integrate on device
 		   event.waitFor();
+		   end = System.currentTimeMillis();
+		   logger.info("PCI-SPH membrane intraction calculating end, took " + (end - start)
+					+ "ms");
+		   start = end;
 		}
 
 		logger.info("SPH finish queue");

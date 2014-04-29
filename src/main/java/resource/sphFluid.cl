@@ -36,21 +36,33 @@
 // Eurographics/SIGGRAPH Symposium on Computer Animation (2003).
 //TODO: write all papers and dissertation what we use in work
 
+//#include "src//owOpenCLConstant.h"
+
+#ifndef OW_OPENCL_CONSTANT_H
+#define OW_OPENCL_CONSTANT_H
+
 #define MAX_NEIGHBOR_COUNT 32
-#define LIQUID_PARTICLE 1
-#define ELASTIC_PARTICLE 2
+
+#define MAX_MEMBRANES_INCLUDING_SAME_PARTICLE 7
+
+#define LIQUID_PARTICLE   1
+#define ELASTIC_PARTICLE  2
 #define BOUNDARY_PARTICLE 3
 
 #define NO_PARTICLE_ID -1
 #define NO_CELL_ID -1
 #define NO_DISTANCE -1.0f
 
+#define QUEUE_EACH_KERNEL 1
+
+#define INTEL_OPENCL_DEBUG 0
+
+#endif // #ifndef OW_OPENCL_CONSTANT_H
+
 #define POSITION_CELL_ID( i ) i.w
 
 #define PI_CELL_ID( name ) name.x
 #define PI_SERIAL_ID( name ) name.y
-
-#define MAX_MEMBRANES_INCLUDING_SAME_PARTICLE 7
 
 #define NEIGHBOR_MAP_ID( nm ) nm.x
 #define NEIGHBOR_MAP_DISTANCE( nm ) nm.y
@@ -70,8 +82,8 @@
 #define SELECT( A, B, C ) C ? B : A
 #endif
 
+#pragma OPENCL EXTENSION cl_amd_printf : enable
 #pragma OPENCL EXTENSION cl_intel_printf : enable
-
 #ifdef cl_khr_fp64
     #pragma OPENCL EXTENSION cl_khr_fp64 : enable
 #elif defined(cl_amd_fp64)
@@ -80,6 +92,9 @@
     #error "Double precision floating point not supported by OpenCL implementation."
 #endif
 
+
+// FUNCTION DEPRECATED
+// neighborMap should have all values or defauls assigned in findNeighbors kernel
 __kernel void clearBuffers(
 							__global float2 * neighborMap,
 							int PARTICLE_COUNT
@@ -125,8 +140,8 @@ int searchCell(
 	int dy = deltaY * gridCellsX;
 	int dz = deltaZ * gridCellsX * gridCellsY;
 	int newCellId = cellId + dx + dy + dz;
-	newCellId = SELECT( newCellId, newCellId + gridCellCount, ( newCellId < 0 ) );
-	newCellId = SELECT( newCellId, newCellId - gridCellCount, ( newCellId >= gridCellCount ) );
+	newCellId = newCellId < 0 ? newCellId + gridCellCount : newCellId;
+	newCellId = newCellId >= gridCellCount ? newCellId - gridCellCount : newCellId;
 	return newCellId;
 }
 
@@ -134,76 +149,76 @@ int searchCell(
 #define FOUND_ONE_NEIGHBOR 1
 #define radius_segments 30
 
-int searchForNeighbors( 
-					   int searchCell_, 
-					   __global uint * gridCellIndex, 
-					   float4 position_, 
-					   int myParticleId, 
-					   __global float4 * sortedPosition,
-					   __global float2 * neighborMap,
-					   int spaceLeft,
-					   float h,
-					   float simulationScale,
-					   int mode,
-					   int * radius_distrib,
-					   float r_thr
-					   )
+int getMaxIndex(
+				float *d_array
+				)
+{
+	int result;
+	float max_d = -1.f;
+	for(int i=0; i<MAX_NEIGHBOR_COUNT; i++){
+		if (d_array[i] > max_d){
+			max_d = d_array[i];
+			result = i;
+		}
+	}
+	return result;
+}
+
+
+int searchForNeighbors_b(
+						 int searchCell_,
+						 __global uint * gridCellIndex,
+						 float4 position_,
+						 int myParticleId,
+						 __global float4 * sortedPosition,
+						 __global float2 * neighborMap,
+						 int * closest_indexes,
+						 float * closest_distances,
+						 int last_farthest,
+						 int *found_count
+						 )
 {
 	int baseParticleId = gridCellIndex[ searchCell_ ];
 	int nextParticleId = gridCellIndex[ searchCell_ + 1 ];
 	int particleCountThisCell = nextParticleId - baseParticleId;
-	int potentialNeighbors = particleCountThisCell;
-	int foundCount = 0;
-	bool loop = true;
-	int i = 0,j;
-	float _distance,_distanceSquared;
-	float r_thr_Squared = r_thr*r_thr;
-	float2 neighbor_data;
+	int i = 0;
+	float _distanceSquared;
 	int neighborParticleId;
-	int myOffset;
-	if(spaceLeft>0)
-		while( i < particleCountThisCell ){
-
-			neighborParticleId = baseParticleId + i;
-			
-			//if(myParticleId == neighborParticleId) continue;
-
-			if(myParticleId != neighborParticleId)
+	
+	int farthest_neighbor = last_farthest;
+	
+	while( i < particleCountThisCell ){
+		
+		neighborParticleId = baseParticleId + i;
+		
+		if(myParticleId != neighborParticleId)
+		{
+			float4 d = position_ - sortedPosition[ neighborParticleId ];
+			_distanceSquared = d.x*d.x + d.y*d.y + d.z*d.z; // inlined openCL dot(d,d)
+			if( _distanceSquared <= closest_distances[farthest_neighbor])
 			{
-				float4 d = position_ - sortedPosition[ neighborParticleId ];
-				d.w = 0.0f;
-				_distanceSquared = d.x*d.x + d.y*d.y + d.z*d.z; // inlined openCL dot(d,d)
-				if( _distanceSquared <= r_thr_Squared )
-				{
-					_distance = SQRT( _distanceSquared );
-					j = (int)(_distance*radius_segments/h);
-					if(j<radius_segments) radius_distrib[j]++; 
-
-					// searchForNeighbors runs twice
-					// first time with mode = 0, to build distribution
-					// and 2nd time with mode = 1, to select 32 nearest neighbors
-					if(mode)
-					{
-						myOffset = MAX_NEIGHBOR_COUNT - spaceLeft + foundCount;
-						if(myOffset>=MAX_NEIGHBOR_COUNT) break;// New line fixing the bug with indeterminism. A. Palyanov 22.02.2013
-						neighbor_data.x = neighborParticleId;
-						neighbor_data.y = _distance * simulationScale; // scaled, OK
-						neighborMap[ myParticleId*MAX_NEIGHBOR_COUNT + myOffset ] = neighbor_data;
-						foundCount++;
-					}
+				closest_distances[farthest_neighbor] = _distanceSquared;
+				closest_indexes[farthest_neighbor] = neighborParticleId;
+				if(*found_count < MAX_NEIGHBOR_COUNT-1){
+					(*found_count)++;
+					farthest_neighbor = *found_count;
+				} else{
+					farthest_neighbor = getMaxIndex(closest_distances);
 				}
-			
 			}
-
-			i++;
 			
-		}//while
-
-	return foundCount;
+			
+		}
+		
+		i++;
+		
+	}//while
+	
+	return farthest_neighbor;
 }
 
 
-int4 cellFactors( 
+int4 cellFactors(
 				 float4 position,
 				 float xmin,
 				 float ymin,
@@ -218,9 +233,6 @@ int4 cellFactors(
 	result.z = (int)( position.z *  hashGridCellSizeInv );
 	return result;
 }
-
-
-
 
 
 __kernel void findNeighbors(
@@ -246,105 +258,94 @@ __kernel void findNeighbors(
 	__global uint * gridCellIndex = gridCellIndexFixedUp;
 	float4 position_ = sortedPosition[ id ];
 	int myCellId = (int)POSITION_CELL_ID( position_ ) & 0xffff;// truncate to low 16 bits
-	int searchCell_;
-	int foundCount = 0;
-	int mode = 0;
-	int distrib_sum = 0;
-	int radius_distrib[radius_segments];
-	int i=0,j;
-	float r_thr = h;
+	int searchCells[8];
+	float r_thr2 = h * h;
+	float closest_distances[MAX_NEIGHBOR_COUNT];
+	int closest_indexes[MAX_NEIGHBOR_COUNT];
+	int found_count = 0;
 	
-	while( i<radius_segments )
-	{
-		radius_distrib[i]=0;
-		i++;
+	for(int k=0;k<MAX_NEIGHBOR_COUNT;k++){
+		closest_distances[k] = r_thr2;
+		closest_indexes[k] = -1;
 	}
 	
-	while( mode<2 )
-	{
-		// search surrounding cell 1
-
-		searchCell_ = myCellId;
-		foundCount += searchForNeighbors( searchCell_, gridCellIndex, position_, 
-			id, sortedPosition, neighborMap, MAX_NEIGHBOR_COUNT - foundCount, 
-			h, simulationScale, mode, radius_distrib, r_thr );
-
-		// p is the current particle position within the bounds of the hash grid
-		float4 p;
-		float4 p0 = (float4)( xmin, ymin, zmin, 0.0f );
-		p = position_ - p0;
-
-		// cf is the min,min,min corner of the current cell
-		int4 cellFactors_ = cellFactors( position_, xmin, ymin, zmin, hashGridCellSizeInv );
-		float4 cf;
-		cf.x = cellFactors_.x * hashGridCellSize;
-		cf.y = cellFactors_.y * hashGridCellSize;
-		cf.z = cellFactors_.z * hashGridCellSize;
-
-		// lo.A is true if the current position is in the low half of the cell for dimension A
-		int4 lo;
-		lo = (( p - cf ) < h );
-
-		int4 delta;
-		int4 one = (int4)( 1, 1, 1, 1 );
-		delta = one + 2 * lo;
-
-		// search surrounding cells 2..8
-
-		searchCell_ = searchCell( myCellId, delta.x, 0, 0, gridCellsX, gridCellsY, gridCellsZ, gridCellCount );
-		foundCount += searchForNeighbors( searchCell_, gridCellIndex, position_, 
-			id, sortedPosition, neighborMap, MAX_NEIGHBOR_COUNT - foundCount, 
-			h, simulationScale, mode, radius_distrib, r_thr  );
-
-		searchCell_ = searchCell( myCellId, 0, delta.y, 0, gridCellsX, gridCellsY, gridCellsZ, gridCellCount );
-		foundCount += searchForNeighbors( searchCell_, gridCellIndex, position_, 
-			id, sortedPosition, neighborMap, MAX_NEIGHBOR_COUNT - foundCount, 
-			h, simulationScale, mode, radius_distrib, r_thr  );
-
-		searchCell_ = searchCell( myCellId, 0, 0, delta.z, gridCellsX, gridCellsY, gridCellsZ, gridCellCount );
-		foundCount += searchForNeighbors( searchCell_, gridCellIndex, position_, 
-			id, sortedPosition, neighborMap, MAX_NEIGHBOR_COUNT - foundCount, 
-			h, simulationScale, mode, radius_distrib, r_thr  );
-
-		searchCell_ = searchCell( myCellId, delta.x, delta.y, 0, gridCellsX, gridCellsY, gridCellsZ, gridCellCount );
-		foundCount += searchForNeighbors( searchCell_, gridCellIndex, position_, 
-			id, sortedPosition, neighborMap, MAX_NEIGHBOR_COUNT - foundCount, 
-			h, simulationScale, mode, radius_distrib, r_thr  );
-
-		searchCell_ = searchCell( myCellId, delta.x, 0, delta.z, gridCellsX, gridCellsY, gridCellsZ, gridCellCount );
-		foundCount += searchForNeighbors( searchCell_, gridCellIndex, position_, 
-			id, sortedPosition, neighborMap, MAX_NEIGHBOR_COUNT - foundCount, 
-			h, simulationScale, mode, radius_distrib, r_thr  );
-
-		searchCell_ = searchCell( myCellId, 0, delta.y, delta.z, gridCellsX, gridCellsY, gridCellsZ, gridCellCount );
-		foundCount += searchForNeighbors( searchCell_, gridCellIndex, position_, 
-			id, sortedPosition, neighborMap, MAX_NEIGHBOR_COUNT - foundCount, 
-			h, simulationScale, mode, radius_distrib, r_thr  );
-
-		searchCell_ = searchCell( myCellId, delta.x, delta.y, delta.z, gridCellsX, gridCellsY, gridCellsZ, gridCellCount );
-		foundCount += searchForNeighbors( searchCell_, gridCellIndex, position_, 
-			id, sortedPosition, neighborMap, MAX_NEIGHBOR_COUNT - foundCount, 
-			h, simulationScale, mode, radius_distrib, r_thr );
-
-		if(mode==0)
-		{
-			j=0;
-			
-			while(j<radius_segments)
-			{
-				distrib_sum += radius_distrib[j];
-				if(distrib_sum==MAX_NEIGHBOR_COUNT) break;
-				if(distrib_sum> MAX_NEIGHBOR_COUNT) { j--; break; }
-				j++;
-			}
-
-			r_thr = (j+1)*h/radius_segments;
-
+	searchCells[0] = myCellId;
+	
+	// p is the current particle position within the bounds of the hash grid
+	float4 p;
+	float4 p0 = (float4)( xmin, ymin, zmin, 0.0f );
+	p = position_ - p0;
+	
+	// cf is the min,min,min corner of the current cell
+	int4 cellFactors_ = cellFactors( position_, xmin, ymin, zmin, hashGridCellSizeInv );
+	float4 cf;
+	cf.x = cellFactors_.x * hashGridCellSize;
+	cf.y = cellFactors_.y * hashGridCellSize;
+	cf.z = cellFactors_.z * hashGridCellSize;
+	
+	// lo.A is true if the current position is in the low half of the cell for dimension A
+	int4 lo;
+	lo = (( p - cf ) < h );
+	
+	int4 delta;
+	int4 one = (int4)( 1, 1, 1, 1 );
+	delta = one + 2 * lo;
+	
+	searchCells[1] = searchCell( myCellId, delta.x, 0, 0, gridCellsX, gridCellsY, gridCellsZ, gridCellCount );
+	searchCells[2] = searchCell( myCellId, 0, delta.y, 0, gridCellsX, gridCellsY, gridCellsZ, gridCellCount );
+	searchCells[3] = searchCell( myCellId, 0, 0, delta.z, gridCellsX, gridCellsY, gridCellsZ, gridCellCount );
+	searchCells[4] = searchCell( myCellId, delta.x, delta.y, 0, gridCellsX, gridCellsY, gridCellsZ, gridCellCount );
+	searchCells[5] = searchCell( myCellId, delta.x, 0, delta.z, gridCellsX, gridCellsY, gridCellsZ, gridCellCount );
+	searchCells[6] = searchCell( myCellId, 0, delta.y, delta.z, gridCellsX, gridCellsY, gridCellsZ, gridCellCount );
+	searchCells[7] = searchCell( myCellId, delta.x, delta.y, delta.z, gridCellsX, gridCellsY, gridCellsZ, gridCellCount );
+	
+	// search surrounding cells 1..8
+	int last_farthest = 0;
+	
+	last_farthest = searchForNeighbors_b( searchCells[0], gridCellIndex, position_,
+										 id, sortedPosition, neighborMap,
+										 closest_indexes, closest_distances, last_farthest, &found_count );
+	
+	last_farthest = searchForNeighbors_b( searchCells[1], gridCellIndex, position_,
+										 id, sortedPosition, neighborMap,
+										 closest_indexes, closest_distances, last_farthest, &found_count  );
+	
+	last_farthest = searchForNeighbors_b( searchCells[2], gridCellIndex, position_,
+										 id, sortedPosition, neighborMap,
+										 closest_indexes, closest_distances, last_farthest, &found_count  );
+	
+	last_farthest = searchForNeighbors_b( searchCells[3], gridCellIndex, position_,
+										 id, sortedPosition, neighborMap,
+										 closest_indexes, closest_distances, last_farthest, &found_count  );
+	
+	last_farthest = searchForNeighbors_b( searchCells[4], gridCellIndex, position_,
+										 id, sortedPosition, neighborMap,
+										 closest_indexes, closest_distances, last_farthest, &found_count  );
+	
+	last_farthest = searchForNeighbors_b( searchCells[5], gridCellIndex, position_,
+										 id, sortedPosition, neighborMap,
+										 closest_indexes, closest_distances, last_farthest, &found_count  );
+	
+	last_farthest = searchForNeighbors_b( searchCells[6], gridCellIndex, position_,
+										 id, sortedPosition, neighborMap,
+										 closest_indexes, closest_distances, last_farthest, &found_count  );
+	
+	last_farthest = searchForNeighbors_b( searchCells[7], gridCellIndex, position_,
+										 id, sortedPosition, neighborMap,
+										 closest_indexes, closest_distances, last_farthest, &found_count );
+	
+	for(int j=0; j<MAX_NEIGHBOR_COUNT; j++){
+		float2 neighbor_data;
+		neighbor_data.x = closest_indexes[j];
+		if(closest_indexes[j] >= 0){
+			neighbor_data.y = SQRT( closest_distances[j] ) * simulationScale; // scaled, OK
+		}else{
+			neighbor_data.y = -1.f;
 		}
-
-		mode++;
+		neighborMap[ id*MAX_NEIGHBOR_COUNT + j ] = neighbor_data;
 	}
-
+	
+	
 }
 
 
@@ -401,7 +402,6 @@ __kernel void hashParticles(
 
 }
 
-
 __kernel void indexx(
 					 __global uint2 * particleIndex,
 			 		int gridCellCount,
@@ -457,7 +457,6 @@ __kernel void indexx(
  
 	gridCellIndex[ id ] = cellIndex;
 }
-
 
 __kernel void sortPostPass(
 						   __global uint2 * particleIndex,
@@ -537,6 +536,75 @@ __kernel void pcisph_computeDensity(
 	density *= ((double)mass)*Wpoly6Coefficient; // since all particles are same fluid type, factor this out to here
 	rho[ id ] = density; 		
 }
+/*
+float4 calcBoundaryForceAcceleration(float4 position,
+									 float4 velocity,
+									 float xmin,
+									 float xmax,
+									 float ymin,
+									 float ymax,
+									 float zmin,
+									 float zmax,
+									 float h,
+									 float simulationScale)
+{
+    float4 acceleration = (float4)( 0.0f, 0.0f, 0.0f, 0.0f );
+	float hScaled = h*simulationScale;
+    float dist_iw; //i-th particle to wall distance
+    float diff;
+    float boundaryStiffness = 2000.0f;
+    float boundaryDampening = 256.0f;
+
+
+	float value = 32; //value
+    
+	//-----------------------------------------------
+	if ( ( diff = (position[0]-xmin)*simulationScale ) < hScaled)
+    {
+        float4 norm =  (float4)( 1.f, 0.f, 0.f, 0.f );
+        float adj = boundartStiffness * diff - boundaryDampening * DOT(norm, velocity);
+        acceleration +=  norm * adj;
+    }
+
+	if ( ( diff = (xmax-position[0])*simulationScale ) < hScaled)
+    {
+        float4 norm =  (float4)(-1.f, 0.f, 0.f, 0.f );
+        float adj = boundartStiffness * diff - boundaryDampening * DOT(norm, velocity);
+        acceleration +=  norm * adj;
+    }
+	//-----------------------------------------------
+	if ( ( diff = (position[1]-ymin)*simulationScale ) < hScaled)
+    {
+        float4 norm =  (float4)( 0.f, 1.f, 0.f, 0.f );
+        float adj = boundartStiffness * diff - boundaryDampening * DOT(norm, velocity);
+        acceleration +=  norm * adj;
+    }
+
+	if ( ( diff = (ymax-position[1])*simulationScale ) < hScaled)
+    {
+        float4 norm =  (float4)( 0.f,-1.f, 0.f, 0.f );
+        float adj = boundartStiffness * diff - boundaryDampening * DOT(norm, velocity);
+        acceleration +=  norm * adj;
+    }
+	//-----------------------------------------------
+	if ( ( diff = (position[2]-zmin)*simulationScale ) < hScaled)
+    {
+        float4 norm =  (float4)( 0.f, 0.f, 1.f, 0.f );
+        float adj = boundartStiffness * diff - boundaryDampening * DOT(norm, velocity);
+        acceleration +=  norm * adj;
+    }
+
+	if ( ( diff = (zmax-position[2])*simulationScale ) < hScaled)
+    {
+        float4 norm =  (float4)( 0.f, 0.f,-1.f, 0.f );
+        float adj = boundartStiffness * diff - boundaryDampening * DOT(norm, velocity);
+        acceleration +=  norm * adj;
+    }
+	//-----------------------------------------------
+
+    return acceleration;
+}
+*/
 
 __kernel void pcisph_computeForcesAndInitPressure(
 								  __global float2 * neighborMap,
@@ -546,7 +614,8 @@ __kernel void pcisph_computeForcesAndInitPressure(
 								  __global float4 * sortedVelocity,
 								  __global float4 * acceleration,
 								  __global uint * particleIndexBack,
-								  /*float*/double Wpoly6Coefficient,
+								  float surfTensCoeff,
+								  // /*float*/double Wpoly6Coefficient,
 								  /*float*/double del2WviscosityCoefficient,
 								  float h,
 								  float mass,
@@ -557,8 +626,7 @@ __kernel void pcisph_computeForcesAndInitPressure(
 								  float gravity_z,
 								  __global float4 * position,
 								  __global uint2 * particleIndex,
-								  int PARTICLE_COUNT,
-								  float surfTensCoeff
+								  int PARTICLE_COUNT
 								  //__global float4 * elasticConnectionsData
 								  )
 {
@@ -612,7 +680,7 @@ __kernel void pcisph_computeForcesAndInitPressure(
 				//0.09 for experiments with water drops
 				//-0.0133
 				// surface tension force
-				accel_surfTensForce += ( surfTensCoeff* (float)(Wpoly6Coefficient * pow(hScaled2/2.0,3.0)) * simulationScale ) * (sortedPosition[id]-sortedPosition[jd]);
+				accel_surfTensForce += surfTensCoeff * (sortedPosition[id]-sortedPosition[jd]);
 			}
 		}
 		
@@ -671,12 +739,11 @@ __kernel void pcisph_computeElasticForces(
 								  float simulationScale,
 								  int numOfElasticP,
 								  __global float4 * elasticConnectionsData,
-								  int offset,
 								  int PARTICLE_COUNT,
 								  int MUSCLE_COUNT,
 								  __global float * muscle_activation_signal,
 								  __global float4 * position,
-								  float elasticityCoeff
+								  float elasticityCoefficient
 								  )
 {
 	int index = get_global_id( 0 );//it is the index of the elastic particle among all elastic particles but this isn't real id of particle
@@ -689,10 +756,9 @@ __kernel void pcisph_computeElasticForces(
 
 	float4 p_xyzw = position[index];
 
-	int id = particleIndexBack[index + offset];
+	int id = particleIndexBack[index];
 	int idx = index * MAX_NEIGHBOR_COUNT;
 	float r_ij_equilibrium, r_ij, delta_r_ij, v_i_cm_length;
-	float k = elasticityCoeff;// k - coefficient of elasticity
 	float4 vect_r_ij;
 	float4 centerOfMassVelocity;
 	float4 velocity_i_cm;
@@ -726,8 +792,7 @@ __kernel void pcisph_computeElasticForces(
 
 			if(r_ij!=0.f)
 			{
-				acceleration[ id ] += -(vect_r_ij/r_ij) * delta_r_ij * k / mass;
-
+				acceleration[ id ] += -(vect_r_ij/r_ij) * delta_r_ij * elasticityCoefficient ;
 				for(i=0;i<MUSCLE_COUNT;i++)//check all muscles
 				{
 					if((int)(elasticConnectionsData[idx+nc].z)==(i+1))//contractible spring, = muscle
@@ -917,16 +982,16 @@ __kernel void pcisph_predictDensity(
 	id = particleIndexBack[id];//track selected particle (indices are not shuffled anymore)
 	int idx = id * MAX_NEIGHBOR_COUNT;
 	int nc=0;//neighbor counter
-	/*double*/double density = 0.0f;
+	/*double*/double density = 0.0;
+	float density_accum = 0.0f;
 	float4 r_ij;
 	float r_ij2;//squared r_ij
+	float h2 = h*h;
 	float hScaled = h * simulationScale;//scaled smoothing radius
 	float hScaled2 = hScaled*hScaled;//squared scaled smoothing radius
 	float hScaled6 = hScaled2*hScaled2*hScaled2;
-	//float2 nm;
 	int jd;
-	int real_nc = 0;
-
+	
 	//if((int)(sortedPosition[/*PARTICLE_COUNT+*/id].w) == LIQUID_PARTICLE)
 	/*for(int k = 0; k<PARTICLE_COUNT; k++)
 	{
@@ -945,12 +1010,11 @@ __kernel void pcisph_predictDensity(
 		if( (jd = NEIGHBOR_MAP_ID( neighborMap[ idx + nc ])) != NO_PARTICLE_ID )
 		{
 			r_ij = sortedPosition[PARTICLE_COUNT+id]-sortedPosition[PARTICLE_COUNT+jd];
-			r_ij2 = (r_ij.x*r_ij.x+r_ij.y*r_ij.y+r_ij.z*r_ij.z)*simulationScale*simulationScale;
+			r_ij2 = (r_ij.x*r_ij.x+r_ij.y*r_ij.y+r_ij.z*r_ij.z);
 
-			if(r_ij2<hScaled2)
+			if(r_ij2<h2)
 			{
-				density += (hScaled2-r_ij2)*(hScaled2-r_ij2)*(hScaled2-r_ij2);
-				real_nc++;
+				density_accum += (h2-r_ij2)*(h2-r_ij2)*(h2-r_ij2);
 			}
 
 			if(r_ij2==0)
@@ -962,6 +1026,7 @@ __kernel void pcisph_predictDensity(
 
 	}while( ++nc < MAX_NEIGHBOR_COUNT );
 	
+	density = (double)density_accum * simulationScale * simulationScale * simulationScale * simulationScale * simulationScale * simulationScale;
 	//if(density==0.f) 
 	if(density<hScaled6)
 	{
@@ -1077,14 +1142,13 @@ __kernel void pcisph_computePressureForceAcceleration(
 				/*2*///										+pressure[jd]/(rho[PARTICLE_COUNT+id]*rho[PARTICLE_COUNT+id]) );
 				vr_ij = (sortedPosition[id]-sortedPosition[jd])*simulationScale; vr_ij.w = 0;
 
-				
-				if(r_ij<0.5*(hScaled/2))//hScaled/2 = r0 
+
+				if(r_ij<0.5*(hScaled/2))//hScaled/2 = r0
 				{
 					value = -(hScaled*0.25f-r_ij)*(hScaled*0.25f-r_ij)*0.5f*(rho0*delta)/rho[PARTICLE_COUNT+jd];
-					vr_ij = (sortedPosition[id]-sortedPosition[jd])*simulationScale; vr_ij.w = 0;
+					//vr_ij = (sortedPosition[id]-sortedPosition[jd])*simulationScale; vr_ij.w = 0;
 				}
-
-				if(r_ij==0.0f) 
+				if(r_ij==0.0f)
 				{
 					printf("\n> Error!: r_ij: %f ",r_ij);
 					printf("\n> sortedPosition[%d]	: %f , %f , %f ",id,sortedPosition[id].x,sortedPosition[id].y,sortedPosition[id].z);
@@ -1621,6 +1685,7 @@ __kernel void pcisph_integrate(
 	if(position_t_dt.y>ymax-0.000001f) position_t_dt.y = ymax-0.000001f;//A.Palyanov 30.08.2012
 	if(position_t_dt.z>zmax-0.000001f) position_t_dt.z = zmax-0.000001f;//A.Palyanov 30.08.2012
 	// better replace 0.0000001 with smoothingRadius*0.001 or smth like this 
+
 	float particleType = position[ id_source_particle ].w;
 	computeInteractionWithBoundaryParticles(id,r0,neighborMap,particleIndexBack,particleIndex,position,velocity,&position_t_dt, true, &velocity_t_dt,PARTICLE_COUNT);
 	velocity[ id_source_particle ] = (float4)((float)velocity_t_dt.x, (float)velocity_t_dt.y, (float)velocity_t_dt.z, 0.f);
