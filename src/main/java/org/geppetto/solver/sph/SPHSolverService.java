@@ -390,6 +390,7 @@ public class SPHSolverService implements ISolver {
 				: _model.getElasticBundles().intValue();
 		SPHConstants.setBeta(_timeStep, _mass);
 		SPHConstants.setDependingParammeters(_simulationScale, _mass);
+		_surfTensCoeff *= (SPHConstants.W_POLY_6_COEFFICIENT * Math.pow((SPHConstants.H * SPHConstants.H * _simulationScale  * _simulationScale)/2.0,3.0)) * _simulationScale; 
 		_particleCount = _model.getNumberOfParticles();
 		_numOfElasticP = 0;
 		_numOfLiquidP = 0;
@@ -1063,9 +1064,18 @@ public class SPHSolverService implements ISolver {
 		if(_numOfMembranes!=0){
 		   logger.info("PCI-SPH membrane interaction calculating");
 		   run_clearMembraneBuffers();
+		   if (_recordCheckPoints) {
+				recordCheckpoints(KernelsEnum.CLEAR_MEMBRANE_BUFFERS);
+		   }
 		   run_computeInteractionWithMembranes();
+		   if (_recordCheckPoints) {
+				recordCheckpoints(KernelsEnum.COMPUTE_INTERACTION_WITH_MEMBRANES);
+		   }
 		   // compute change of coordinates due to interactions with membranes
 		   event = run_computeInteractionWithMembranes_finalize();
+		   if (_recordCheckPoints) {
+				recordCheckpoints(KernelsEnum.COMPUTE_INTERACTION_WITH_MEMBRANES_FINALIZE);
+		   }
 		   // wait for the end of the run_pcisph_integrate on device
 		   event.waitFor();
 		   end = System.currentTimeMillis();
@@ -1418,7 +1428,12 @@ public class SPHSolverService implements ISolver {
 					_elasticConnectionsDataPtr, _elasticConnectionsData,
 					this._buffersSizeMap.get(BuffersEnum.ELASTIC_CONNECTIONS));
 		}
-
+		if(_numOfMembranes > 0){
+			check.membranes = this.<Integer> getBufferValues(_membraneDataPtr, _membraneData, 
+					this._buffersSizeMap.get(BuffersEnum.MEMBRANES_DATA));
+			check.membranesParticleIndexList = this.<Integer> getBufferValues(_particleMembranesListPtr, _particleMembranesList, 
+					this._buffersSizeMap.get(BuffersEnum.MEMBRANES_PARTICLE_INDEX_LIST));
+		}
 		_checkpointsMap.put(kernelCheckpoint, check);
 	}
 

@@ -34,6 +34,7 @@
 package org.geppetto.solver.sph.internal;
 
 import java.net.URL;
+import java.util.Map;
 
 import junit.framework.Assert;
 
@@ -43,6 +44,8 @@ import org.geppetto.core.model.state.StateTreeRoot;
 import org.geppetto.core.simulation.TimeConfiguration;
 import org.geppetto.model.sph.services.SPHModelInterpreterService;
 import org.geppetto.model.sph.x.SPHModelX;
+import org.geppetto.solver.sph.KernelsEnum;
+import org.geppetto.solver.sph.PCISPHCheckPoint;
 import org.geppetto.solver.sph.PCISPHTestUtilities;
 import org.geppetto.solver.sph.SPHSolverService;
 import org.junit.Test;
@@ -229,8 +232,10 @@ public class PCISPHSolverTest
 		
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
-		solver.setRecordCheckpoint(false);
-		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 50, 1));
+		solver.setRecordCheckpoint(true);
+		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 2, 1));
+		Map<KernelsEnum, PCISPHCheckPoint> checkpoints = solver.getCheckpointsMap();
+		PCISPHCheckPoint lastCheckPoint = checkpoints.get(KernelsEnum.COMPUTE_INTERACTION_WITH_MEMBRANES_FINALIZE);
 		Assert.assertTrue(true);
 		//PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
 	

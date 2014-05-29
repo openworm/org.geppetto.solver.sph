@@ -51,5 +51,7 @@ public class PCISPHCheckPoint {
 	public List<Float> sortedVelocity = new ArrayList<Float>();
 	public List<Float> velocity = new ArrayList<Float>();
 	public List<Float> elasticConnections = new ArrayList<Float>();
+	public List<Integer> membranes = new ArrayList<Integer>();
+	public List<Integer> membranesParticleIndexList = new ArrayList<Integer>();
 	
 }

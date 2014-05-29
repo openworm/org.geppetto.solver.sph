@@ -81,9 +81,13 @@
 #else
 #define SELECT( A, B, C ) C ? B : A
 #endif
-
-#pragma OPENCL EXTENSION cl_amd_printf : enable
-#pragma OPENCL EXTENSION cl_intel_printf : enable
+#ifdef cl_amd_printf
+	#pragma OPENCL EXTENSION cl_amd_printf : enable
+#define PRINTF_ON
+#elif defined(cl_intel_printf)
+	#pragma OPENCL EXTENSION cl_intel_printf : enable
+#define PRINTF_ON
+#endif
 #ifdef cl_khr_fp64
     #pragma OPENCL EXTENSION cl_khr_fp64 : enable
 #elif defined(cl_amd_fp64)
@@ -263,7 +267,6 @@ __kernel void findNeighbors(
 	float closest_distances[MAX_NEIGHBOR_COUNT];
 	int closest_indexes[MAX_NEIGHBOR_COUNT];
 	int found_count = 0;
-	
 	for(int k=0;k<MAX_NEIGHBOR_COUNT;k++){
 		closest_distances[k] = r_thr2;
 		closest_indexes[k] = -1;
@@ -657,7 +660,8 @@ __kernel void pcisph_computeForcesAndInitPressure(
 	//float4 normalVector = (float4)( 0.0f, 0.0f, 0.0f, 0.0f );
 	//float  nV_length;
 	//int neighbor_cnt = 0;
-
+	float not_bp;
+	int jd_source_particle;
 
 	do{
 		if( (jd = NEIGHBOR_MAP_ID(neighborMap[ idx + nc])) != NO_PARTICLE_ID )
@@ -671,7 +675,9 @@ __kernel void pcisph_computeForcesAndInitPressure(
 				rho_j = rho[jd];
 				vi = sortedVelocity[id];
 				vj = sortedVelocity[jd];
-				sum += (sortedVelocity[jd]-sortedVelocity[id])*(hScaled-r_ij)/rho[jd];
+    			jd_source_particle = PI_SERIAL_ID( particleIndex[jd] );
+				not_bp = (float)((int)(position[ jd_source_particle ].w) != BOUNDARY_PARTICLE);
+				sum += (sortedVelocity[jd]*not_bp-sortedVelocity[id])*(hScaled-r_ij)/rho[jd];// formula 2.19 of B. Solenthaler's dissertation
 				//29aug_A.Palyanov_start_block
 				// M.Beckner & M.Teschner / Weakly compressible SPH for free surface flows. 2007.
 				//normalVector += sortedPosition[id]-sortedPosition[jd];
@@ -1020,7 +1026,9 @@ __kernel void pcisph_predictDensity(
 			if(r_ij2==0)
 			{
 				//printf("\a\n");
+#ifdef PRINTF_ON
 				printf("@@@|>>[%d]-[%d]<<|@@@ %E @@@@ (%f) (%f) ####",id,jd,((double)r_ij2),sortedPosition[PARTICLE_COUNT+id].w,sortedPosition[PARTICLE_COUNT+jd].w );
+#endif
 			}
 		}
 
@@ -1150,9 +1158,11 @@ __kernel void pcisph_computePressureForceAcceleration(
 				}
 				if(r_ij==0.0f)
 				{
+#ifdef PRINTF_ON
 					printf("\n> Error!: r_ij: %f ",r_ij);
 					printf("\n> sortedPosition[%d]	: %f , %f , %f ",id,sortedPosition[id].x,sortedPosition[id].y,sortedPosition[id].z);
 					printf("\n> sortedPosition[%d]	: %f , %f , %f ",jd,sortedPosition[jd].x,sortedPosition[jd].y,sortedPosition[jd].z);
+#endif
 				}
 				result += value*vr_ij/r_ij;
 				//result = result;
@@ -1273,13 +1283,10 @@ float4 calculateProjectionOfPointToPlane(float4 ps, float4 pa, float4 pb, float4
                 pm.z = calcDeterminant3x3(a_1,a_2,b  )/denominator;
         }
         else {
-                printf("\ndenominator equal to zero\n");        
-                pm.w = -1;//indicates error 
-				printf("%f\t%f\t%f\n",a_1_1, a_1_2, a_1_3);
-				printf("%f\t%f\t%f\n",a_2_1, a_2_2, a_2_3);
-				printf("%f\t%f\t%f\n",a_3_1, a_3_2, a_3_3);
-				printf("\n{{%f,%f,%f},{%f,%f,%f},{%f,%f,%f}}\n", a_1.x, a_1.y, a_1.z, a_2.x, a_2.y, a_2.z,a_3.x, a_3.y, a_3.z);
-				printf("\n");       
+#ifdef PRINTF_ON
+                printf("\ndenominator equal to zero\n");
+#endif
+                pm.w = -1;//indicates error       
         }
 
         //printf("\npa=(%f,%f,%f)",pa.x,pa.y,pa.z);
@@ -1404,8 +1411,10 @@ __kernel void computeInteractionWithMembranes(
 
 						if(pos_p.w==-1)
 						{
+#ifdef PRINTF_ON
 							printf("calculateProjectionOfPointToPlane() returned error");
 							printf("\n membran ID: %d\n",mdi + 1);
+#endif
 							return;
 						}
 
@@ -1438,7 +1447,9 @@ __kernel void computeInteractionWithMembranes(
 						}
 						else
 						{
+#ifdef PRINTF_ON
 							printf("computeInteractionWithMembranes error #001");
+#endif
 							return;
 						}
 

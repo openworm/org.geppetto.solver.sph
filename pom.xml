@@ -192,7 +192,12 @@
 				<version>2.15</version>
 				<configuration>
 					<excludes>
+						<exclude>**/PCISPHSolverTest.java</exclude>
 						<exclude>**/PCISPHSolverBigTest.java</exclude>
+						<exclude>**/StepValidationTest.java</exclude>
+						<exclude>**/RecordCheckpointsTest.java</exclude>
+						<exclude>**/StepValidationWithCheckpointsTest.java</exclude>
+						<exclude>**/PhysicsLawsTest.java</exclude>
 					</excludes>
 				</configuration>
 			</plugin>
