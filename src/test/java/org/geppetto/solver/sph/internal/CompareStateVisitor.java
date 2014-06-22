@@ -38,8 +38,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.geppetto.core.model.state.CompositeStateNode;
-import org.geppetto.core.model.state.SimpleStateNode;
+import org.geppetto.core.model.state.ACompositeStateNode;
+import org.geppetto.core.model.state.ASimpleStateNode;
 import org.geppetto.core.model.state.visitors.DefaultStateVisitor;
 import org.geppetto.core.model.values.AValue;
 import org.geppetto.model.sph.Vector3D;
@@ -69,7 +69,7 @@ public class CompareStateVisitor extends DefaultStateVisitor
 	}
 	
 	@Override
-	public boolean inCompositeStateNode(CompositeStateNode node) {
+	public boolean inCompositeStateNode(ACompositeStateNode node) {
 		if(node.isArray())
 			currentID = node.getIndex();
 		
@@ -77,7 +77,7 @@ public class CompareStateVisitor extends DefaultStateVisitor
 	}
 	
 	@Override
-	public boolean outCompositeStateNode(CompositeStateNode node) {
+	public boolean outCompositeStateNode(ACompositeStateNode node) {
 		if(node.isArray())
 			currentID = null;
 		
@@ -85,7 +85,7 @@ public class CompareStateVisitor extends DefaultStateVisitor
 	}
 
 	@Override
-	public boolean visitSimpleStateNode(SimpleStateNode node)
+	public boolean visitSimpleStateNode(ASimpleStateNode node)
 	{
 		// get last step
 		AValue v = node.getValues().get(node.getValues().size() - 1);

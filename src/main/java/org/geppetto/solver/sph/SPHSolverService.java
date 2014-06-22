@@ -61,10 +61,11 @@ import org.geppetto.core.data.model.StructuredType;
 import org.geppetto.core.data.model.VariableList;
 import org.geppetto.core.model.IModel;
 import org.geppetto.core.model.state.AStateNode;
-import org.geppetto.core.model.state.CompositeStateNode;
-import org.geppetto.core.model.state.SimpleStateNode;
+import org.geppetto.core.model.state.ACompositeStateNode;
+import org.geppetto.core.model.state.ASimpleStateNode;
 import org.geppetto.core.model.state.StateTreeRoot;
 import org.geppetto.core.model.state.StateTreeRoot.SUBTREE;
+import org.geppetto.core.model.state.StateVariableNode;
 import org.geppetto.core.model.values.FloatValue;
 import org.geppetto.core.model.values.ValuesFactory;
 import org.geppetto.core.simulation.IRunConfiguration;
@@ -1006,7 +1007,7 @@ public class SPHSolverService implements ISolver {
 	}
 
 	private void updateStateTree() {
-		CompositeStateNode modelSubTree = _stateTree.getSubTree(StateTreeRoot.SUBTREE.MODEL_TREE);
+		ACompositeStateNode modelSubTree = _stateTree.getSubTree(StateTreeRoot.SUBTREE.MODEL_TREE);
 
 		_positionPtr = _position.map(_queue, CLMem.MapFlags.Read);
 
@@ -1029,20 +1030,20 @@ public class SPHSolverService implements ISolver {
 				if (pV.getAsFloat() != SPHConstants.BOUNDARY_TYPE) {
 					// don't need to create a state for the boundary particles,
 					// they don't move.
-					CompositeStateNode particle = new CompositeStateNode(particleId);
+					ACompositeStateNode particle = new ACompositeStateNode(particleId);
 					modelSubTree.addChild(particle);
-					CompositeStateNode pos = new CompositeStateNode("pos");
+					ACompositeStateNode pos = new ACompositeStateNode("pos");
 					particle.addChild(pos);
-					SimpleStateNode x = new SimpleStateNode("x");
+					StateVariableNode x = new StateVariableNode("x");
 					x.addValue(xV);
 					pos.addChild(x);
-					SimpleStateNode y = new SimpleStateNode("y");
+					StateVariableNode y = new StateVariableNode("y");
 					y.addValue(yV);
 					pos.addChild(y);
-					SimpleStateNode z = new SimpleStateNode("z");
+					StateVariableNode z = new StateVariableNode("z");
 					z.addValue(zV);
 					pos.addChild(z);
-					SimpleStateNode p = new SimpleStateNode("p");
+					StateVariableNode p = new StateVariableNode("p");
 					p.addValue(pV);
 					pos.addChild(p);
 				}
@@ -1061,7 +1062,7 @@ public class SPHSolverService implements ISolver {
 	}
 
 	private void updateStateTreeForWatch() {
-		CompositeStateNode watchTree = _stateTree.getSubTree(SUBTREE.WATCH_TREE);
+		ACompositeStateNode watchTree = _stateTree.getSubTree(SUBTREE.WATCH_TREE);
 
 		// map watchable buffers that are not already mapped
 		// NOTE: position is mapped for scene generation - improving performance by not mapping it again
@@ -1101,15 +1102,15 @@ public class SPHSolverService implements ISolver {
 							// tokenize variable path in watch list via dot
 							// separator (handle array brackets)
 							StringTokenizer tokenizer = new StringTokenizer(s,".");
-							CompositeStateNode node = watchTree;
+							ACompositeStateNode node = watchTree;
 							while (tokenizer.hasMoreElements()) {
 								// loop through tokens and build tree
 								String current = tokenizer.nextToken();
 								boolean found = false;
 								for (AStateNode child : node.getChildren()) {
 									if (child.getName().equals(current)) {
-										if (child instanceof CompositeStateNode) {
-											node = (CompositeStateNode) child;
+										if (child instanceof ACompositeStateNode) {
+											node = (ACompositeStateNode) child;
 										}
 										found = true;
 										break;
@@ -1126,7 +1127,7 @@ public class SPHSolverService implements ISolver {
 											nodeName = current + "[" + particleID + "]";
 										}
 										
-										CompositeStateNode newNode = new CompositeStateNode(nodeName);
+										ACompositeStateNode newNode = new ACompositeStateNode(nodeName);
 										
 										boolean addNewNode = containsNode(node, newNode.getName());
 										
@@ -1139,7 +1140,7 @@ public class SPHSolverService implements ISolver {
 										}
 									} else {
 										// it's a leaf node
-										SimpleStateNode newNode = new SimpleStateNode(current);
+										StateVariableNode newNode = new StateVariableNode(current);
 
 										FloatValue val = null;
 
@@ -1176,7 +1177,7 @@ public class SPHSolverService implements ISolver {
 		_velocity.unmap(_queue, _positionPtr);
 	}
 
-	private boolean containsNode(CompositeStateNode node, String name){
+	private boolean containsNode(ACompositeStateNode node, String name){
 		List<AStateNode> children = node.getChildren();
 		
 		boolean addNewNode = true;
@@ -1185,9 +1186,9 @@ public class SPHSolverService implements ISolver {
 				addNewNode = false;
 				return addNewNode;
 			}
-			if(child instanceof CompositeStateNode){
-				if(((CompositeStateNode)child).getChildren() != null){
-					addNewNode = containsNode((CompositeStateNode) child, name);
+			if(child instanceof ACompositeStateNode){
+				if(((ACompositeStateNode)child).getChildren() != null){
+					addNewNode = containsNode((ACompositeStateNode) child, name);
 				}
 			}
 
@@ -1196,20 +1197,20 @@ public class SPHSolverService implements ISolver {
 		return addNewNode;
 	}
 	
-	private CompositeStateNode getNode(CompositeStateNode node, String name){
-		CompositeStateNode newNode = null;
+	private ACompositeStateNode getNode(ACompositeStateNode node, String name){
+		ACompositeStateNode newNode = null;
 		
 		List<AStateNode> children = node.getChildren();
 		
 		boolean addNewNode = true;
 		for(AStateNode child : children){
 			if(child.getName().equals(name)){
-				newNode = (CompositeStateNode) child;
+				newNode = (ACompositeStateNode) child;
 				return newNode;
 			}
-			if(child instanceof CompositeStateNode){
-				if(((CompositeStateNode)child).getChildren() != null){
-					newNode = getNode((CompositeStateNode) child, name);
+			if(child instanceof ACompositeStateNode){
+				if(((ACompositeStateNode)child).getChildren() != null){
+					newNode = getNode((ACompositeStateNode) child, name);
 				}
 			}
 

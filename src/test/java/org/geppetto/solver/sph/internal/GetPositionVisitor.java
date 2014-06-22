@@ -5,7 +5,7 @@ import java.util.List;
 
 import junit.framework.Assert;
 
-import org.geppetto.core.model.state.SimpleStateNode;
+import org.geppetto.core.model.state.ASimpleStateNode;
 import org.geppetto.core.model.state.visitors.DefaultStateVisitor;
 import org.geppetto.core.model.values.AValue;
 import org.geppetto.model.sph.common.SPHConstants;
@@ -19,7 +19,7 @@ public class GetPositionVisitor extends DefaultStateVisitor {
 	List<Vector3DX> positionList = new ArrayList<Vector3DX>();
 	Vector3DX currentPos = new Vector3DX();
 	@Override
-	public boolean visitSimpleStateNode(SimpleStateNode node)
+	public boolean visitSimpleStateNode(ASimpleStateNode node)
 	{
 		Assert.assertFalse(node.getValues().size() == 0);
 		//positionList.clear();
