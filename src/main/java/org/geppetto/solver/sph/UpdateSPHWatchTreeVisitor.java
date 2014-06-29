@@ -33,11 +33,9 @@
 package org.geppetto.solver.sph;
 
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.bridj.Pointer;
-import org.geppetto.core.model.state.ASimpleStateNode;
+import org.geppetto.core.model.state.StateVariableNode;
 import org.geppetto.core.model.state.visitors.DefaultStateVisitor;
 import org.geppetto.core.model.values.FloatValue;
 import org.geppetto.core.model.values.ValuesFactory;
@@ -56,7 +54,7 @@ public class UpdateSPHWatchTreeVisitor extends DefaultStateVisitor {
 	}
 
 	@Override
-	public boolean visitSimpleStateNode(ASimpleStateNode node)
+	public boolean visitStateVariableNode(StateVariableNode node)
 	{
 		// 1. figure out which of the variables being watched this node represents
 		String fullName = node.getFullName();
@@ -88,7 +86,7 @@ public class UpdateSPHWatchTreeVisitor extends DefaultStateVisitor {
 			node.addValue(_zV);
 		}
 		
-		return super.visitSimpleStateNode(node);
+		return super.visitStateVariableNode(node);
 	}
 
 }

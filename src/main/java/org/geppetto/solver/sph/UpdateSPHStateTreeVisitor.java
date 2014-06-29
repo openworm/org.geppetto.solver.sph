@@ -34,7 +34,7 @@ package org.geppetto.solver.sph;
 
 import org.bridj.Pointer;
 import org.geppetto.core.model.state.ACompositeStateNode;
-import org.geppetto.core.model.state.ASimpleStateNode;
+import org.geppetto.core.model.state.StateVariableNode;
 import org.geppetto.core.model.state.visitors.DefaultStateVisitor;
 import org.geppetto.core.model.values.FloatValue;
 import org.geppetto.core.model.values.ValuesFactory;
@@ -84,7 +84,7 @@ public class UpdateSPHStateTreeVisitor extends DefaultStateVisitor
 	}
 
 	@Override
-	public boolean visitSimpleStateNode(ASimpleStateNode node)
+	public boolean visitStateVariableNode(StateVariableNode node)
 	{
 		if(node.getName()=="x")
 		{
@@ -102,7 +102,7 @@ public class UpdateSPHStateTreeVisitor extends DefaultStateVisitor
 		{
 			node.addValue(_pV);
 		}
-		return super.visitSimpleStateNode(node);
+		return super.visitStateVariableNode(node);
 	}
 
 }

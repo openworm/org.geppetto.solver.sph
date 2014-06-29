@@ -40,6 +40,7 @@ import java.util.Set;
 
 import org.geppetto.core.model.state.ACompositeStateNode;
 import org.geppetto.core.model.state.ASimpleStateNode;
+import org.geppetto.core.model.state.StateVariableNode;
 import org.geppetto.core.model.state.visitors.DefaultStateVisitor;
 import org.geppetto.core.model.values.AValue;
 import org.geppetto.model.sph.Vector3D;
@@ -85,7 +86,7 @@ public class CompareStateVisitor extends DefaultStateVisitor
 	}
 
 	@Override
-	public boolean visitSimpleStateNode(ASimpleStateNode node)
+	public boolean visitStateVariableNode(StateVariableNode node)
 	{
 		// get last step
 		AValue v = node.getValues().get(node.getValues().size() - 1);
@@ -125,7 +126,7 @@ public class CompareStateVisitor extends DefaultStateVisitor
 			mismatchingIDs.add(currentID);
 		}
 		
-		return super.visitSimpleStateNode(node);
+		return super.visitStateVariableNode(node);
 	}
 	
 	private float round(float d, int decimalPlace) 

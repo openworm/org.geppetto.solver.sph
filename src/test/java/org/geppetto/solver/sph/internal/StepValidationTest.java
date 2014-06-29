@@ -41,7 +41,7 @@ import java.util.Set;
 
 import junit.framework.Assert;
 
-import org.geppetto.core.model.state.StateTreeRoot;
+import org.geppetto.core.model.state.AspectTreeNode;
 import org.geppetto.core.simulation.TimeConfiguration;
 
 import org.geppetto.model.sph.services.SPHModelInterpreterService;
@@ -102,7 +102,7 @@ public class StepValidationTest {
 			// get reference values
 			String[] referenceValues = referenceValuesMap.get(step);
 
-			StateTreeRoot stateSet = solver.getStateTree();
+			AspectTreeNode stateSet = solver.getStateTree();
 
 			// compare state tree with logged values for each recorded step
 			CompareStateVisitor compareVisitor = new CompareStateVisitor(referenceValues);
@@ -113,7 +113,7 @@ public class StepValidationTest {
 		for(int i = 0; i < 50; i++)
 		{
 			// calculate step
-			StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 1, 1));
+			AspectTreeNode stateSet = solver.solve(new TimeConfiguration(0.1f, 1, 1));
 			
 			// only keep latest step results
 			if (i > 0) {
@@ -190,7 +190,7 @@ public class StepValidationTest {
 			// get reference values
 			String[] referenceValues = referenceValuesMap.get(step);
 			
-			StateTreeRoot stateSet = solver.getStateTree();
+			AspectTreeNode stateSet = solver.getStateTree();
 
 			// compare state tree with logged values for each recorded step
 			CompareStateVisitor compareVisitor = new CompareStateVisitor(referenceValues);
@@ -201,7 +201,7 @@ public class StepValidationTest {
 		for(int i = 0; i < 10; i++)
 		{
 			// calculate step
-			StateTreeRoot stateSet = solver.solve(new TimeConfiguration(null, 1, null));
+			AspectTreeNode stateSet = solver.solve(new TimeConfiguration(null, 1, null));
 			
 			// only keep latest step results
 			if (i > 0) {
@@ -292,7 +292,7 @@ public class StepValidationTest {
 			// get reference values
 			String[] referenceValues = referenceValuesMap.get(step);
 
-			StateTreeRoot stateSet = solver.getStateTree();
+			AspectTreeNode stateSet = solver.getStateTree();
 
 			// compare state tree with logged values for each recorded step
 			CompareStateVisitor compareVisitor = new CompareStateVisitor(referenceValues);
@@ -303,7 +303,7 @@ public class StepValidationTest {
 		for(int i = 0; i < 100; i++)
 		{
 			// calculate step
-			StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 1, 1));
+			AspectTreeNode stateSet = solver.solve(new TimeConfiguration(0.1f, 1, 1));
 			
 			// only keep latest step results
 			if (i > 0) {

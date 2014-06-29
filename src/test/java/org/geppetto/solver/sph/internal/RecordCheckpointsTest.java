@@ -39,7 +39,7 @@ import java.util.Map;
 import junit.framework.Assert;
 
 import org.geppetto.core.model.IModel;
-import org.geppetto.core.model.state.StateTreeRoot;
+import org.geppetto.core.model.state.AspectTreeNode;
 import org.geppetto.core.simulation.TimeConfiguration;
 import org.geppetto.model.sph.services.SPHModelInterpreterService;
 import org.geppetto.model.sph.x.SPHModelX;
@@ -64,7 +64,7 @@ public class RecordCheckpointsTest {
 		// use default constructor - doesn't record checkpoints
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
-		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 1, 1));
+		AspectTreeNode stateSet = solver.solve(new TimeConfiguration(0.1f, 1, 1));
 		
 		PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
 		Assert.assertTrue("Particle count doesn't match.", stateSet.getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
@@ -85,7 +85,7 @@ public class RecordCheckpointsTest {
 		// tell the solver to record checkpoints
 		SPHSolverService solver = new SPHSolverService(true);
 		solver.initialize(model);
-		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 1, 1));
+		AspectTreeNode stateSet = solver.solve(new TimeConfiguration(0.1f, 1, 1));
 		
 		PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
 		Assert.assertTrue("Particle count doesn't match.", stateSet.getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
@@ -144,7 +144,7 @@ public class RecordCheckpointsTest {
 		SPHSolverService solver = new SPHSolverService(true);
 		solver.initialize(model);
 		// run many steps - test should give same results
-		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 10, 1));
+		AspectTreeNode stateSet = solver.solve(new TimeConfiguration(0.1f, 10, 1));
 		
 		PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
 		Assert.assertTrue("Particle count doesn't match.", stateSet.getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
@@ -199,7 +199,7 @@ public class RecordCheckpointsTest {
 		// tell the solver to record checkpoints
 		SPHSolverService solver = new SPHSolverService(true);
 		solver.initialize(model);
-		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(null, 1, null));
+		AspectTreeNode stateSet = solver.solve(new TimeConfiguration(null, 1, null));
 		
 		PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
 		
