@@ -40,6 +40,7 @@ import java.util.Set;
 
 import org.geppetto.core.model.state.ACompositeStateNode;
 import org.geppetto.core.model.state.ASimpleStateNode;
+import org.geppetto.core.model.state.CompositeVariableNode;
 import org.geppetto.core.model.state.StateVariableNode;
 import org.geppetto.core.model.state.visitors.DefaultStateVisitor;
 import org.geppetto.core.model.values.AValue;
@@ -70,7 +71,7 @@ public class CompareStateVisitor extends DefaultStateVisitor
 	}
 	
 	@Override
-	public boolean inCompositeStateNode(ACompositeStateNode node) {
+	public boolean inCompositeStateNode(CompositeVariableNode node) {
 		if(node.isArray())
 			currentID = node.getIndex();
 		
@@ -78,7 +79,7 @@ public class CompareStateVisitor extends DefaultStateVisitor
 	}
 	
 	@Override
-	public boolean outCompositeStateNode(ACompositeStateNode node) {
+	public boolean outCompositeStateNode(CompositeVariableNode node) {
 		if(node.isArray())
 			currentID = null;
 		
