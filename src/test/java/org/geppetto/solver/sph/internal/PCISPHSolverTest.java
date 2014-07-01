@@ -232,10 +232,10 @@ public class PCISPHSolverTest
 		
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
-		solver.setRecordCheckpoint(true);
-		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 2, 1));
-		Map<KernelsEnum, PCISPHCheckPoint> checkpoints = solver.getCheckpointsMap();
-		PCISPHCheckPoint lastCheckPoint = checkpoints.get(KernelsEnum.COMPUTE_INTERACTION_WITH_MEMBRANES_FINALIZE);
+		//solver.setRecordCheckpoint(true);
+		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 100, 1));
+		//Map<KernelsEnum, PCISPHCheckPoint> checkpoints = solver.getCheckpointsMap();
+		//PCISPHCheckPoint lastCheckPoint = checkpoints.get(KernelsEnum.COMPUTE_INTERACTION_WITH_MEMBRANES_FINALIZE);
 		Assert.assertTrue(true);
 		//PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
 	

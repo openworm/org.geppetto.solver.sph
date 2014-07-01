@@ -200,7 +200,7 @@ public class SPHSolverService implements ISolver {
 	private StateTreeRoot _stateTree;
 	
 	private int iterationNumber;
-	private boolean _recordCheckPoints = true;
+	private boolean _recordCheckPoints = false;
 	
 
 	/*
@@ -395,14 +395,28 @@ public class SPHSolverService implements ISolver {
 		_numOfElasticP = 0;
 		_numOfLiquidP = 0;
 		_numOfBoundaryP = 0;
-
+		
 		_gridCellsX = (int) ((_model.getXMax() - _model.getXMin()) / SPHConstants.H) + 1;
 		_gridCellsY = (int) ((_model.getYMax() - _model.getYMin()) / SPHConstants.H) + 1;
 		_gridCellsZ = (int) ((_model.getZMax() - _model.getZMin()) / SPHConstants.H) + 1;
 
 		// set grid dimensions
 		_gridCellCount = _gridCellsX * _gridCellsY * _gridCellsZ;
-
+		
+		//OUT all main constant
+		System.out.println("/******MAIN CONSTAN FOR CONFIGURATION************/");
+		System.out.println("particle mass: " + _mass);
+		System.out.println("time step: " + _timeStep);
+		System.out.println("simulation scale: " + _simulationScale);
+		System.out.println("surface tension coefficient: " + _surfTensCoeff);
+		System.out.println("elasticity coefficient: " + _elasticityCoeff);
+		System.out.println("viscosity coefficient: " + _viscosityCoeff);
+		System.out.println("beta: " + SPHConstants.BETA);
+		System.out.println("delta: " + SPHConstants.DELTA);
+		System.out.println("W_POLY_6_COEFFICIENT: " + SPHConstants.W_POLY_6_COEFFICIENT);
+		System.out.println("GRAD_W_SPIKY_COEFFICIENT: " + SPHConstants.GRAD_W_SPIKY_COEFFICIENT);
+		System.out.println("DEL_2_W_VISCOSITY_COEFFICIENT: " + SPHConstants.DEL_2_W_VISCOSITY_COEFFICIENT);
+		System.out.println("/*******************END**************************/");
 		// allocate buffers - requires global dimensions of the grid
 		this.allocateBuffers();
 
@@ -941,7 +955,7 @@ public class SPHSolverService implements ISolver {
 		logger.info("SPH hash particles");
 		CLEvent hashParticles = runHashParticles();
 		if (_recordCheckPoints) {
-			recordCheckpoints(KernelsEnum.HASH_PARTICLES);
+			//recordCheckpoints(KernelsEnum.HASH_PARTICLES);
 		}
 		end = System.currentTimeMillis();
 		logger.info("SPH hash particles end, took " + (end - start) + "ms");
@@ -953,7 +967,7 @@ public class SPHSolverService implements ISolver {
 		logger.info("SPH sort");
 		runSort();
 		if (_recordCheckPoints) {
-			recordCheckpoints(KernelsEnum.SORT);
+			//recordCheckpoints(KernelsEnum.SORT);
 		}
 		end = System.currentTimeMillis();
 		logger.info("SPH sort end, took " + (end - start) + "ms");
@@ -962,7 +976,7 @@ public class SPHSolverService implements ISolver {
 		logger.info("SPH sort post pass");
 		runSortPostPass();
 		if (_recordCheckPoints) {
-			recordCheckpoints(KernelsEnum.SORT_POST_PASS);
+			//recordCheckpoints(KernelsEnum.SORT_POST_PASS);
 		}
 		end = System.currentTimeMillis();
 		logger.info("SPH sort post pass end, took " + (end - start) + "ms");
@@ -971,7 +985,7 @@ public class SPHSolverService implements ISolver {
 		logger.info("SPH index");
 		CLEvent runIndexx = runIndexx();
 		if (_recordCheckPoints) {
-			recordCheckpoints(KernelsEnum.INDEX);
+			//recordCheckpoints(KernelsEnum.INDEX);
 		}
 		end = System.currentTimeMillis();
 		logger.info("SPH index end, took " + (end - start) + "ms");
@@ -983,7 +997,7 @@ public class SPHSolverService implements ISolver {
 		logger.info("SPH index post pass");
 		runIndexPostPass();
 		if (_recordCheckPoints) {
-			recordCheckpoints(KernelsEnum.INDEX_POST_PASS);
+			//recordCheckpoints(KernelsEnum.INDEX_POST_PASS);
 		}
 		end = System.currentTimeMillis();
 		logger.info("SPH index post pass end, took " + (end - start) + "ms");
@@ -992,7 +1006,7 @@ public class SPHSolverService implements ISolver {
 		logger.info("SPH find neighbors");
 		runFindNeighbors();
 		if (_recordCheckPoints) {
-			recordCheckpoints(KernelsEnum.FIND_NEIGHBORS);
+			//recordCheckpoints(KernelsEnum.FIND_NEIGHBORS);
 		}
 		end = System.currentTimeMillis();
 		logger.info("SPH find neighbors end, took " + (end - start) + "ms");
@@ -1002,7 +1016,7 @@ public class SPHSolverService implements ISolver {
 		logger.info("PCI-SPH compute density");
 		run_pcisph_computeDensity();
 		if (_recordCheckPoints) {
-			recordCheckpoints(KernelsEnum.COMPUTE_DENSITY);
+			//recordCheckpoints(KernelsEnum.COMPUTE_DENSITY);
 		}
 		end = System.currentTimeMillis();
 		logger.info("PCI-SPH compute density end, took " + (end - start) + "ms");
@@ -1011,7 +1025,7 @@ public class SPHSolverService implements ISolver {
 		logger.info("PCI-SPH compute forces and init pressure");
 		run_pcisph_computeForcesAndInitPressure();
 		if (_recordCheckPoints) {
-			recordCheckpoints(KernelsEnum.COMPUTE_FORCES_INIT_PRESSURE);
+			//recordCheckpoints(KernelsEnum.COMPUTE_FORCES_INIT_PRESSURE);
 		}
 		end = System.currentTimeMillis();
 		logger.info("PCI-SPH compute forces and init pressure end, took "
@@ -1044,7 +1058,7 @@ public class SPHSolverService implements ISolver {
 			iter++;
 		} while ((iter < maxIterations));
 		if (_recordCheckPoints) {
-			recordCheckpoints(KernelsEnum.PREDICTIVE_LOOP);
+			//recordCheckpoints(KernelsEnum.PREDICTIVE_LOOP);
 		}
 		end = System.currentTimeMillis();
 		logger.info("PCI-SPH predict/correct loop end, took " + (end - start)
@@ -1054,7 +1068,7 @@ public class SPHSolverService implements ISolver {
 		logger.info("PCI-SPH integrate");
 		CLEvent event = run_pcisph_integrate();
 		if (_recordCheckPoints) {
-			recordCheckpoints(KernelsEnum.INTEGRATE);
+			//recordCheckpoints(KernelsEnum.INTEGRATE);
 		}
 		end = System.currentTimeMillis();
 		logger.info("PCI-SPH integrate end, took " + (end - start) + "ms");
@@ -1065,11 +1079,11 @@ public class SPHSolverService implements ISolver {
 		   logger.info("PCI-SPH membrane interaction calculating");
 		   run_clearMembraneBuffers();
 		   if (_recordCheckPoints) {
-				recordCheckpoints(KernelsEnum.CLEAR_MEMBRANE_BUFFERS);
+				//recordCheckpoints(KernelsEnum.CLEAR_MEMBRANE_BUFFERS);
 		   }
 		   run_computeInteractionWithMembranes();
 		   if (_recordCheckPoints) {
-				recordCheckpoints(KernelsEnum.COMPUTE_INTERACTION_WITH_MEMBRANES);
+				//recordCheckpoints(KernelsEnum.COMPUTE_INTERACTION_WITH_MEMBRANES);
 		   }
 		   // compute change of coordinates due to interactions with membranes
 		   event = run_computeInteractionWithMembranes_finalize();
