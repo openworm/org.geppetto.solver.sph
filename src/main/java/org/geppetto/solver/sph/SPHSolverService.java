@@ -556,33 +556,12 @@ public class SPHSolverService implements ISolver {
 		_stateTree = null;
 		_context.release();
 	}
-
+	//TODO depricated method will be removed after determenistic test
 	private int runClearBuffers() {
+		
 		_clearBuffers.setArg(0, _neighborMap);
 		_clearBuffers.setArg(1, _particleCount);
 		_clearBuffers.enqueueNDRange(_queue,
-				new int[] { getParticleCountRoundedUp() });
-		return 0;
-	}
-
-	private int runFindNeighbors() {
-		_findNeighbors.setArg(0, _gridCellIndexFixedUp);
-		_findNeighbors.setArg(1, _sortedPosition);
-		_gridCellCount = ((_gridCellsX) * (_gridCellsY)) * (_gridCellsZ);
-		_findNeighbors.setArg(2, _gridCellCount);
-		_findNeighbors.setArg(3, _gridCellsX);
-		_findNeighbors.setArg(4, _gridCellsY);
-		_findNeighbors.setArg(5, _gridCellsZ);
-		_findNeighbors.setArg(6, SPHConstants.H);
-		_findNeighbors.setArg(7, SPHConstants.HASH_GRID_CELL_SIZE);
-		_findNeighbors.setArg(8, SPHConstants.HASH_GRID_CELL_SIZE_INV);
-		_findNeighbors.setArg(9, _simulationScale);
-		_findNeighbors.setArg(10, _xMin);
-		_findNeighbors.setArg(11, _yMin);
-		_findNeighbors.setArg(12, _zMin);
-		_findNeighbors.setArg(13, _neighborMap);
-		_findNeighbors.setArg(14, _particleCount);
-		_findNeighbors.enqueueNDRange(_queue,
 				new int[] { getParticleCountRoundedUp() });
 		return 0;
 	}
@@ -604,7 +583,19 @@ public class SPHSolverService implements ISolver {
 
 		return event;
 	}
+	private CLEvent runIndexx() {
+		// Stage Indexx
+		_indexx.setArg(0, _particleIndex);
+		_gridCellCount = ((_gridCellsX) * (_gridCellsY)) * (_gridCellsZ);
+		_indexx.setArg(1, _gridCellCount);
+		_indexx.setArg(2, _gridCellIndex);
+		_indexx.setArg(3, _particleCount);
+		int gridCellCountRoundedUp = (((_gridCellCount - 1) / 256) + 1) * 256;
+		CLEvent event = _indexx.enqueueNDRange(_queue,
+				new int[] { gridCellCountRoundedUp });
 
+		return event;
+	}
 	private int runIndexPostPass() {
 		// get values out of buffer
 		_gridCellIndexPtr = _gridCellIndex.map(_queue, CLMem.MapFlags.Read);
@@ -628,21 +619,36 @@ public class SPHSolverService implements ISolver {
 
 		return 0;
 	}
+	
+	private int runSort() {
+		// this version work with qsort
+		int index = 0;
+		List<int[]> particleIndex = new ArrayList<int[]>();
 
-	private CLEvent runIndexx() {
-		// Stage Indexx
-		_indexx.setArg(0, _particleIndex);
-		_gridCellCount = ((_gridCellsX) * (_gridCellsY)) * (_gridCellsZ);
-		_indexx.setArg(1, _gridCellCount);
-		_indexx.setArg(2, _gridCellIndex);
-		_indexx.setArg(3, _particleCount);
-		int gridCellCountRoundedUp = (((_gridCellCount - 1) / 256) + 1) * 256;
-		CLEvent event = _indexx.enqueueNDRange(_queue,
-				new int[] { gridCellCountRoundedUp });
+		// get values out of buffer
+		_particleIndexPtr = _particleIndex
+				.map(_queue, CLMem.MapFlags.ReadWrite);
+		int[] particleInd = _particleIndexPtr.getInts();
 
-		return event;
+		for (int i = 0; i < _particleCount * 2; i += 2) {
+			int[] element = { particleInd[i], particleInd[i + 1] };
+			particleIndex.add(element);
+		}
+		Collections.sort(particleIndex, new MyCompare());
+		for (int i = 0; i < particleIndex.size(); i++) {
+			for (int j = 0; j < 2; j++) {
+				particleInd[index] = particleIndex.get(i)[j];
+				index++;
+			}
+		}
+
+		// put results back
+		_particleIndexPtr.setInts(particleInd);
+		_particleIndex.unmap(_queue, _particleIndexPtr);
+
+		return 0;
 	}
-
+	
 	private int runSortPostPass() {
 		// Stage SortPostPass
 		_sortPostPass.setArg(0, _particleIndex);
@@ -656,24 +662,37 @@ public class SPHSolverService implements ISolver {
 				new int[] { getParticleCountRoundedUp() });
 		return 0;
 	}
-
+	
+	private int runFindNeighbors() {
+		_findNeighbors.setArg(0, _gridCellIndexFixedUp);
+		_findNeighbors.setArg(1, _sortedPosition);
+		_gridCellCount = ((_gridCellsX) * (_gridCellsY)) * (_gridCellsZ);
+		_findNeighbors.setArg(2, _gridCellCount);
+		_findNeighbors.setArg(3, _gridCellsX);
+		_findNeighbors.setArg(4, _gridCellsY);
+		_findNeighbors.setArg(5, _gridCellsZ);
+		_findNeighbors.setArg(6, SPHConstants.H);
+		_findNeighbors.setArg(7, SPHConstants.HASH_GRID_CELL_SIZE);
+		_findNeighbors.setArg(8, SPHConstants.HASH_GRID_CELL_SIZE_INV);
+		_findNeighbors.setArg(9, _simulationScale);
+		_findNeighbors.setArg(10, _xMin);
+		_findNeighbors.setArg(11, _yMin);
+		_findNeighbors.setArg(12, _zMin);
+		_findNeighbors.setArg(13, _neighborMap);
+		_findNeighbors.setArg(14, _particleCount);
+		_findNeighbors.enqueueNDRange(_queue,
+				new int[] { getParticleCountRoundedUp() });
+		return 0;
+	}
+	
 	private int run_pcisph_computeDensity() {
 		// Stage ComputeDensityPressure
 		_pcisph_computeDensity.setArg(0, _neighborMap);
-		_pcisph_computeDensity.setArg(1, SPHConstants.W_POLY_6_COEFFICIENT);
-		_pcisph_computeDensity.setArg(2, SPHConstants.H);
-		_pcisph_computeDensity.setArg(3, _mass);
-		_pcisph_computeDensity.setArg(4, SPHConstants.RHO0);
-		_pcisph_computeDensity.setArg(5, _simulationScale);
-		_pcisph_computeDensity.setArg(6, SPHConstants.STIFFNESS);
-		_pcisph_computeDensity.setArg(7, _sortedPosition);
-		_pcisph_computeDensity.setArg(8, _pressure);
-		_pcisph_computeDensity.setArg(9, _rho);
-		_pcisph_computeDensity.setArg(10, _particleIndexBack);
-		_pcisph_computeDensity.setArg(11, SPHConstants.DELTA); // calculated
-																// from
-																// constants
-		_pcisph_computeDensity.setArg(12, _particleCount);
+		_pcisph_computeDensity.setArg(1, SPHConstants.MASS_MULT_WPOLY6COEFFICIENT);
+		_pcisph_computeDensity.setArg(2, SPHConstants._hScaled2);
+		_pcisph_computeDensity.setArg(3, _rho);
+		_pcisph_computeDensity.setArg(4, _particleIndexBack);
+		_pcisph_computeDensity.setArg(5, _particleCount);
 		_pcisph_computeDensity.enqueueNDRange(_queue,
 				new int[] { getParticleCountRoundedUp() });
 
@@ -690,18 +709,15 @@ public class SPHSolverService implements ISolver {
 		_pcisph_computeForcesAndInitPressure.setArg(6, _particleIndexBack);
 		_pcisph_computeForcesAndInitPressure.setArg(7, _surfTensCoeff);
 		_pcisph_computeForcesAndInitPressure.setArg(8,
-				SPHConstants.DEL_2_W_VISCOSITY_COEFFICIENT);
-		_pcisph_computeForcesAndInitPressure.setArg(9, SPHConstants.H);
-		_pcisph_computeForcesAndInitPressure.setArg(10, _mass);
-		_pcisph_computeForcesAndInitPressure.setArg(11, _viscosityCoeff);
-		_pcisph_computeForcesAndInitPressure.setArg(12,
-				_simulationScale);
-		_pcisph_computeForcesAndInitPressure.setArg(13, SPHConstants.GRAVITY_X);
-		_pcisph_computeForcesAndInitPressure.setArg(14, SPHConstants.GRAVITY_Y);
-		_pcisph_computeForcesAndInitPressure.setArg(15, SPHConstants.GRAVITY_Z);
-		_pcisph_computeForcesAndInitPressure.setArg(16, _position);
-		_pcisph_computeForcesAndInitPressure.setArg(17, _particleIndex);
-		_pcisph_computeForcesAndInitPressure.setArg(18, _particleCount);
+				SPHConstants.MASS_MULT_DIVGRADWVISCOSITYCOEFFICIENT);
+		_pcisph_computeForcesAndInitPressure.setArg(9, SPHConstants._hScaled);
+		_pcisph_computeForcesAndInitPressure.setArg(10, _viscosityCoeff);
+		_pcisph_computeForcesAndInitPressure.setArg(11, SPHConstants.GRAVITY_X);
+		_pcisph_computeForcesAndInitPressure.setArg(12, SPHConstants.GRAVITY_Y);
+		_pcisph_computeForcesAndInitPressure.setArg(13, SPHConstants.GRAVITY_Z);
+		_pcisph_computeForcesAndInitPressure.setArg(14, _position);
+		_pcisph_computeForcesAndInitPressure.setArg(15, _particleIndex);
+		_pcisph_computeForcesAndInitPressure.setArg(16, _particleCount);
 		_pcisph_computeForcesAndInitPressure.enqueueNDRange(_queue,
 				new int[] { getParticleCountRoundedUp() });
 
@@ -745,18 +761,11 @@ public class SPHSolverService implements ISolver {
 		_pcisph_predictPositions.setArg(7, SPHConstants.GRAVITY_Z);
 		_pcisph_predictPositions.setArg(8, this._simulationScaleInv);
 		_pcisph_predictPositions.setArg(9, this._timeStep);
-		_pcisph_predictPositions.setArg(10, _xMin);
-		_pcisph_predictPositions.setArg(11, _xMax);
-		_pcisph_predictPositions.setArg(12, _yMin);
-		_pcisph_predictPositions.setArg(13, _yMax);
-		_pcisph_predictPositions.setArg(14, _zMin);
-		_pcisph_predictPositions.setArg(15, _zMax);
-		_pcisph_predictPositions.setArg(16, SPHConstants.DAMPING);
-		_pcisph_predictPositions.setArg(17, _position);
-		_pcisph_predictPositions.setArg(18, _velocity);
-		_pcisph_predictPositions.setArg(19, SPHConstants.R0);
-		_pcisph_predictPositions.setArg(20, _neighborMap);
-		_pcisph_predictPositions.setArg(21, _particleCount);
+		_pcisph_predictPositions.setArg(10, _position);
+		_pcisph_predictPositions.setArg(11, _velocity);
+		_pcisph_predictPositions.setArg(12, SPHConstants.R0);
+		_pcisph_predictPositions.setArg(13, _neighborMap);
+		_pcisph_predictPositions.setArg(14, _particleCount);
 		_pcisph_predictPositions.enqueueNDRange(_queue,
 				new int[] { getParticleCountRoundedUp() });
 
@@ -767,17 +776,15 @@ public class SPHSolverService implements ISolver {
 		// Stage predict density
 		_pcisph_predictDensity.setArg(0, _neighborMap);
 		_pcisph_predictDensity.setArg(1, _particleIndexBack);
-		_pcisph_predictDensity.setArg(2, SPHConstants.W_POLY_6_COEFFICIENT);
+		_pcisph_predictDensity.setArg(2, SPHConstants.MASS_MULT_WPOLY6COEFFICIENT);
 		_pcisph_predictDensity.setArg(3, SPHConstants.H);
-		_pcisph_predictDensity.setArg(4, this._mass);
-		_pcisph_predictDensity.setArg(5, SPHConstants.RHO0);
-		_pcisph_predictDensity.setArg(6, this._simulationScale);
-		_pcisph_predictDensity.setArg(7, SPHConstants.STIFFNESS);
-		_pcisph_predictDensity.setArg(8, _sortedPosition);
-		_pcisph_predictDensity.setArg(9, _pressure);
-		_pcisph_predictDensity.setArg(10, _rho);
-		_pcisph_predictDensity.setArg(11, SPHConstants.DELTA);
-		_pcisph_predictDensity.setArg(12, this._particleCount);
+		_pcisph_predictDensity.setArg(4, SPHConstants.RHO0);
+		_pcisph_predictDensity.setArg(5, this._simulationScale);
+		_pcisph_predictDensity.setArg(6, SPHConstants.STIFFNESS);
+		_pcisph_predictDensity.setArg(7, _sortedPosition);
+		_pcisph_predictDensity.setArg(8, _pressure);
+		_pcisph_predictDensity.setArg(9, _rho);
+		_pcisph_predictDensity.setArg(10, this._particleCount);
 		_pcisph_predictDensity.enqueueNDRange(_queue,
 				new int[] { getParticleCountRoundedUp() });
 
@@ -786,20 +793,12 @@ public class SPHSolverService implements ISolver {
 
 	private int run_pcisph_correctPressure() {
 		// Stage correct pressure
-		_pcisph_correctPressure.setArg(0, _neighborMap);
-		_pcisph_correctPressure.setArg(1, _particleIndexBack);
-		_pcisph_correctPressure.setArg(2, SPHConstants.H);
-		_pcisph_correctPressure.setArg(3, this._mass);
-		_pcisph_correctPressure.setArg(4, SPHConstants.RHO0);
-		_pcisph_correctPressure.setArg(5, this._simulationScale);
-		_pcisph_correctPressure.setArg(6, SPHConstants.STIFFNESS);
-		_pcisph_correctPressure.setArg(7, _sortedPosition);
-		_pcisph_correctPressure.setArg(8, _pressure);
-		_pcisph_correctPressure.setArg(9, _rho);
-		_pcisph_correctPressure.setArg(10, SPHConstants.DELTA);
-		_pcisph_correctPressure.setArg(11, _position);
-		_pcisph_correctPressure.setArg(12, _particleIndex);
-		_pcisph_correctPressure.setArg(13, _particleCount);
+		_pcisph_correctPressure.setArg(0, _particleIndexBack);
+		_pcisph_correctPressure.setArg(1, SPHConstants.RHO0);
+		_pcisph_correctPressure.setArg(2, _pressure);
+		_pcisph_correctPressure.setArg(3, _rho);
+		_pcisph_correctPressure.setArg(4, SPHConstants.DELTA);
+		_pcisph_correctPressure.setArg(5, _particleCount);
 		_pcisph_correctPressure.enqueueNDRange(_queue,
 				new int[] { getParticleCountRoundedUp() });
 
@@ -817,17 +816,15 @@ public class SPHSolverService implements ISolver {
 		_pcisph_computePressureForceAcceleration.setArg(6,
 				SPHConstants.DELTA);
 		_pcisph_computePressureForceAcceleration.setArg(7,
-				SPHConstants.GRAD_W_SPIKY_COEFFICIENT);
+				SPHConstants.MASS_MULT_GRADWSPIKYCOEFFICIENT);
 		_pcisph_computePressureForceAcceleration.setArg(8, SPHConstants.H);
-		_pcisph_computePressureForceAcceleration.setArg(9, _mass);
+		_pcisph_computePressureForceAcceleration.setArg(9, _simulationScale);
 		_pcisph_computePressureForceAcceleration.setArg(10, this._viscosityCoeff);
-		_pcisph_computePressureForceAcceleration.setArg(11,
-				_simulationScale);
-		_pcisph_computePressureForceAcceleration.setArg(12, _acceleration);
-		_pcisph_computePressureForceAcceleration.setArg(13, SPHConstants.RHO0);
-		_pcisph_computePressureForceAcceleration.setArg(14, _position);
-		_pcisph_computePressureForceAcceleration.setArg(15, _particleIndex);
-		_pcisph_computePressureForceAcceleration.setArg(16, _particleCount);
+		_pcisph_computePressureForceAcceleration.setArg(11, _acceleration);
+		_pcisph_computePressureForceAcceleration.setArg(12, SPHConstants.RHO0);
+		_pcisph_computePressureForceAcceleration.setArg(13, _position);
+		_pcisph_computePressureForceAcceleration.setArg(14, _particleIndex);
+		_pcisph_computePressureForceAcceleration.setArg(15, _particleCount);
 		_pcisph_computePressureForceAcceleration.enqueueNDRange(_queue,
 				new int[] { getParticleCountRoundedUp() });
 
@@ -898,35 +895,7 @@ public class SPHSolverService implements ISolver {
 		CLEvent event = _computeInteractionWithMembranes_finalize.enqueueNDRange(_queue, new int[] { getParticleCountRoundedUp() });
 		return event;
 	}
-	private int runSort() {
-		// this version work with qsort
-		int index = 0;
-		List<int[]> particleIndex = new ArrayList<int[]>();
-
-		// get values out of buffer
-		_particleIndexPtr = _particleIndex
-				.map(_queue, CLMem.MapFlags.ReadWrite);
-		int[] particleInd = _particleIndexPtr.getInts();
-
-		for (int i = 0; i < _particleCount * 2; i += 2) {
-			int[] element = { particleInd[i], particleInd[i + 1] };
-			particleIndex.add(element);
-		}
-		Collections.sort(particleIndex, new MyCompare());
-		for (int i = 0; i < particleIndex.size(); i++) {
-			for (int j = 0; j < 2; j++) {
-				particleInd[index] = particleIndex.get(i)[j];
-				index++;
-			}
-		}
-
-		// put results back
-		_particleIndexPtr.setInts(particleInd);
-		_particleIndex.unmap(_queue, _particleIndexPtr);
-
-		return 0;
-	}
-
+	
 	class MyCompare implements Comparator<int[]> {
 		public int compare(int[] o1, int[] o2) {
 			if (o1[0] < o2[0])
