@@ -43,6 +43,7 @@ import java.util.Map;
 import junit.framework.Assert;
 
 import org.geppetto.core.simulation.TimeConfiguration;
+import org.geppetto.model.sph.Membrane;
 import org.geppetto.model.sph.Vector3D;
 import org.geppetto.model.sph.common.SPHConstants;
 import org.geppetto.model.sph.services.SPHModelInterpreterService;
@@ -269,7 +270,14 @@ public class StepValidationWithCheckpointsTest {
 
 		return v;
 	}
-	
+	private Membrane getMembrane(String values){
+		Membrane m = new Membrane();
+		String[] indexes = values.split("\t");
+		if (indexes.length > 0) m.setParticleI(new Integer(indexes[0].trim()));
+		if (indexes.length > 1) m.setParticleJ(new Integer(indexes[1].trim()));
+		if (indexes.length > 2) m.setParticleK(new Integer(indexes[2].trim()));
+		return m;
+	}
 	/*
 	 * Retrieves an array of ints from a tab separated string of values
 	 * */
@@ -771,13 +779,16 @@ public class StepValidationWithCheckpointsTest {
 	
 		// calculate step
 		int iterationCount = 5;
-		int iteration = 0;
+		int iteration = 1;
 		
 		// get buffer sizes
 		Map<BuffersEnum, Integer> dimensions = solver.getBuffersSizeMap();
-		List<Map<String,Vector3D>> partcileEvolution = new ArrayList<Map<String,Vector3D>>();
+		Map<BuffersEnum,List<Map<String,Vector3D>>> partcileEvolution = new HashMap<BuffersEnum,List<Map<String,Vector3D>>>();
 		while(iteration <= iterationCount){
 			logs.put(BuffersEnum.POSITION, StepValidationTest.class.getResource("/results/membranes_test/position_" + iteration + ".txt"));
+			//logs.put(BuffersEnum.VELOCITY, StepValidationTest.class.getResource("/results/membranes_test/velocity_" + iteration + ".txt"));
+			//logs.put(BuffersEnum.MEMBRANES_DATA, StepValidationTest.class.getResource("/results/membranes_test/membranes_" + iteration + ".txt"));
+			logs.put(BuffersEnum.MEMBRANES_PARTICLE_INDEX_LIST, StepValidationTest.class.getResource("/results/membranes_test/membranesindex_" + iteration + ".txt"));
 			for (Map.Entry<BuffersEnum, URL> entry : logs.entrySet())
 			{
 				String fileContent = PCISPHTestUtilities.readFile(logs.get(entry.getKey()).getPath());
@@ -786,48 +797,150 @@ public class StepValidationWithCheckpointsTest {
 			solver.solve(new TimeConfiguration(null, 1, null));
 			// get checkpoint of interest
 			PCISPHCheckPoint checkpoint_values = solver.getCheckpointsMap().get(checkpoint);
-	      	List<Float> pos_calculatedValues = checkpoint_values.position;
-	      	int pos_mismatches = 0;
-	      	Assert.assertTrue(dimensions.get(BuffersEnum.POSITION).intValue() == checkpointReferenceValuesMap.get(BuffersEnum.POSITION).length * 4 * 2);
 	      	int j=0;
-	      	for(int i = 0; i < dimensions.get(BuffersEnum.POSITION)/2; i = i + 4)
-	      	{
-	      		// get vector from ref values
-	      		Vector3D pos_vector = get3DVector(checkpointReferenceValuesMap.get(BuffersEnum.POSITION)[j]);
-	      		
-	      		// it sucks, but all the if statements are separate to facilitate debugging
-	      		if(pos_vector.getX().floatValue() != pos_calculatedValues.get(i).floatValue()) 
-	      		{
-	      			pos_mismatches++;
-	      		}
-	      		if(pos_vector.getY().floatValue() != pos_calculatedValues.get(i + 1).floatValue()) 
-	      		{
-	      			pos_mismatches++;
-	      		}
-	      		if(pos_vector.getZ().floatValue() != pos_calculatedValues.get(i + 2).floatValue()) 
-	      		{
-	      			pos_mismatches++;
-	      		}
-	      		if(pos_vector.getP().floatValue() != pos_calculatedValues.get(i + 3).floatValue()) 
-	      		{
-	      			pos_mismatches++;
-	      		}
-	      		if(pos_vector.getP().floatValue() == SPHConstants.LIQUID_TYPE){
-	      			Map<String,Vector3D> temp = new HashMap<String, Vector3D>();
-	      			temp.put("GEPPETTO", new Vector3DX(pos_calculatedValues.get(i).floatValue(),pos_calculatedValues.get(i + 1).floatValue(),pos_calculatedValues.get(i + 2).floatValue()));
-	      			temp.put("SIBERNETIC", pos_vector);
-	      			partcileEvolution.add(temp);
-	      		}
-	      		j++;
-	      	}
+	     // compare buffer values at first checkpoint
+			for (Map.Entry<BuffersEnum, String[]> entry : checkpointReferenceValuesMap.entrySet())
+			{
+				switch (entry.getKey()) {
+			        case VELOCITY:
+			        	List<Float> vel_calculatedValues = checkpoint_values.velocity;
+			        	int vel_mismatches = 0;
+			        	Assert.assertTrue(dimensions.get(entry.getKey()).intValue() == checkpointReferenceValuesMap.get(BuffersEnum.VELOCITY).length * 4 * 2);
+			        	j=0;
+			        	for(int i = 0; i < dimensions.get(BuffersEnum.VELOCITY)/2; i = i + 4)
+			        	{	
+			        		// get vector from ref values
+			        		Vector3D vel_vector = get3DVector(checkpointReferenceValuesMap.get(entry.getKey())[j]);
+			        		
+			        		// it sucks, but all the if statements are separate to facilitate debugging
+			        		if(vel_vector.getX().floatValue() != vel_calculatedValues.get(i).floatValue()) 
+			        		{
+			        			vel_mismatches++;
+			        		}
+			        		if(vel_vector.getY().floatValue() != vel_calculatedValues.get(i + 1).floatValue()) 
+			        		{
+			        			vel_mismatches++;
+			        		}
+			        		if(vel_vector.getZ().floatValue() != vel_calculatedValues.get(i + 2).floatValue()) 
+			        		{
+			        			vel_mismatches++;
+			        		}
+			        		if(vel_vector.getP().floatValue() == SPHConstants.LIQUID_TYPE){
+				      			Map<String,Vector3D> temp = new HashMap<String, Vector3D>();
+				      			temp.put("GEPPETTO", new Vector3DX(vel_calculatedValues.get(i).floatValue(),vel_calculatedValues.get(i + 1).floatValue(),vel_calculatedValues.get(i + 2).floatValue()));
+				      			temp.put("SIBERNETIC", vel_vector);
+				      			if(partcileEvolution.containsKey(BuffersEnum.VELOCITY))
+				      				partcileEvolution.get(BuffersEnum.VELOCITY).add(temp);
+				      			else{
+				      				List<Map<String,Vector3D>> t_list= new ArrayList<Map<String,Vector3D>>();
+				      				t_list.add(temp);
+				      				partcileEvolution.put(BuffersEnum.VELOCITY, t_list);
+				      			}
+				      		}
+			        		j++;
+			        	}
+			        	break;
+			        case POSITION:
+			        	List<Float> pos_calculatedValues = checkpoint_values.position;
+				      	int pos_mismatches = 0;
+				      	Assert.assertTrue(dimensions.get(BuffersEnum.POSITION).intValue() == checkpointReferenceValuesMap.get(BuffersEnum.POSITION).length * 4 * 2);
+				      	j=0;
+				      	for(int i = 0; i < dimensions.get(BuffersEnum.POSITION)/2; i = i + 4)
+				      	{
+				      		// get vector from ref values
+				      		Vector3D pos_vector = get3DVector(checkpointReferenceValuesMap.get(BuffersEnum.POSITION)[j]);
+				      		
+				      		// it sucks, but all the if statements are separate to facilitate debugging
+				      		if(pos_vector.getX().floatValue() != pos_calculatedValues.get(i).floatValue()) 
+				      		{
+				      			pos_mismatches++;
+				      		}
+				      		if(pos_vector.getY().floatValue() != pos_calculatedValues.get(i + 1).floatValue()) 
+				      		{
+				      			pos_mismatches++;
+				      		}
+				      		if(pos_vector.getZ().floatValue() != pos_calculatedValues.get(i + 2).floatValue()) 
+				      		{
+				      			pos_mismatches++;
+				      		}
+				      		if(pos_vector.getP().floatValue() != pos_calculatedValues.get(i + 3).floatValue()) 
+				      		{
+				      			pos_mismatches++;
+				      		}
+				      		if(pos_vector.getP().floatValue() == SPHConstants.LIQUID_TYPE){
+				      			Map<String,Vector3D> temp = new HashMap<String, Vector3D>();
+				      			temp.put("GEPPETTO", new Vector3DX(pos_calculatedValues.get(i).floatValue(),pos_calculatedValues.get(i + 1).floatValue(),pos_calculatedValues.get(i + 2).floatValue()));
+				      			temp.put("SIBERNETIC", pos_vector);
+				      			if(partcileEvolution.containsKey(BuffersEnum.POSITION))
+				      				partcileEvolution.get(BuffersEnum.POSITION).add(temp);
+				      			else{
+				      				List<Map<String,Vector3D>> t_list= new ArrayList<Map<String,Vector3D>>();
+				      				t_list.add(temp);
+				      				partcileEvolution.put(BuffersEnum.POSITION, t_list);
+				      			}
+				      		}
+				      		j++;
+				      	}
+				      	break;
+			        /*case MEMBRANES_DATA:
+			        	List<Integer> membranesValues = checkpoint_values.membranes;
+				      	int mem_mismatches = 0;
+				      	Assert.assertTrue(dimensions.get(BuffersEnum.MEMBRANES_DATA).intValue() == checkpointReferenceValuesMap.get(BuffersEnum.MEMBRANES_DATA).length * 3);
+				      	j=0;
+				      	for(int i = 0; i < dimensions.get(BuffersEnum.MEMBRANES_DATA); i = i + 3)
+				      	{
+				      		// get vector from ref values
+				      		Membrane m = getMembrane(checkpointReferenceValuesMap.get(BuffersEnum.MEMBRANES_DATA)[j]);
+				      		
+				      		// it sucks, but all the if statements are separate to facilitate debugging
+				      		if(m.getParticleI() != membranesValues.get(i).intValue()) 
+				      		{
+				      			mem_mismatches++;
+				      		}
+				      		if(m.getParticleJ() != membranesValues.get(i + 1).intValue()) 
+				      		{
+				      			mem_mismatches++;
+				      		}
+				      		if(m.getParticleK() != membranesValues.get(i + 2).intValue()) 
+				      		{
+				      			mem_mismatches++;
+				      		}
+				      		j++;
+				      	}
+				      	break;*/
+			       /* case MEMBRANES_PARTICLE_INDEX_LIST:
+			        	List<Integer> membranesIndexesValues = checkpoint_values.membranesParticleIndexList;
+				      	int meml_mismatches = 0;
+				      	Assert.assertTrue(dimensions.get(BuffersEnum.MEMBRANES_PARTICLE_INDEX_LIST).intValue() == checkpointReferenceValuesMap.get(BuffersEnum.MEMBRANES_PARTICLE_INDEX_LIST).length);
+				      	j=0;
+				      	for(int i = 0; i < dimensions.get(BuffersEnum.MEMBRANES_PARTICLE_INDEX_LIST); i++)
+				      	{
+				      		// get vector from ref values
+				      		Integer m = new Integer(checkpointReferenceValuesMap.get(BuffersEnum.MEMBRANES_PARTICLE_INDEX_LIST)[i]);
+				      		
+				      		// it sucks, but all the if statements are separate to facilitate debugging
+				      		if(m != membranesIndexesValues.get(i).intValue()) 
+				      		{
+				      			meml_mismatches++;
+				      		}
+				      	}
+				      	break;*/
+				    default:
+				    	break;
+				}
+			}
 	      	iteration++;
 		}
-		int j=0;
-		for(Map<String,Vector3D> m:partcileEvolution){
-			System.out.println("Evolution of liquid particle on iteration " + j);
-  			System.out.println("SIBERNETIC X = " + m.get("SIBERNETIC").getX().floatValue() + " Y = " + m.get("SIBERNETIC").getY().floatValue() + " Z = " + m.get("SIBERNETIC").getZ().floatValue());
-  			System.out.println("GEPPETTO X = " + m.get("GEPPETTO").getX().floatValue() + " Y = " + m.get("GEPPETTO").getY().floatValue() + " Z = " + m.get("GEPPETTO").getZ().floatValue());
-  			j++;
+		int j=1;
+		for(Map.Entry<BuffersEnum,List<Map<String,Vector3D>>> l:partcileEvolution.entrySet()){
+			System.out.println("Evolution of liquid particle " +l.getKey().name());
+			j=1;
+			for(Map<String,Vector3D> m:l.getValue()){
+				System.out.println("Evolution of liquid particle on iteration " + j);
+	  			System.out.println("SIBERNETIC X = " + m.get("SIBERNETIC").getX().floatValue() + " Y = " + m.get("SIBERNETIC").getY().floatValue() + " Z = " + m.get("SIBERNETIC").getZ().floatValue());
+	  			System.out.println("GEPPETTO X = " + m.get("GEPPETTO").getX().floatValue() + " Y = " + m.get("GEPPETTO").getY().floatValue() + " Z = " + m.get("GEPPETTO").getZ().floatValue());
+	  			j++;
+			}
 		}
 	}
 }

@@ -416,6 +416,9 @@ public class SPHSolverService implements ISolver {
 		System.out.println("W_POLY_6_COEFFICIENT: " + SPHConstants.W_POLY_6_COEFFICIENT);
 		System.out.println("GRAD_W_SPIKY_COEFFICIENT: " + SPHConstants.GRAD_W_SPIKY_COEFFICIENT);
 		System.out.println("DEL_2_W_VISCOSITY_COEFFICIENT: " + SPHConstants.DEL_2_W_VISCOSITY_COEFFICIENT);
+		System.out.println("MASS_MULT_WPOLY6COEFFICIENT: " + SPHConstants.MASS_MULT_WPOLY6COEFFICIENT);
+		System.out.println("MASS_MULT_GRADWSPIKYCOEFFICIENT: " + SPHConstants.MASS_MULT_GRADWSPIKYCOEFFICIENT);
+		System.out.println("MASS_MULT_DIVGRADWVISCOSITYCOEFFICIENT: " + SPHConstants.MASS_MULT_DIVGRADWVISCOSITYCOEFFICIENT);
 		System.out.println("/*******************END**************************/");
 		// allocate buffers - requires global dimensions of the grid
 		this.allocateBuffers();
@@ -882,7 +885,7 @@ public class SPHSolverService implements ISolver {
 		_computeInteractionWithMembranes.setArg( 7, _membraneData );
 		_computeInteractionWithMembranes.setArg( 8, _particleCount );
 		_computeInteractionWithMembranes.setArg( 9, _numOfElasticP );
-		_computeInteractionWithMembranes.setArg( 10, SPHConstants.RHO0 );
+		_computeInteractionWithMembranes.setArg( 10, SPHConstants.R0 );
 		_computeInteractionWithMembranes.enqueueNDRange(_queue, new int[]{ getParticleCountRoundedUp() } );
 		return 0;
 	}
