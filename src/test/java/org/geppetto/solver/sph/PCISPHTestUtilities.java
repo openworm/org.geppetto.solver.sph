@@ -11,7 +11,7 @@ import java.util.List;
 
 import junit.framework.Assert;
 
-import org.geppetto.core.model.state.AspectTreeNode;
+import org.geppetto.core.model.runtime.AspectSubTreeNode;
 import org.geppetto.core.model.state.visitors.RemoveTimeStepsVisitor;
 import org.geppetto.model.sph.common.SPHConstants;
 import org.geppetto.model.sph.x.SPHModelX;
@@ -38,7 +38,7 @@ public class PCISPHTestUtilities {
 	/*
 	 * Checks the entire StateTreeRoot for NaN values
 	 * */
-	public static void checkStateTreeForNaN(AspectTreeNode set, boolean expected)
+	public static void checkStateTreeForNaN(AspectSubTreeNode set, boolean expected)
 	{
 		FindNaNVisitor findNaNVisitor=new FindNaNVisitor();
 		set.apply(findNaNVisitor);
@@ -56,7 +56,7 @@ public class PCISPHTestUtilities {
 	/*
 	 * Removes the first state from state tree values
 	 * */
-	public static void removeFirstStateFromTree(AspectTreeNode set)
+	public static void removeFirstStateFromTree(AspectSubTreeNode set)
 	{
 		RemoveTimeStepsVisitor removeTimeStepVisitor= new RemoveTimeStepsVisitor(1);
 		set.apply(removeTimeStepVisitor);

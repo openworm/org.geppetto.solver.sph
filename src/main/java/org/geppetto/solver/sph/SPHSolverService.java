@@ -51,6 +51,7 @@ import java.util.regex.Pattern;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.bridj.Pointer;
+import org.geppetto.core.common.GeppettoExecutionException;
 import org.geppetto.core.common.GeppettoInitializationException;
 import org.geppetto.core.data.model.AVariable;
 import org.geppetto.core.data.model.ArrayVariable;
@@ -60,13 +61,13 @@ import org.geppetto.core.data.model.SimpleVariable;
 import org.geppetto.core.data.model.StructuredType;
 import org.geppetto.core.data.model.VariableList;
 import org.geppetto.core.model.IModel;
-import org.geppetto.core.model.state.ANode;
-import org.geppetto.core.model.state.ACompositeStateNode;
-import org.geppetto.core.model.state.ASimpleStateNode;
-import org.geppetto.core.model.state.AspectTreeNode;
-import org.geppetto.core.model.state.ANode.SUBTREE;
-import org.geppetto.core.model.state.CompositeVariableNode;
-import org.geppetto.core.model.state.StateVariableNode;
+import org.geppetto.core.model.runtime.ACompositeNode;
+import org.geppetto.core.model.runtime.ANode;
+import org.geppetto.core.model.runtime.ASimpleNode;
+import org.geppetto.core.model.runtime.AspectSubTreeNode;
+import org.geppetto.core.model.runtime.CompositeVariableNode;
+import org.geppetto.core.model.runtime.StateVariableNode;
+import org.geppetto.core.model.runtime.AspectSubTreeNode.ASPECTTREE;
 import org.geppetto.core.model.values.FloatValue;
 import org.geppetto.core.model.values.ValuesFactory;
 import org.geppetto.core.simulation.IRunConfiguration;
@@ -173,7 +174,7 @@ public class SPHSolverService implements ISolver {
 	public int _numOfBoundaryP;
 
 	private SPHModelX _model;
-	private AspectTreeNode _stateTree;
+	private AspectSubTreeNode _stateTree;
 
 	private boolean _recordCheckPoints = false;
 
@@ -971,9 +972,9 @@ public class SPHSolverService implements ISolver {
 	}
 
 	// XXX: for debug only, remove
-	public AspectTreeNode getStateTree() {
+	public AspectSubTreeNode getStateTree() throws GeppettoExecutionException {
 		if (_stateTree == null) {
-			_stateTree = new AspectTreeNode(_model.getId());
+			_stateTree = new AspectSubTreeNode(_model.getId());
 			updateStateTree();
 		}
 
@@ -981,13 +982,13 @@ public class SPHSolverService implements ISolver {
 	}
 
 	@Override
-	public AspectTreeNode solve(IRunConfiguration timeConfiguration) {
+	public AspectSubTreeNode solve(IRunConfiguration timeConfiguration) throws GeppettoExecutionException {
 		// TODO: extend this to use time configuration to do multiple steps in one go
 		long time = System.currentTimeMillis();
 		logger.info("SPH solver start");
 
 		if (_stateTree == null) {
-			_stateTree = new AspectTreeNode(_model.getId());
+			_stateTree = new AspectSubTreeNode(_model.getId());
 		}
 
 		for (int i = 0; i < timeConfiguration.getTimeSteps(); i++) {
@@ -1008,7 +1009,7 @@ public class SPHSolverService implements ISolver {
 	}
 
 	private void updateStateTree() {
-		ACompositeStateNode modelSubTree = _stateTree.getSubTree(AspectTreeNode.SUBTREE.MODEL_TREE);
+		ACompositeNode modelSubTree = _stateTree.getSubTree(AspectSubTreeNode.ASPECTTREE.MODEL_TREE);
 
 		_positionPtr = _position.map(_queue, CLMem.MapFlags.Read);
 
@@ -1063,7 +1064,7 @@ public class SPHSolverService implements ISolver {
 	}
 
 	private void updateStateTreeForWatch() {
-		ACompositeStateNode watchTree = _stateTree.getSubTree(SUBTREE.WATCH_TREE);
+		ACompositeNode watchTree = _stateTree.getSubTree(ASPECTTREE.WATCH_TREE);
 
 		// map watchable buffers that are not already mapped
 		// NOTE: position is mapped for scene generation - improving performance by not mapping it again
@@ -1103,15 +1104,15 @@ public class SPHSolverService implements ISolver {
 							// tokenize variable path in watch list via dot
 							// separator (handle array brackets)
 							StringTokenizer tokenizer = new StringTokenizer(s,".");
-							ACompositeStateNode node = watchTree;
+							ACompositeNode node = watchTree;
 							while (tokenizer.hasMoreElements()) {
 								// loop through tokens and build tree
 								String current = tokenizer.nextToken();
 								boolean found = false;
 								for (ANode child : node.getChildren()) {
 									if (child.getName().equals(current)) {
-										if (child instanceof ACompositeStateNode) {
-											node = (ACompositeStateNode) child;
+										if (child instanceof ACompositeNode) {
+											node = (ACompositeNode) child;
 										}
 										found = true;
 										break;
@@ -1178,7 +1179,7 @@ public class SPHSolverService implements ISolver {
 		_velocity.unmap(_queue, _positionPtr);
 	}
 
-	private boolean containsNode(ACompositeStateNode node, String name){
+	private boolean containsNode(ACompositeNode node, String name){
 		List<ANode> children = node.getChildren();
 		
 		boolean addNewNode = true;
@@ -1187,9 +1188,9 @@ public class SPHSolverService implements ISolver {
 				addNewNode = false;
 				return addNewNode;
 			}
-			if(child instanceof ACompositeStateNode){
-				if(((ACompositeStateNode)child).getChildren() != null){
-					addNewNode = containsNode((ACompositeStateNode) child, name);
+			if(child instanceof ACompositeNode){
+				if(((ACompositeNode)child).getChildren() != null){
+					addNewNode = containsNode((ACompositeNode) child, name);
 				}
 			}
 
@@ -1198,20 +1199,20 @@ public class SPHSolverService implements ISolver {
 		return addNewNode;
 	}
 	
-	private ACompositeStateNode getNode(ACompositeStateNode node, String name){
-		ACompositeStateNode newNode = null;
+	private ACompositeNode getNode(ACompositeNode node, String name){
+		ACompositeNode newNode = null;
 		
 		List<ANode> children = node.getChildren();
 		
 		boolean addNewNode = true;
 		for(ANode child : children){
 			if(child.getName().equals(name)){
-				newNode = (ACompositeStateNode) child;
+				newNode = (ACompositeNode) child;
 				return newNode;
 			}
-			if(child instanceof ACompositeStateNode){
-				if(((ACompositeStateNode)child).getChildren() != null){
-					newNode = getNode((ACompositeStateNode) child, name);
+			if(child instanceof ACompositeNode){
+				if(((ACompositeNode)child).getChildren() != null){
+					newNode = getNode((ACompositeNode) child, name);
 				}
 			}
 
@@ -1221,11 +1222,11 @@ public class SPHSolverService implements ISolver {
 	}
 	
 	@Override
-	public AspectTreeNode initialize(IModel model) throws GeppettoInitializationException {
+	public AspectSubTreeNode initialize(IModel model) {
 		_model = (SPHModelX) model;
 		setBuffersFromModel();
 
-		_stateTree = new AspectTreeNode(_model.getId());
+		_stateTree = new AspectSubTreeNode(_model.getId());
 		updateStateTree();
 
 		setWatchableVariables();

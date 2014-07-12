@@ -33,9 +33,9 @@
 package org.geppetto.solver.sph;
 
 import org.bridj.Pointer;
-import org.geppetto.core.model.state.ACompositeStateNode;
-import org.geppetto.core.model.state.CompositeVariableNode;
-import org.geppetto.core.model.state.StateVariableNode;
+import org.geppetto.core.model.runtime.ACompositeNode;
+import org.geppetto.core.model.runtime.CompositeVariableNode;
+import org.geppetto.core.model.runtime.StateVariableNode;
 import org.geppetto.core.model.state.visitors.DefaultStateVisitor;
 import org.geppetto.core.model.values.FloatValue;
 import org.geppetto.core.model.values.ValuesFactory;

@@ -37,7 +37,7 @@ import java.net.URL;
 import junit.framework.Assert;
 
 import org.geppetto.core.model.IModel;
-import org.geppetto.core.model.state.AspectTreeNode;
+import org.geppetto.core.model.runtime.AspectSubTreeNode;
 import org.geppetto.core.simulation.TimeConfiguration;
 import org.geppetto.model.sph.services.SPHModelInterpreterService;
 import org.geppetto.model.sph.x.SPHModelX;
@@ -82,11 +82,11 @@ public class MultipleThreadsTests {
 		SPHSolverService solver5 = new SPHSolverService();
 		solver5.initialize(model);
 		
-		AspectTreeNode stateSet = solver.solve(new TimeConfiguration(0.1f, 2, 1));
-		AspectTreeNode stateSet2 = solver2.solve(new TimeConfiguration(0.2f, 4, 1));
-		AspectTreeNode stateSet3 = solver3.solve(new TimeConfiguration(0.3f, 5, 1));
-		AspectTreeNode stateSet4 = solver4.solve(new TimeConfiguration(0.4f, 3, 1));
-		AspectTreeNode stateSet5 = solver5.solve(new TimeConfiguration(0.5f, 2, 1));
+		AspectSubTreeNode stateSet = solver.solve(new TimeConfiguration(0.1f, 2, 1));
+		AspectSubTreeNode stateSet2 = solver2.solve(new TimeConfiguration(0.2f, 4, 1));
+		AspectSubTreeNode stateSet3 = solver3.solve(new TimeConfiguration(0.3f, 5, 1));
+		AspectSubTreeNode stateSet4 = solver4.solve(new TimeConfiguration(0.4f, 3, 1));
+		AspectSubTreeNode stateSet5 = solver5.solve(new TimeConfiguration(0.5f, 2, 1));
 		
 		// NOTE: this is commented out as it fails on Apple CPU - should pass everywhere else
 		// PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);

@@ -38,10 +38,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.geppetto.core.model.state.ACompositeStateNode;
-import org.geppetto.core.model.state.ASimpleStateNode;
-import org.geppetto.core.model.state.CompositeVariableNode;
-import org.geppetto.core.model.state.StateVariableNode;
+import org.geppetto.core.model.runtime.ACompositeNode;
+import org.geppetto.core.model.runtime.ASimpleNode;
+import org.geppetto.core.model.runtime.CompositeVariableNode;
+import org.geppetto.core.model.runtime.StateVariableNode;
 import org.geppetto.core.model.state.visitors.DefaultStateVisitor;
 import org.geppetto.core.model.values.AValue;
 import org.geppetto.model.sph.Vector3D;

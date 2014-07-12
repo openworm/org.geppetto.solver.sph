@@ -35,7 +35,7 @@ package org.geppetto.solver.sph;
 import java.util.List;
 
 import org.bridj.Pointer;
-import org.geppetto.core.model.state.StateVariableNode;
+import org.geppetto.core.model.runtime.StateVariableNode;
 import org.geppetto.core.model.state.visitors.DefaultStateVisitor;
 import org.geppetto.core.model.values.FloatValue;
 import org.geppetto.core.model.values.ValuesFactory;
@@ -57,7 +57,7 @@ public class UpdateSPHWatchTreeVisitor extends DefaultStateVisitor {
 	public boolean visitStateVariableNode(StateVariableNode node)
 	{
 		// 1. figure out which of the variables being watched this node represents
-		String fullName = node.getFullName();
+		String fullName = node.getInstancePath();
 		
 		// 2. get value of interest (Nth particle from relevant results arrays)
 		// extract index from string

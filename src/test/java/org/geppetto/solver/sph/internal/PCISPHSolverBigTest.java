@@ -38,7 +38,7 @@ import java.net.URL;
 import junit.framework.Assert;
 
 import org.geppetto.core.model.IModel;
-import org.geppetto.core.model.state.AspectTreeNode;
+import org.geppetto.core.model.runtime.AspectSubTreeNode;
 import org.geppetto.core.simulation.TimeConfiguration;
 import org.geppetto.model.sph.services.SPHModelInterpreterService;
 import org.geppetto.model.sph.x.SPHModelX;
@@ -63,11 +63,11 @@ public class PCISPHSolverBigTest {
 		
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
-		AspectTreeNode stateSet = solver.solve(new TimeConfiguration(0.1f, 1, 1));
+		AspectSubTreeNode stateSet = solver.solve(new TimeConfiguration(0.1f, 1, 1));
 		
 		PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
 		
-		Assert.assertTrue("Particle count doesn't match.", stateSet.getSubTree(AspectTreeNode.SUBTREE.MODEL_TREE).getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
+		Assert.assertTrue("Particle count doesn't match.", stateSet.getSubTree(AspectSubTreeNode.ASPECTTREE.MODEL_TREE).getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
 	}
 	
 	/*
@@ -89,7 +89,7 @@ public class PCISPHSolverBigTest {
 		// run cycles one by one
 		SPHSolverService solver1 = new SPHSolverService();
 		solver1.initialize(model);
-		AspectTreeNode stateTree1 = null;
+		AspectSubTreeNode stateTree1 = null;
 		for(int i = 0; i < cycles; i++){
 			stateTree1 = solver1.solve(new TimeConfiguration(0.1f, 1, 1));
 		}
@@ -97,7 +97,7 @@ public class PCISPHSolverBigTest {
 		// run cycles at once
 		SPHSolverService solver2 = new SPHSolverService();
 		solver2.initialize(model);
-		AspectTreeNode stateTree2 = solver2.solve(new TimeConfiguration(0.1f, cycles, 1));
+		AspectSubTreeNode stateTree2 = solver2.solve(new TimeConfiguration(0.1f, cycles, 1));
 		
 		//checks the trees are equivalent
 		Assert.assertEquals(stateTree1.toString(),stateTree2.toString());
@@ -105,8 +105,8 @@ public class PCISPHSolverBigTest {
 		PCISPHTestUtilities.checkStateTreeForNaN(stateTree1, false);
 		PCISPHTestUtilities.checkStateTreeForNaN(stateTree2, false);
 		
-		Assert.assertTrue("Particle count doesn't match.", stateTree1.getSubTree(AspectTreeNode.SUBTREE.MODEL_TREE).getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
-		Assert.assertTrue("Particle count doesn't match.", stateTree2.getSubTree(AspectTreeNode.SUBTREE.MODEL_TREE).getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
+		Assert.assertTrue("Particle count doesn't match.", stateTree1.getSubTree(AspectSubTreeNode.ASPECTTREE.MODEL_TREE).getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
+		Assert.assertTrue("Particle count doesn't match.", stateTree2.getSubTree(AspectSubTreeNode.ASPECTTREE.MODEL_TREE).getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
 	}
 
 	/*
@@ -123,11 +123,11 @@ public class PCISPHSolverBigTest {
 
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
-		AspectTreeNode stateSet = solver.solve(new TimeConfiguration(null, 1, null));
+		AspectSubTreeNode stateSet = solver.solve(new TimeConfiguration(null, 1, null));
 		
 		PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
 		
-		Assert.assertTrue("Particle count doesn't match.", stateSet.getSubTree(AspectTreeNode.SUBTREE.MODEL_TREE).getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
+		Assert.assertTrue("Particle count doesn't match.", stateSet.getSubTree(AspectSubTreeNode.ASPECTTREE.MODEL_TREE).getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
 	}
 	
 	/*
@@ -149,7 +149,7 @@ public class PCISPHSolverBigTest {
 		// run cycles one by one
 		SPHSolverService solver1 = new SPHSolverService();
 		solver1.initialize(model);
-		AspectTreeNode stateTree = null;
+		AspectSubTreeNode stateTree = null;
 		for(int i = 0; i < cycles; i++){
 			stateTree = solver1.solve(new TimeConfiguration(0.1f, 1, 1));
 			if (i > 0) {
@@ -159,7 +159,7 @@ public class PCISPHSolverBigTest {
 		
 		PCISPHTestUtilities.checkStateTreeForNaN(stateTree, false);
 		
-		Assert.assertTrue("Particle count doesn't match.", stateTree.getSubTree(AspectTreeNode.SUBTREE.MODEL_TREE).getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
+		Assert.assertTrue("Particle count doesn't match.", stateTree.getSubTree(AspectSubTreeNode.ASPECTTREE.MODEL_TREE).getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
 	}
 	
 	/*
@@ -181,7 +181,7 @@ public class PCISPHSolverBigTest {
 		// run cycles one by one
 		SPHSolverService solver1 = new SPHSolverService();
 		solver1.initialize(model);
-		AspectTreeNode stateTree1 = null;
+		AspectSubTreeNode stateTree1 = null;
 		for(int i = 0; i < cycles; i++){
 			stateTree1 = solver1.solve(new TimeConfiguration(0.1f, 1, 1));
 		}
@@ -189,7 +189,7 @@ public class PCISPHSolverBigTest {
 		// run cycles at once
 		SPHSolverService solver2 = new SPHSolverService();
 		solver2.initialize(model);
-		AspectTreeNode stateTree2 = solver2.solve(new TimeConfiguration(0.1f, cycles, 1));
+		AspectSubTreeNode stateTree2 = solver2.solve(new TimeConfiguration(0.1f, cycles, 1));
 		
 		//checks the trees are equivalent
 		Assert.assertEquals(stateTree1.toString(),stateTree2.toString());
@@ -197,8 +197,8 @@ public class PCISPHSolverBigTest {
 		PCISPHTestUtilities.checkStateTreeForNaN(stateTree1, false);
 		PCISPHTestUtilities.checkStateTreeForNaN(stateTree2, false);
 		
-		Assert.assertTrue("Particle count doesn't match.", stateTree1.getSubTree(AspectTreeNode.SUBTREE.MODEL_TREE).getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
-		Assert.assertTrue("Particle count doesn't match.", stateTree2.getSubTree(AspectTreeNode.SUBTREE.MODEL_TREE).getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
+		Assert.assertTrue("Particle count doesn't match.", stateTree1.getSubTree(AspectSubTreeNode.ASPECTTREE.MODEL_TREE).getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
+		Assert.assertTrue("Particle count doesn't match.", stateTree2.getSubTree(AspectSubTreeNode.ASPECTTREE.MODEL_TREE).getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
 	}
 	
 	/*
@@ -213,10 +213,10 @@ public class PCISPHSolverBigTest {
 
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
-		AspectTreeNode stateSet = solver.solve(new TimeConfiguration(null, 1, null));
+		AspectSubTreeNode stateSet = solver.solve(new TimeConfiguration(null, 1, null));
 		
 		PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
 		
-		Assert.assertTrue("Particle count doesn't match.", stateSet.getSubTree(AspectTreeNode.SUBTREE.MODEL_TREE).getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
+		Assert.assertTrue("Particle count doesn't match.", stateSet.getSubTree(AspectSubTreeNode.ASPECTTREE.MODEL_TREE).getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
 	}
 }

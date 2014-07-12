@@ -38,8 +38,8 @@ import java.net.URL;
 import junit.framework.Assert;
 
 import org.geppetto.core.model.IModel;
-import org.geppetto.core.model.state.ACompositeStateNode;
-import org.geppetto.core.model.state.AspectTreeNode;
+import org.geppetto.core.model.runtime.ACompositeNode;
+import org.geppetto.core.model.runtime.AspectSubTreeNode;
 import org.geppetto.core.simulation.TimeConfiguration;
 import org.geppetto.model.sph.services.SPHModelInterpreterService;
 import org.geppetto.model.sph.x.SPHModelX;
