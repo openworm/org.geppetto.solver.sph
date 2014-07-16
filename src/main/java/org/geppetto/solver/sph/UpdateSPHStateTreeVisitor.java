@@ -33,9 +33,9 @@
 package org.geppetto.solver.sph;
 
 import org.bridj.Pointer;
-import org.geppetto.core.model.runtime.ACompositeNode;
+import org.geppetto.core.model.quantities.PhysicalQuantity;
 import org.geppetto.core.model.runtime.CompositeVariableNode;
-import org.geppetto.core.model.runtime.StateVariableNode;
+import org.geppetto.core.model.runtime.VariableNode;
 import org.geppetto.core.model.state.visitors.DefaultStateVisitor;
 import org.geppetto.core.model.values.FloatValue;
 import org.geppetto.core.model.values.ValuesFactory;
@@ -59,7 +59,7 @@ public class UpdateSPHStateTreeVisitor extends DefaultStateVisitor
 	}
 
 	@Override
-	public boolean inCompositeStateNode(CompositeVariableNode node)
+	public boolean inCompositeVariableNode(CompositeVariableNode node)
 	{
 		if(node.isArray())
 		{
@@ -71,39 +71,47 @@ public class UpdateSPHStateTreeVisitor extends DefaultStateVisitor
 			_pV = ValuesFactory.getFloatValue(_positionPtr.get(index + 3));
 				
 		}
-		return super.inCompositeStateNode(node);
+		return super.inCompositeVariableNode(node);
 	}
 
 	@Override
-	public boolean outCompositeStateNode(CompositeVariableNode node)
+	public boolean outCompositeVariableNode(CompositeVariableNode node)
 	{
 		if(node.isArray())
 		{
 			_xV = _yV = _zV = _pV = null;
 		}
-		return super.outCompositeStateNode(node);
+		return super.outCompositeVariableNode(node);
 	}
 
 	@Override
-	public boolean visitStateVariableNode(StateVariableNode node)
+	public boolean visitVariableNode(VariableNode node)
 	{
 		if(node.getName()=="x")
 		{
-			node.addValue(_xV);
+			PhysicalQuantity q = new PhysicalQuantity();
+			q.setValue(_xV);
+			node.addPhysicalQuantity(q);
 		}
 		else if(node.getName()=="y")
 		{
-			node.addValue(_yV);
+			PhysicalQuantity q = new PhysicalQuantity();
+			q.setValue(_yV);
+			node.addPhysicalQuantity(q);
 		}
 		else if(node.getName()=="z")
 		{
-			node.addValue(_zV);
+			PhysicalQuantity q = new PhysicalQuantity();
+			q.setValue(_zV);
+			node.addPhysicalQuantity(q);
 		}
 		else if(node.getName()=="p")
 		{
-			node.addValue(_pV);
+			PhysicalQuantity q = new PhysicalQuantity();
+			q.setValue(_pV);
+			node.addPhysicalQuantity(q);
 		}
-		return super.visitStateVariableNode(node);
+		return super.visitVariableNode(node);
 	}
 
 }

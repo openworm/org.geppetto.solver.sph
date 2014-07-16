@@ -34,8 +34,9 @@ package org.geppetto.solver.sph.internal;
 
 import junit.framework.Assert;
 
-import org.geppetto.core.model.runtime.ASimpleNode;
-import org.geppetto.core.model.runtime.StateVariableNode;
+import org.geppetto.core.model.quantities.PhysicalQuantity;
+import org.geppetto.core.model.runtime.ATimeSeriesNode;
+import org.geppetto.core.model.runtime.VariableNode;
 import org.geppetto.core.model.state.visitors.DefaultStateVisitor;
 import org.geppetto.core.model.values.AValue;
 
@@ -56,13 +57,14 @@ public class FindNaNVisitor extends DefaultStateVisitor
 	}
 
 	@Override
-	public boolean visitStateVariableNode(StateVariableNode node)
+	public boolean visitVariableNode(VariableNode node)
 	{
-		Assert.assertFalse(node.getValues().size() == 0);
+		Assert.assertFalse(node.getTimeSeries().size() == 0);
 		
 		int i=0;
-		for(AValue v:node.getValues())
+		for(PhysicalQuantity p:node.getTimeSeries())
 		{
+			AValue v = p.getValue();
 			if(v.getStringValue().equals(NAN))	
 			{
 				doStopVisiting();
@@ -72,7 +74,7 @@ public class FindNaNVisitor extends DefaultStateVisitor
 			}
 			i++;
 		}
-		return super.visitStateVariableNode(node);
+		return super.visitVariableNode(node);
 	}
 
 	public String getParticleWithNaN()

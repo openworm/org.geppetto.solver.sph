@@ -45,8 +45,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.StringTokenizer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -61,13 +59,13 @@ import org.geppetto.core.data.model.SimpleVariable;
 import org.geppetto.core.data.model.StructuredType;
 import org.geppetto.core.data.model.VariableList;
 import org.geppetto.core.model.IModel;
+import org.geppetto.core.model.quantities.PhysicalQuantity;
 import org.geppetto.core.model.runtime.ACompositeNode;
 import org.geppetto.core.model.runtime.ANode;
-import org.geppetto.core.model.runtime.ASimpleNode;
 import org.geppetto.core.model.runtime.AspectSubTreeNode;
 import org.geppetto.core.model.runtime.CompositeVariableNode;
-import org.geppetto.core.model.runtime.StateVariableNode;
-import org.geppetto.core.model.runtime.AspectSubTreeNode.ASPECTTREE;
+import org.geppetto.core.model.runtime.VariableNode;
+import org.geppetto.core.model.runtime.AspectSubTreeNode.AspectTreeType;
 import org.geppetto.core.model.values.FloatValue;
 import org.geppetto.core.model.values.ValuesFactory;
 import org.geppetto.core.simulation.IRunConfiguration;
@@ -1009,7 +1007,7 @@ public class SPHSolverService implements ISolver {
 	}
 
 	private void updateStateTree() {
-		ACompositeNode modelSubTree = _stateTree.getSubTree(AspectSubTreeNode.ASPECTTREE.MODEL_TREE);
+		ACompositeNode modelSubTree = _stateTree.getSubTree(AspectSubTreeNode.AspectTreeType.MODEL_TREE);
 
 		_positionPtr = _position.map(_queue, CLMem.MapFlags.Read);
 
@@ -1036,17 +1034,25 @@ public class SPHSolverService implements ISolver {
 					modelSubTree.addChild(particle);
 					CompositeVariableNode pos = new CompositeVariableNode("pos");
 					particle.addChild(pos);
-					StateVariableNode x = new StateVariableNode("x");
-					x.addValue(xV);
+					VariableNode x = new VariableNode("x");
+					PhysicalQuantity q = new PhysicalQuantity();
+					q.setValue(xV);
+					x.addPhysicalQuantity(q);
 					pos.addChild(x);
-					StateVariableNode y = new StateVariableNode("y");
-					y.addValue(yV);
+					VariableNode y = new VariableNode("y");
+					PhysicalQuantity q2 = new PhysicalQuantity();
+					q2.setValue(yV);
+					y.addPhysicalQuantity(q2);
 					pos.addChild(y);
-					StateVariableNode z = new StateVariableNode("z");
-					z.addValue(zV);
+					VariableNode z = new VariableNode("z");
+					PhysicalQuantity q3 = new PhysicalQuantity();
+					q3.setValue(zV);
+					z.addPhysicalQuantity(q3);
 					pos.addChild(z);
-					StateVariableNode p = new StateVariableNode("p");
-					p.addValue(pV);
+					VariableNode p = new VariableNode("p");
+					PhysicalQuantity q4 = new PhysicalQuantity();
+					q4.setValue(pV);
+					p.addPhysicalQuantity(q4);
 					pos.addChild(p);
 				}
 			}
@@ -1064,7 +1070,7 @@ public class SPHSolverService implements ISolver {
 	}
 
 	private void updateStateTreeForWatch() {
-		ACompositeNode watchTree = _stateTree.getSubTree(ASPECTTREE.WATCH_TREE);
+		ACompositeNode watchTree = _stateTree.getSubTree(AspectTreeType.WATCH_TREE);
 
 		// map watchable buffers that are not already mapped
 		// NOTE: position is mapped for scene generation - improving performance by not mapping it again
@@ -1142,7 +1148,7 @@ public class SPHSolverService implements ISolver {
 										}
 									} else {
 										// it's a leaf node
-										StateVariableNode newNode = new StateVariableNode(current);
+										VariableNode newNode = new VariableNode(current);
 
 										FloatValue val = null;
 
@@ -1159,7 +1165,9 @@ public class SPHSolverService implements ISolver {
 											break;
 										}
 
-										newNode.addValue(val);
+										PhysicalQuantity q = new PhysicalQuantity();
+										q.setValue(val);
+										newNode.addPhysicalQuantity(q);
 
 										node.addChild(newNode);
 									}
@@ -1413,6 +1421,20 @@ public class SPHSolverService implements ISolver {
 	@Override
 	public void clearWatchVariables() {
 		watchListVarNames.clear();
+	}
+
+	@Override
+	public void populateVisualTree(IModel model, AspectSubTreeNode visualTree) throws GeppettoInitializationException
+	{
+		_model = (SPHModelX) model;
+		setBuffersFromModel();
+
+		_stateTree = new AspectSubTreeNode(_model.getId());
+		updateStateTree();
+
+		setWatchableVariables();
+		setForceableVariables();
+		// TODO Auto-generated method stub
 	}
 
 };

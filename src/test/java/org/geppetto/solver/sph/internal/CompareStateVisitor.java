@@ -38,10 +38,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.geppetto.core.model.quantities.PhysicalQuantity;
 import org.geppetto.core.model.runtime.ACompositeNode;
-import org.geppetto.core.model.runtime.ASimpleNode;
+import org.geppetto.core.model.runtime.ATimeSeriesNode;
 import org.geppetto.core.model.runtime.CompositeVariableNode;
-import org.geppetto.core.model.runtime.StateVariableNode;
+import org.geppetto.core.model.runtime.VariableNode;
 import org.geppetto.core.model.state.visitors.DefaultStateVisitor;
 import org.geppetto.core.model.values.AValue;
 import org.geppetto.model.sph.Vector3D;
@@ -71,26 +72,27 @@ public class CompareStateVisitor extends DefaultStateVisitor
 	}
 	
 	@Override
-	public boolean inCompositeStateNode(CompositeVariableNode node) {
+	public boolean inCompositeVariableNode(CompositeVariableNode node) {
 		if(node.isArray())
 			currentID = node.getIndex();
 		
-		return super.inCompositeStateNode(node);
+		return super.inCompositeVariableNode(node);
 	}
 	
 	@Override
-	public boolean outCompositeStateNode(CompositeVariableNode node) {
+	public boolean outCompositeVariableNode(CompositeVariableNode node) {
 		if(node.isArray())
 			currentID = null;
 		
-		return super.inCompositeStateNode(node);
+		return super.inCompositeVariableNode(node);
 	}
 
 	@Override
-	public boolean visitStateVariableNode(StateVariableNode node)
+	public boolean visitVariableNode(VariableNode node)
 	{
 		// get last step
-		AValue v = node.getValues().get(node.getValues().size() - 1);
+		PhysicalQuantity p = node.getTimeSeries().get(node.getTimeSeries().size() - 1);
+		AValue v = p.getValue();
 		Float nodeVal = Float.parseFloat(v.getStringValue());
 		
 		String refValues = referenceStates[currentID];
@@ -127,7 +129,7 @@ public class CompareStateVisitor extends DefaultStateVisitor
 			mismatchingIDs.add(currentID);
 		}
 		
-		return super.visitStateVariableNode(node);
+		return super.visitVariableNode(node);
 	}
 	
 	private float round(float d, int decimalPlace) 

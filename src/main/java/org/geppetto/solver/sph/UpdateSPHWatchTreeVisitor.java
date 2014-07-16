@@ -35,7 +35,8 @@ package org.geppetto.solver.sph;
 import java.util.List;
 
 import org.bridj.Pointer;
-import org.geppetto.core.model.runtime.StateVariableNode;
+import org.geppetto.core.model.quantities.PhysicalQuantity;
+import org.geppetto.core.model.runtime.VariableNode;
 import org.geppetto.core.model.state.visitors.DefaultStateVisitor;
 import org.geppetto.core.model.values.FloatValue;
 import org.geppetto.core.model.values.ValuesFactory;
@@ -54,7 +55,7 @@ public class UpdateSPHWatchTreeVisitor extends DefaultStateVisitor {
 	}
 
 	@Override
-	public boolean visitStateVariableNode(StateVariableNode node)
+	public boolean visitVariableNode(VariableNode node)
 	{
 		// 1. figure out which of the variables being watched this node represents
 		String fullName = node.getInstancePath();
@@ -75,18 +76,24 @@ public class UpdateSPHWatchTreeVisitor extends DefaultStateVisitor {
 		// 3. node.addValue
 		if(node.getName().equals("x"))
 		{
-			node.addValue(_xV);
+			PhysicalQuantity q = new PhysicalQuantity();
+			q.setValue(_xV);
+			node.addPhysicalQuantity(q);
 		}
 		else if(node.getName().equals("y"))
 		{
-			node.addValue(_yV);
+			PhysicalQuantity q = new PhysicalQuantity();
+			q.setValue(_yV);
+			node.addPhysicalQuantity(q);
 		}
 		else if(node.getName().equals("z"))
 		{
-			node.addValue(_zV);
+			PhysicalQuantity q = new PhysicalQuantity();
+			q.setValue(_zV);
+			node.addPhysicalQuantity(q);
 		}
 		
-		return super.visitStateVariableNode(node);
+		return super.visitVariableNode(node);
 	}
 
 }
