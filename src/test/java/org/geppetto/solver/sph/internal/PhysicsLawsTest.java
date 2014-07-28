@@ -5,6 +5,7 @@ import java.util.List;
 
 import junit.framework.Assert;
 
+import org.geppetto.core.model.runtime.AspectNode;
 import org.geppetto.core.model.runtime.AspectSubTreeNode;
 import org.geppetto.core.model.values.FloatValue;
 import org.geppetto.core.simulation.TimeConfiguration;
@@ -54,7 +55,9 @@ public class PhysicsLawsTest {
 		v1.setY((float) (v0.getY() + SPHConstants.GRAVITY_Y*t) * SPHConstants.SIMULATION_SCALE);
 		v1.setZ((float) (v0.getZ() + SPHConstants.GRAVITY_Z*t) * SPHConstants.SIMULATION_SCALE);
 		
-		AspectSubTreeNode stateSet = solver.solve(new TimeConfiguration(null, steps, null));
+		AspectNode stateSet = new AspectNode();
+
+		solver.solve(new TimeConfiguration(null, steps, null),stateSet);
 		
 		PCISPHCheckPoint check = solver.getCheckpointsMap().get(KernelsEnum.INTEGRATE);
 		List<Float> velocity = check.velocity;
@@ -95,10 +98,10 @@ public class PhysicsLawsTest {
 		int steps = 1;
 		Vector3DX end_p;
 		GetPositionVisitor positionVisitor = new GetPositionVisitor();
-		AspectSubTreeNode stateSet;
+		AspectNode stateSet = new AspectNode();
 		while(s * SPHConstants.SIMULATION_SCALE <= destination_dis){
 			s_b = s;
-			stateSet = solver.solve(new TimeConfiguration(null, steps, null));
+			solver.solve(new TimeConfiguration(null, steps, null),stateSet);
 			stateSet.apply(positionVisitor);
 			//stateSet.
 			//PCISPHCheckPoint check = solver.getCheckpointsMap().get(KernelsEnum.INTEGRATE);
@@ -138,9 +141,9 @@ public class PhysicsLawsTest {
 		int steps = 1;
 		Vector3DX end_p;
 		GetPositionVisitor positionVisitor = new GetPositionVisitor();
-		AspectSubTreeNode stateSet;
+		AspectNode stateSet = new AspectNode();
 		while(s * SPHConstants.SIMULATION_SCALE <= destination_dis){
-			stateSet = solver.solve(new TimeConfiguration(null, steps, null));
+			solver.solve(new TimeConfiguration(null, steps, null),stateSet);
 			stateSet.apply(positionVisitor);
 			end_p = positionVisitor.getParticlePosition();
 			s = Vector3DX.subtraction(end_p, initPosition).length();
@@ -163,7 +166,7 @@ public class PhysicsLawsTest {
 		int i = 1;
 		int steps = 100;
 		GetPositionVisitor positionVisitor = new GetPositionVisitor();
-		AspectSubTreeNode stateSet;
+		AspectNode stateSet = new AspectNode();
 		SPHParticleX p = null;
 		int particleCount = 0;
 		for(int j=0; j<model.getNumberOfParticles(); j++){
@@ -176,7 +179,7 @@ public class PhysicsLawsTest {
 		}
 		initPosition = Vector3DX.mutiplicationOnScalar(initPosition, 1.f/(float)particleCount);
 		Vector3DX end_p;
-		stateSet = solver.solve(new TimeConfiguration(null, steps, null));
+		solver.solve(new TimeConfiguration(null, steps, null),stateSet);
 		stateSet.apply(positionVisitor);
 		end_p = positionVisitor.getParticlePosition();
 		float result = Vector3DX.subtraction(initPosition, end_p).length();

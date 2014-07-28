@@ -39,7 +39,9 @@ import java.util.Map;
 import junit.framework.Assert;
 
 import org.geppetto.core.model.IModel;
+import org.geppetto.core.model.runtime.AspectNode;
 import org.geppetto.core.model.runtime.AspectSubTreeNode;
+import org.geppetto.core.model.runtime.AspectSubTreeNode.AspectTreeType;
 import org.geppetto.core.simulation.TimeConfiguration;
 import org.geppetto.model.sph.services.SPHModelInterpreterService;
 import org.geppetto.model.sph.x.SPHModelX;
@@ -64,10 +66,12 @@ public class RecordCheckpointsTest {
 		// use default constructor - doesn't record checkpoints
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
-		AspectSubTreeNode stateSet = solver.solve(new TimeConfiguration(0.1f, 1, 1));
+		AspectNode stateSet = new AspectNode();
+
+		solver.solve(new TimeConfiguration(0.1f, 1, 1),stateSet);
 		
-		PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
-		Assert.assertTrue("Particle count doesn't match.", stateSet.getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
+		PCISPHTestUtilities.checkStateTreeForNaN((AspectSubTreeNode) stateSet.getSubTree(AspectTreeType.VISUALIZATION_TREE), false);
+		Assert.assertTrue("Particle count doesn't match.",  stateSet.getSubTree(AspectTreeType.VISUALIZATION_TREE).getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
 		
 		Map<KernelsEnum, PCISPHCheckPoint> checkpoints = solver.getCheckpointsMap();
 		Assert.assertTrue("The map of checkpoints should be empty but is not", checkpoints.isEmpty());
@@ -85,10 +89,12 @@ public class RecordCheckpointsTest {
 		// tell the solver to record checkpoints
 		SPHSolverService solver = new SPHSolverService(true);
 		solver.initialize(model);
-		AspectSubTreeNode stateSet = solver.solve(new TimeConfiguration(0.1f, 1, 1));
 		
-		PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
-		Assert.assertTrue("Particle count doesn't match.", stateSet.getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
+		AspectNode stateSet = new AspectNode();
+		solver.solve(new TimeConfiguration(0.1f, 1, 1),stateSet);
+		
+		PCISPHTestUtilities.checkStateTreeForNaN((AspectSubTreeNode) stateSet.getSubTree(AspectTreeType.VISUALIZATION_TREE), false);
+		Assert.assertTrue("Particle count doesn't match.",  stateSet.getSubTree(AspectTreeType.VISUALIZATION_TREE).getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
 		
 		Map<KernelsEnum, PCISPHCheckPoint> checkpoints = solver.getCheckpointsMap();
 		
@@ -143,11 +149,13 @@ public class RecordCheckpointsTest {
 		// tell the solver to record checkpoints
 		SPHSolverService solver = new SPHSolverService(true);
 		solver.initialize(model);
-		// run many steps - test should give same results
-		AspectSubTreeNode stateSet = solver.solve(new TimeConfiguration(0.1f, 10, 1));
 		
-		PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
-		Assert.assertTrue("Particle count doesn't match.", stateSet.getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
+		AspectNode stateSet = new AspectNode();
+		// run many steps - test should give same results
+		solver.solve(new TimeConfiguration(0.1f, 10, 1),stateSet);
+		
+		PCISPHTestUtilities.checkStateTreeForNaN((AspectSubTreeNode) stateSet.getSubTree(AspectTreeType.VISUALIZATION_TREE), false);
+		Assert.assertTrue("Particle count doesn't match.",  stateSet.getSubTree(AspectTreeType.VISUALIZATION_TREE).getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
 		
 		Map<KernelsEnum, PCISPHCheckPoint> checkpoints = solver.getCheckpointsMap();
 		
@@ -199,11 +207,13 @@ public class RecordCheckpointsTest {
 		// tell the solver to record checkpoints
 		SPHSolverService solver = new SPHSolverService(true);
 		solver.initialize(model);
-		AspectSubTreeNode stateSet = solver.solve(new TimeConfiguration(null, 1, null));
 		
-		PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
+		AspectNode stateSet = new AspectNode();
+		solver.solve(new TimeConfiguration(null, 1, null),stateSet);
 		
-		Assert.assertTrue("Particle count doesn't match.", stateSet.getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
+		PCISPHTestUtilities.checkStateTreeForNaN((AspectSubTreeNode) stateSet.getSubTree(AspectTreeType.VISUALIZATION_TREE), false);
+		
+		Assert.assertTrue("Particle count doesn't match.",  stateSet.getSubTree(AspectTreeType.VISUALIZATION_TREE).getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
 		
 		Map<KernelsEnum, PCISPHCheckPoint> checkpoints = solver.getCheckpointsMap();
 		Assert.assertFalse("The map of checkpoints should not be empty but it is", checkpoints.isEmpty());

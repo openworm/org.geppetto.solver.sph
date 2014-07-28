@@ -41,7 +41,9 @@ import java.util.Set;
 
 import junit.framework.Assert;
 
+import org.geppetto.core.model.runtime.AspectNode;
 import org.geppetto.core.model.runtime.AspectSubTreeNode;
+import org.geppetto.core.model.runtime.AspectSubTreeNode.AspectTreeType;
 import org.geppetto.core.simulation.TimeConfiguration;
 
 import org.geppetto.model.sph.services.SPHModelInterpreterService;
@@ -102,7 +104,7 @@ public class StepValidationTest {
 			// get reference values
 			String[] referenceValues = referenceValuesMap.get(step);
 
-			AspectSubTreeNode stateSet = solver.getStateTree();
+			AspectNode stateSet = new AspectNode();
 
 			// compare state tree with logged values for each recorded step
 			CompareStateVisitor compareVisitor = new CompareStateVisitor(referenceValues);
@@ -110,21 +112,22 @@ public class StepValidationTest {
 			mismatchingSetsMap.put(step, compareVisitor.getMismatches());
 		}
 		
+		AspectNode stateSet = new AspectNode();
 		for(int i = 0; i < 50; i++)
 		{
 			// calculate step
-			AspectSubTreeNode stateSet = solver.solve(new TimeConfiguration(0.1f, 1, 1));
+			solver.solve(new TimeConfiguration(0.1f, 1, 1),stateSet);
 			
 			// only keep latest step results
 			if (i > 0) {
-				PCISPHTestUtilities.removeFirstStateFromTree(stateSet);
+				PCISPHTestUtilities.removeFirstStateFromTree((AspectSubTreeNode) stateSet.getSubTree(AspectTreeType.VISUALIZATION_TREE));
 			}
 			
 			// get reference values
 			step = i + 1;
 			String[] referenceValues = referenceValuesMap.get(step);
 			
-			PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
+			PCISPHTestUtilities.checkStateTreeForNaN((AspectSubTreeNode) stateSet.getSubTree(AspectTreeType.VISUALIZATION_TREE), false);
 			
 			if( referenceValuesMap.containsKey(step) )
 			{
@@ -190,7 +193,7 @@ public class StepValidationTest {
 			// get reference values
 			String[] referenceValues = referenceValuesMap.get(step);
 			
-			AspectSubTreeNode stateSet = solver.getStateTree();
+			AspectNode stateSet = new AspectNode();
 
 			// compare state tree with logged values for each recorded step
 			CompareStateVisitor compareVisitor = new CompareStateVisitor(referenceValues);
@@ -198,21 +201,23 @@ public class StepValidationTest {
 			mismatchingSetsMap.put(step, compareVisitor.getMismatches());
 		}
 
+		AspectNode stateSet = new AspectNode();
+
 		for(int i = 0; i < 10; i++)
 		{
 			// calculate step
-			AspectSubTreeNode stateSet = solver.solve(new TimeConfiguration(null, 1, null));
+			solver.solve(new TimeConfiguration(null, 1, null),stateSet);
 			
 			// only keep latest step results
 			if (i > 0) {
-				PCISPHTestUtilities.removeFirstStateFromTree(stateSet);
+				PCISPHTestUtilities.removeFirstStateFromTree((AspectSubTreeNode) stateSet.getSubTree(AspectTreeType.VISUALIZATION_TREE));
 			}
 			
 			// get reference values
 			step = i + 1;
 			String[] referenceValues = referenceValuesMap.get(step);
 			
-			PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
+			PCISPHTestUtilities.checkStateTreeForNaN((AspectSubTreeNode) stateSet.getSubTree(AspectTreeType.VISUALIZATION_TREE), false);
 			
 			if( referenceValuesMap.containsKey(step) )
 			{
@@ -292,7 +297,7 @@ public class StepValidationTest {
 			// get reference values
 			String[] referenceValues = referenceValuesMap.get(step);
 
-			AspectSubTreeNode stateSet = solver.getStateTree();
+			AspectNode stateSet = new AspectNode();
 
 			// compare state tree with logged values for each recorded step
 			CompareStateVisitor compareVisitor = new CompareStateVisitor(referenceValues);
@@ -300,21 +305,23 @@ public class StepValidationTest {
 			mismatchingSetsMap.put(step, compareVisitor.getMismatches());
 		}
 		
+		AspectNode stateSet = new AspectNode();
+
 		for(int i = 0; i < 100; i++)
 		{
 			// calculate step
-			AspectSubTreeNode stateSet = solver.solve(new TimeConfiguration(0.1f, 1, 1));
+			solver.solve(new TimeConfiguration(0.1f, 1, 1),stateSet);
 			
 			// only keep latest step results
 			if (i > 0) {
-				PCISPHTestUtilities.removeFirstStateFromTree(stateSet);
+				PCISPHTestUtilities.removeFirstStateFromTree((AspectSubTreeNode) stateSet.getSubTree(AspectTreeType.VISUALIZATION_TREE));
 			}
 			
 			// get reference values
 			step = i + 1;
 			String[] referenceValues = referenceValuesMap.get(step);
 			
-			PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
+			PCISPHTestUtilities.checkStateTreeForNaN((AspectSubTreeNode) stateSet.getSubTree(AspectTreeType.VISUALIZATION_TREE), false);
 			
 			if( referenceValuesMap.containsKey(step) )
 			{

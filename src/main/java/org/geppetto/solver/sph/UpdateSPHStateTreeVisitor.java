@@ -34,11 +34,17 @@ package org.geppetto.solver.sph;
 
 import org.bridj.Pointer;
 import org.geppetto.core.model.quantities.PhysicalQuantity;
+import org.geppetto.core.model.runtime.ColladaNode;
 import org.geppetto.core.model.runtime.CompositeVariableNode;
+import org.geppetto.core.model.runtime.CylinderNode;
+import org.geppetto.core.model.runtime.ParticleNode;
+import org.geppetto.core.model.runtime.SphereNode;
 import org.geppetto.core.model.runtime.VariableNode;
+import org.geppetto.core.model.runtime.VisualGroupNode;
 import org.geppetto.core.model.state.visitors.DefaultStateVisitor;
 import org.geppetto.core.model.values.FloatValue;
 import org.geppetto.core.model.values.ValuesFactory;
+import org.geppetto.core.visualisation.model.Point;
 
 /**
  * @author matteocantarelli
@@ -51,67 +57,82 @@ public class UpdateSPHStateTreeVisitor extends DefaultStateVisitor
 
 	private FloatValue _xV, _yV, _zV, _pV;
 	private Pointer<Float> _positionPtr;
-
+	
 	public UpdateSPHStateTreeVisitor(Pointer<Float> positionPtr)
 	{
-		_positionPtr = positionPtr;
-
+		this._positionPtr = positionPtr;
 	}
 
 	@Override
-	public boolean inCompositeVariableNode(CompositeVariableNode node)
+	public boolean inVisualGroupNode(VisualGroupNode node)
+	{		
+		return super.inVisualGroupNode(node);
+	}
+	
+	@Override
+	public boolean outVisualGroupNode(VisualGroupNode node)
 	{
-		if(node.isArray())
-		{
-			int index = node.getIndex()*4;
+		return super.outVisualGroupNode(node);
+	}
+	
+	@Override
+	public boolean visitSphereNode(SphereNode node){
 
+		if(node.getPosition() != null){
+			Point newPosition = new Point();
+			newPosition.setX(this._xV.getAsDouble());
+			newPosition.setY(this._yV.getAsDouble());
+			newPosition.setZ(this._zV.getAsDouble());
+			node.setPosition(newPosition);
+		}
+		return super.visitSphereNode(node);
+	}
+	
+	@Override
+	public boolean visitCylinderNode(CylinderNode node){
+
+		if(node.getPosition() != null){
+			Point newPosition = new Point();
+			newPosition.setX(this._xV.getAsDouble());
+			newPosition.setY(this._yV.getAsDouble());
+			newPosition.setZ(this._zV.getAsDouble());
+			node.setPosition(newPosition);
+		}
+		return super.visitCylinderNode(node);
+	}
+	
+	@Override
+	public boolean visitColladaNode(ColladaNode node){
+		if(node.getPosition() != null){
+			Point newPosition = new Point();
+			newPosition.setX(this._xV.getAsDouble());
+			newPosition.setY(this._yV.getAsDouble());
+			newPosition.setZ(this._zV.getAsDouble());
+			node.setPosition(newPosition);
+		}
+		return super.visitColladaNode(node);
+	}
+	
+	@Override
+	public boolean visitParticleNode(ParticleNode node){
+		if(node.getPosition() != null){
+			
+			int index = (node.getIndex()+1) * 4;
 			_xV = ValuesFactory.getFloatValue(_positionPtr.get(index));
 			_yV = ValuesFactory.getFloatValue(_positionPtr.get(index + 1));
 			_zV = ValuesFactory.getFloatValue(_positionPtr.get(index + 2));
-			_pV = ValuesFactory.getFloatValue(_positionPtr.get(index + 3));
-				
+ 			_pV = ValuesFactory.getFloatValue(_positionPtr.get(index + 3));
+			
+			Point newPosition = new Point();
+			newPosition.setX(this._xV.getAsDouble());
+			newPosition.setY(this._yV.getAsDouble());
+			newPosition.setZ(this._zV.getAsDouble());
+			node.setPosition(newPosition);
+			
+			node.setParticleKind(_pV.getAsFloat());
+			
+			System.out.println("x:" + _xV + " y:" + _yV + " z:" + _zV + " p:" + _pV);
 		}
-		return super.inCompositeVariableNode(node);
+		return super.visitParticleNode(node);
 	}
-
-	@Override
-	public boolean outCompositeVariableNode(CompositeVariableNode node)
-	{
-		if(node.isArray())
-		{
-			_xV = _yV = _zV = _pV = null;
-		}
-		return super.outCompositeVariableNode(node);
-	}
-
-	@Override
-	public boolean visitVariableNode(VariableNode node)
-	{
-		if(node.getName()=="x")
-		{
-			PhysicalQuantity q = new PhysicalQuantity();
-			q.setValue(_xV);
-			node.addPhysicalQuantity(q);
-		}
-		else if(node.getName()=="y")
-		{
-			PhysicalQuantity q = new PhysicalQuantity();
-			q.setValue(_yV);
-			node.addPhysicalQuantity(q);
-		}
-		else if(node.getName()=="z")
-		{
-			PhysicalQuantity q = new PhysicalQuantity();
-			q.setValue(_zV);
-			node.addPhysicalQuantity(q);
-		}
-		else if(node.getName()=="p")
-		{
-			PhysicalQuantity q = new PhysicalQuantity();
-			q.setValue(_pV);
-			node.addPhysicalQuantity(q);
-		}
-		return super.visitVariableNode(node);
-	}
-
 }
