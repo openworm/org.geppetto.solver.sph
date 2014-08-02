@@ -1079,8 +1079,9 @@ public class SPHSolverService implements ISolver {
 	@Override
 	public void initialize(IModel model) {
 		_model = (SPHModelX) model;
-		setBuffersFromModel();
 		
+		setBuffersFromModel();
+
 		setWatchableVariables();
 		setForceableVariables();
 
@@ -1269,6 +1270,8 @@ public class SPHSolverService implements ISolver {
 	@Override
 	public void populateVisualTree(IModel model, AspectSubTreeNode visualTree) throws GeppettoInitializationException
 	{
+		_positionPtr = _position.map(_queue, CLMem.MapFlags.Read);
+
 		VisualGroupNode _liquidModel = new VisualGroupNode("LIQUID_" + model.getId());
 		VisualGroupNode _boundaryModel = new VisualGroupNode("BOUNDARY_" + model.getId());
 		VisualGroupNode _elasticModel = new VisualGroupNode("ELASTIC_" + model.getId());
@@ -1291,6 +1294,7 @@ public class SPHSolverService implements ISolver {
 				pos.setZ(zV.getAsDouble());
 				particle.setPosition(pos);
 				particle.setParticleKind(pV.getAsFloat());
+				particle.setId(particleId);
 				
 				if(pV.getAsFloat() == (SPHConstants.LIQUID_TYPE))
 				{
@@ -1310,6 +1314,8 @@ public class SPHSolverService implements ISolver {
 		visualTree.addChild(_liquidModel);
 		visualTree.addChild(_elasticModel);
 		visualTree.addChild(_boundaryModel);		
+		
+		_position.unmap(_queue, _positionPtr);
 	}
 
 	@Override

@@ -33,13 +33,10 @@
 package org.geppetto.solver.sph;
 
 import org.bridj.Pointer;
-import org.geppetto.core.model.quantities.PhysicalQuantity;
 import org.geppetto.core.model.runtime.ColladaNode;
-import org.geppetto.core.model.runtime.CompositeVariableNode;
 import org.geppetto.core.model.runtime.CylinderNode;
 import org.geppetto.core.model.runtime.ParticleNode;
 import org.geppetto.core.model.runtime.SphereNode;
-import org.geppetto.core.model.runtime.VariableNode;
 import org.geppetto.core.model.runtime.VisualGroupNode;
 import org.geppetto.core.model.state.visitors.DefaultStateVisitor;
 import org.geppetto.core.model.values.FloatValue;
@@ -117,7 +114,7 @@ public class UpdateSPHStateTreeVisitor extends DefaultStateVisitor
 	public boolean visitParticleNode(ParticleNode node){
 		if(node.getPosition() != null){
 			
-			int index = (node.getIndex()+1) * 4;
+			int index = node.getIndex() * 4;
 			_xV = ValuesFactory.getFloatValue(_positionPtr.get(index));
 			_yV = ValuesFactory.getFloatValue(_positionPtr.get(index + 1));
 			_zV = ValuesFactory.getFloatValue(_positionPtr.get(index + 2));
@@ -129,9 +126,7 @@ public class UpdateSPHStateTreeVisitor extends DefaultStateVisitor
 			newPosition.setZ(this._zV.getAsDouble());
 			node.setPosition(newPosition);
 			
-			node.setParticleKind(_pV.getAsFloat());
-			
-			System.out.println("x:" + _xV + " y:" + _yV + " z:" + _zV + " p:" + _pV);
+			node.setParticleKind(_pV.getAsFloat());			
 		}
 		return super.visitParticleNode(node);
 	}
