@@ -41,7 +41,7 @@ import java.util.Set;
 import org.geppetto.core.model.quantities.PhysicalQuantity;
 import org.geppetto.core.model.runtime.ACompositeNode;
 import org.geppetto.core.model.runtime.ATimeSeriesNode;
-import org.geppetto.core.model.runtime.CompositeVariableNode;
+import org.geppetto.core.model.runtime.CompositeNode;
 import org.geppetto.core.model.runtime.VariableNode;
 import org.geppetto.core.model.state.visitors.DefaultStateVisitor;
 import org.geppetto.core.model.values.AValue;
@@ -72,19 +72,19 @@ public class CompareStateVisitor extends DefaultStateVisitor
 	}
 	
 	@Override
-	public boolean inCompositeVariableNode(CompositeVariableNode node) {
+	public boolean inCompositeNode(CompositeNode node) {
 		if(node.isArray())
 			currentID = node.getIndex();
 		
-		return super.inCompositeVariableNode(node);
+		return super.inCompositeNode(node);
 	}
 	
 	@Override
-	public boolean outCompositeVariableNode(CompositeVariableNode node) {
+	public boolean outCompositeNode(CompositeNode node) {
 		if(node.isArray())
 			currentID = null;
 		
-		return super.inCompositeVariableNode(node);
+		return super.inCompositeNode(node);
 	}
 
 	@Override

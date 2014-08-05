@@ -37,7 +37,7 @@ import org.geppetto.core.model.runtime.ColladaNode;
 import org.geppetto.core.model.runtime.CylinderNode;
 import org.geppetto.core.model.runtime.ParticleNode;
 import org.geppetto.core.model.runtime.SphereNode;
-import org.geppetto.core.model.runtime.VisualGroupNode;
+import org.geppetto.core.model.runtime.CompositeNode;
 import org.geppetto.core.model.state.visitors.DefaultStateVisitor;
 import org.geppetto.core.model.values.FloatValue;
 import org.geppetto.core.model.values.ValuesFactory;
@@ -49,27 +49,27 @@ import org.geppetto.core.visualisation.model.Point;
  * This method updates the particles already present in the tree
  * adding new values as found on the position pointer
  */
-public class UpdateSPHStateTreeVisitor extends DefaultStateVisitor
+public class UpdateSPHVisualizationTreeVisitor extends DefaultStateVisitor
 {
 
 	private FloatValue _xV, _yV, _zV, _pV;
 	private Pointer<Float> _positionPtr;
 	
-	public UpdateSPHStateTreeVisitor(Pointer<Float> positionPtr)
+	public UpdateSPHVisualizationTreeVisitor(Pointer<Float> positionPtr)
 	{
 		this._positionPtr = positionPtr;
 	}
 
 	@Override
-	public boolean inVisualGroupNode(VisualGroupNode node)
+	public boolean inCompositeNode(CompositeNode node)
 	{		
-		return super.inVisualGroupNode(node);
+		return super.inCompositeNode(node);
 	}
 	
 	@Override
-	public boolean outVisualGroupNode(VisualGroupNode node)
+	public boolean outCompositeNode(CompositeNode node)
 	{
-		return super.outVisualGroupNode(node);
+		return super.outCompositeNode(node);
 	}
 	
 	@Override

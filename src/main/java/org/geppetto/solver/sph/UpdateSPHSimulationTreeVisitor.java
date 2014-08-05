@@ -32,8 +32,6 @@
  *******************************************************************************/
 package org.geppetto.solver.sph;
 
-import java.util.List;
-
 import org.bridj.Pointer;
 import org.geppetto.core.model.quantities.PhysicalQuantity;
 import org.geppetto.core.model.runtime.VariableNode;
@@ -41,17 +39,13 @@ import org.geppetto.core.model.state.visitors.DefaultStateVisitor;
 import org.geppetto.core.model.values.FloatValue;
 import org.geppetto.core.model.values.ValuesFactory;
 
-public class UpdateSPHWatchTreeVisitor extends DefaultStateVisitor {
+public class UpdateSPHSimulationTreeVisitor extends DefaultStateVisitor {
 
 	private Pointer<Float> _positionPtr;
-	private Pointer<Float> _velocityPtr;
-	private List<String> _watchlist;
 
-	public UpdateSPHWatchTreeVisitor(Pointer<Float> positionPtr, Pointer<Float> velocityPtr, List<String> watchList)
+	public UpdateSPHSimulationTreeVisitor(Pointer<Float> positionPtr)
 	{
 		_positionPtr = positionPtr;
-		_velocityPtr = velocityPtr;
-		_watchlist = watchList;
 	}
 
 	@Override

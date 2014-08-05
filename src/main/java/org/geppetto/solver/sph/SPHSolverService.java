@@ -64,10 +64,9 @@ import org.geppetto.core.model.runtime.ACompositeNode;
 import org.geppetto.core.model.runtime.ANode;
 import org.geppetto.core.model.runtime.AspectNode;
 import org.geppetto.core.model.runtime.AspectSubTreeNode;
-import org.geppetto.core.model.runtime.CompositeVariableNode;
+import org.geppetto.core.model.runtime.CompositeNode;
 import org.geppetto.core.model.runtime.ParticleNode;
 import org.geppetto.core.model.runtime.VariableNode;
-import org.geppetto.core.model.runtime.VisualGroupNode;
 import org.geppetto.core.model.runtime.AspectSubTreeNode.AspectTreeType;
 import org.geppetto.core.model.values.FloatValue;
 import org.geppetto.core.model.values.ValuesFactory;
@@ -1006,27 +1005,32 @@ public class SPHSolverService implements ISolver {
 		// reason to revoke this assumption we need to add code that at every
 		// cycle checks
 		// if some new states exist to eventually add them to the stateTree
-		UpdateSPHStateTreeVisitor updateSPHStateTreeVisitor = new UpdateSPHStateTreeVisitor(_positionPtr);
+		UpdateSPHVisualizationTreeVisitor updateSPHStateTreeVisitor = new UpdateSPHVisualizationTreeVisitor(_positionPtr);
 		visualTree.apply(updateSPHStateTreeVisitor);
 
 		if (watching) {
-			updateStateTreeForWatch(simulationTree);
+			updateSimulationTree(simulationTree);
 		}
 		
 		_position.unmap(_queue, _positionPtr);
 
 	}
 
-	private void updateStateTreeForWatch(AspectSubTreeNode simulationTree) {
+	/**
+	 * Updates nodes for simulation tree, if tree is empty call method to populate it.
+	 * 
+	 * @param simulationTree
+	 */
+	private void updateSimulationTree(AspectSubTreeNode simulationTree) {
 		// map watchable buffers that are not already mapped
 		// NOTE: position is mapped for scene generation - improving performance by not mapping it again
 		_velocityPtr = _velocity.map(_queue, CLMem.MapFlags.Read);
 
 		if (simulationTree.getChildren().isEmpty()) {	
-			this.populateSimulationTree(simulationTree);			
+			populateSimulationTree(simulationTree);			
 		} else {
 			// watch tree not empty populate new values
-			UpdateSPHWatchTreeVisitor visitor = new UpdateSPHWatchTreeVisitor(_positionPtr, _positionPtr, this.watchListVarNames);
+			UpdateSPHSimulationTreeVisitor visitor = new UpdateSPHSimulationTreeVisitor(_positionPtr);
 			simulationTree.apply(visitor);
 		}
 
@@ -1272,9 +1276,9 @@ public class SPHSolverService implements ISolver {
 	{
 		_positionPtr = _position.map(_queue, CLMem.MapFlags.Read);
 
-		VisualGroupNode _liquidModel = new VisualGroupNode("LIQUID_" + model.getId());
-		VisualGroupNode _boundaryModel = new VisualGroupNode("BOUNDARY_" + model.getId());
-		VisualGroupNode _elasticModel = new VisualGroupNode("ELASTIC_" + model.getId());
+		CompositeNode _liquidModel = new CompositeNode("LIQUID_" + model.getId());
+		CompositeNode _boundaryModel = new CompositeNode("BOUNDARY_" + model.getId());
+		CompositeNode _elasticModel = new CompositeNode("ELASTIC_" + model.getId());
 		
 		// the state tree is empty, let's create it
 		for (int i = 0, index = 0; i < _particleCount; i++, index = index + 4) {
@@ -1330,8 +1334,9 @@ public class SPHSolverService implements ISolver {
 			for (String varName : watchListVarNames) {
 				// get watchable variables path
 				List<String> watchableVarsPaths = new ArrayList<String>();
-				VariablePathSerializer.GetFullVariablePath(var, _model.getInstancePath(), watchableVarsPaths);
+				VariablePathSerializer.GetFullVariablePath(var, "", watchableVarsPaths);
 
+				varName = varName.replace(watchTree.getInstancePath()+".", "");
 				// remove array bracket arguments from variable paths
 				String varNameNoBrackets = varName;
 				String particleID = null;
@@ -1383,7 +1388,7 @@ public class SPHSolverService implements ISolver {
 										nodeName = current + "[" + particleID + "]";
 									}
 
-									CompositeVariableNode newNode = new CompositeVariableNode(nodeName);
+									CompositeNode newNode = new CompositeNode(nodeName);
 
 									boolean addNewNode = containsNode(node, newNode.getName());
 
