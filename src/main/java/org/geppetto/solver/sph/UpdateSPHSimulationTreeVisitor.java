@@ -32,34 +32,27 @@
  *******************************************************************************/
 package org.geppetto.solver.sph;
 
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import org.bridj.Pointer;
-import org.geppetto.core.model.state.SimpleStateNode;
+import org.geppetto.core.model.quantities.PhysicalQuantity;
+import org.geppetto.core.model.runtime.VariableNode;
 import org.geppetto.core.model.state.visitors.DefaultStateVisitor;
 import org.geppetto.core.model.values.FloatValue;
 import org.geppetto.core.model.values.ValuesFactory;
 
-public class UpdateSPHWatchTreeVisitor extends DefaultStateVisitor {
+public class UpdateSPHSimulationTreeVisitor extends DefaultStateVisitor {
 
 	private Pointer<Float> _positionPtr;
-	private Pointer<Float> _velocityPtr;
-	private List<String> _watchlist;
 
-	public UpdateSPHWatchTreeVisitor(Pointer<Float> positionPtr, Pointer<Float> velocityPtr, List<String> watchList)
+	public UpdateSPHSimulationTreeVisitor(Pointer<Float> positionPtr)
 	{
 		_positionPtr = positionPtr;
-		_velocityPtr = velocityPtr;
-		_watchlist = watchList;
 	}
 
 	@Override
-	public boolean visitSimpleStateNode(SimpleStateNode node)
+	public boolean visitVariableNode(VariableNode node)
 	{
 		// 1. figure out which of the variables being watched this node represents
-		String fullName = node.getFullName();
+		String fullName = node.getInstancePath();
 		
 		// 2. get value of interest (Nth particle from relevant results arrays)
 		// extract index from string
@@ -77,18 +70,24 @@ public class UpdateSPHWatchTreeVisitor extends DefaultStateVisitor {
 		// 3. node.addValue
 		if(node.getName().equals("x"))
 		{
-			node.addValue(_xV);
+			PhysicalQuantity q = new PhysicalQuantity();
+			q.setValue(_xV);
+			node.addPhysicalQuantity(q);
 		}
 		else if(node.getName().equals("y"))
 		{
-			node.addValue(_yV);
+			PhysicalQuantity q = new PhysicalQuantity();
+			q.setValue(_yV);
+			node.addPhysicalQuantity(q);
 		}
 		else if(node.getName().equals("z"))
 		{
-			node.addValue(_zV);
+			PhysicalQuantity q = new PhysicalQuantity();
+			q.setValue(_zV);
+			node.addPhysicalQuantity(q);
 		}
 		
-		return super.visitSimpleStateNode(node);
+		return super.visitVariableNode(node);
 	}
 
 }

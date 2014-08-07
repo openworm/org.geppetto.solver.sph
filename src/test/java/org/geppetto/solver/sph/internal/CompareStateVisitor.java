@@ -38,8 +38,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.geppetto.core.model.state.CompositeStateNode;
-import org.geppetto.core.model.state.SimpleStateNode;
+import org.geppetto.core.model.quantities.PhysicalQuantity;
+import org.geppetto.core.model.runtime.ACompositeNode;
+import org.geppetto.core.model.runtime.ATimeSeriesNode;
+import org.geppetto.core.model.runtime.CompositeNode;
+import org.geppetto.core.model.runtime.VariableNode;
 import org.geppetto.core.model.state.visitors.DefaultStateVisitor;
 import org.geppetto.core.model.values.AValue;
 import org.geppetto.model.sph.Vector3D;
@@ -69,26 +72,27 @@ public class CompareStateVisitor extends DefaultStateVisitor
 	}
 	
 	@Override
-	public boolean inCompositeStateNode(CompositeStateNode node) {
+	public boolean inCompositeNode(CompositeNode node) {
 		if(node.isArray())
 			currentID = node.getIndex();
 		
-		return super.inCompositeStateNode(node);
+		return super.inCompositeNode(node);
 	}
 	
 	@Override
-	public boolean outCompositeStateNode(CompositeStateNode node) {
+	public boolean outCompositeNode(CompositeNode node) {
 		if(node.isArray())
 			currentID = null;
 		
-		return super.inCompositeStateNode(node);
+		return super.inCompositeNode(node);
 	}
 
 	@Override
-	public boolean visitSimpleStateNode(SimpleStateNode node)
+	public boolean visitVariableNode(VariableNode node)
 	{
 		// get last step
-		AValue v = node.getValues().get(node.getValues().size() - 1);
+		PhysicalQuantity p = node.getTimeSeries().get(node.getTimeSeries().size() - 1);
+		AValue v = p.getValue();
 		Float nodeVal = Float.parseFloat(v.getStringValue());
 		
 		String refValues = referenceStates[currentID];
@@ -125,7 +129,7 @@ public class CompareStateVisitor extends DefaultStateVisitor
 			mismatchingIDs.add(currentID);
 		}
 		
-		return super.visitSimpleStateNode(node);
+		return super.visitVariableNode(node);
 	}
 	
 	private float round(float d, int decimalPlace) 
