@@ -41,6 +41,7 @@ import java.util.Map;
 
 import junit.framework.Assert;
 
+import org.geppetto.core.model.runtime.AspectNode;
 import org.geppetto.core.simulation.TimeConfiguration;
 import org.geppetto.model.sph.Vector3D;
 import org.geppetto.model.sph.services.SPHModelInterpreterService;
@@ -317,8 +318,9 @@ public class StepValidationWithCheckpointsTest {
 		
 		Map<BuffersEnum, Integer> mismatchingValuesPerBuffers = new LinkedHashMap<BuffersEnum, Integer>();
 
+		AspectNode aspect= new AspectNode();
 		// calculate step
-		solver.solve(new TimeConfiguration(null, 1, null));
+		solver.solve(new TimeConfiguration(null, 1, null),aspect);
 		
 		// get checkpoint of interest
 		PCISPHCheckPoint checkpoint_values = solver.getCheckpointsMap().get(checkpoint);

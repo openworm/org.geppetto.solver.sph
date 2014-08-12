@@ -5,7 +5,8 @@ import java.util.List;
 
 import junit.framework.Assert;
 
-import org.geppetto.core.model.state.SimpleStateNode;
+import org.geppetto.core.model.runtime.ATimeSeriesNode;
+import org.geppetto.core.model.runtime.VariableNode;
 import org.geppetto.core.model.state.visitors.DefaultStateVisitor;
 import org.geppetto.core.model.values.AValue;
 import org.geppetto.model.sph.common.SPHConstants;
@@ -19,23 +20,23 @@ public class GetPositionVisitor extends DefaultStateVisitor {
 	List<Vector3DX> positionList = new ArrayList<Vector3DX>();
 	Vector3DX currentPos = new Vector3DX();
 	@Override
-	public boolean visitSimpleStateNode(SimpleStateNode node)
+	public boolean visitVariableNode(VariableNode node)
 	{
-		Assert.assertFalse(node.getValues().size() == 0);
+		Assert.assertFalse(node.getTimeSeries().size() == 0);
 		//positionList.clear();
 		int i=0;
 		switch(node.getName()){
 			case "x":
-				currentPos.setX(Float.parseFloat(node.getValues().get(node.getValues().size() - 1).toString()));
+				currentPos.setX(Float.parseFloat(node.getTimeSeries().get(node.getTimeSeries().size() - 1).toString()));
 				break;
 			case "y":
-				currentPos.setY(Float.parseFloat(node.getValues().get(node.getValues().size() - 1).toString()));
+				currentPos.setY(Float.parseFloat(node.getTimeSeries().get(node.getTimeSeries().size() - 1).toString()));
 				break;
 			case "z":
-				currentPos.setZ(Float.parseFloat(node.getValues().get(node.getValues().size() - 1).toString()));
+				currentPos.setZ(Float.parseFloat(node.getTimeSeries().get(node.getTimeSeries().size() - 1).toString()));
 				break;
 			case "p":
-				currentPos.setP(Float.parseFloat(node.getValues().get(node.getValues().size() - 1).toString()));
+				currentPos.setP(Float.parseFloat(node.getTimeSeries().get(node.getTimeSeries().size() - 1).toString()));
 				break;
 		}
 		if(currentPos.getX() != null && currentPos.getY() != null && currentPos.getZ() != null && currentPos.getP() != null){
@@ -44,7 +45,7 @@ public class GetPositionVisitor extends DefaultStateVisitor {
 			}
 			currentPos = new Vector3DX();
 		}
-		return super.visitSimpleStateNode(node);
+		return super.visitVariableNode(node);
 	}
 
 	/*public Vector3D getPArticlePosition(int id){
