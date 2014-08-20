@@ -1389,7 +1389,8 @@ public class SPHSolverService implements ISolver {
 									}
 
 									CompositeNode newNode = new CompositeNode(nodeName);
-
+									newNode.setId(nodeName);
+									
 									boolean addNewNode = containsNode(node, newNode.getName());
 
 									if(addNewNode){
@@ -1402,7 +1403,8 @@ public class SPHSolverService implements ISolver {
 								} else {
 									// it's a leaf node
 									VariableNode newNode = new VariableNode(current);
-
+									newNode.setId(current);
+									
 									FloatValue val = null;
 
 									// get value
