@@ -1014,6 +1014,8 @@ public class SPHSolverService implements ISolver {
 		
 		_position.unmap(_queue, _positionPtr);
 
+		visualTree.setModified(true);
+		simulationTree.setModified(true);
 	}
 
 	/**

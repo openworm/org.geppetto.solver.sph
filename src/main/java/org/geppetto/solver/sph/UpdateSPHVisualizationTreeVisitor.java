@@ -77,10 +77,16 @@ public class UpdateSPHVisualizationTreeVisitor extends DefaultStateVisitor
 
 		if(node.getPosition() != null){
 			Point newPosition = new Point();
-			newPosition.setX(this._xV.getAsDouble());
-			newPosition.setY(this._yV.getAsDouble());
-			newPosition.setZ(this._zV.getAsDouble());
-			node.setPosition(newPosition);
+			double x = this._xV.getAsDouble();
+			double y = this._yV.getAsDouble();
+			double z = this._zV.getAsDouble();
+			
+			if(!Double.isNaN(x) && !Double.isNaN(y) && !Double.isNaN(z)){
+				newPosition.setX(x);
+				newPosition.setY(y);
+				newPosition.setZ(z);
+				node.setPosition(newPosition);
+			}
 		}
 		return super.visitSphereNode(node);
 	}
@@ -90,10 +96,16 @@ public class UpdateSPHVisualizationTreeVisitor extends DefaultStateVisitor
 
 		if(node.getPosition() != null){
 			Point newPosition = new Point();
-			newPosition.setX(this._xV.getAsDouble());
-			newPosition.setY(this._yV.getAsDouble());
-			newPosition.setZ(this._zV.getAsDouble());
-			node.setPosition(newPosition);
+			double x = this._xV.getAsDouble();
+			double y = this._yV.getAsDouble();
+			double z = this._zV.getAsDouble();
+			
+			if(!Double.isNaN(x) && !Double.isNaN(y) && !Double.isNaN(z)){
+				newPosition.setX(x);
+				newPosition.setY(y);
+				newPosition.setZ(z);
+				node.setPosition(newPosition);
+			}
 		}
 		return super.visitCylinderNode(node);
 	}
@@ -102,10 +114,16 @@ public class UpdateSPHVisualizationTreeVisitor extends DefaultStateVisitor
 	public boolean visitColladaNode(ColladaNode node){
 		if(node.getPosition() != null){
 			Point newPosition = new Point();
-			newPosition.setX(this._xV.getAsDouble());
-			newPosition.setY(this._yV.getAsDouble());
-			newPosition.setZ(this._zV.getAsDouble());
-			node.setPosition(newPosition);
+			double x = this._xV.getAsDouble();
+			double y = this._yV.getAsDouble();
+			double z = this._zV.getAsDouble();
+			
+			if(!Double.isNaN(x) && !Double.isNaN(y) && !Double.isNaN(z)){
+				newPosition.setX(x);
+				newPosition.setY(y);
+				newPosition.setZ(z);
+				node.setPosition(newPosition);
+			}
 		}
 		return super.visitColladaNode(node);
 	}
@@ -120,13 +138,22 @@ public class UpdateSPHVisualizationTreeVisitor extends DefaultStateVisitor
 			_zV = ValuesFactory.getFloatValue(_positionPtr.get(index + 2));
  			_pV = ValuesFactory.getFloatValue(_positionPtr.get(index + 3));
 			
-			Point newPosition = new Point();
-			newPosition.setX(this._xV.getAsDouble());
-			newPosition.setY(this._yV.getAsDouble());
-			newPosition.setZ(this._zV.getAsDouble());
-			node.setPosition(newPosition);
+ 			Point newPosition = new Point();
+			double x = this._xV.getAsDouble();
+			double y = this._yV.getAsDouble();
+			double z = this._zV.getAsDouble();
+			float p = this._pV.getAsFloat();
 			
-			node.setParticleKind(_pV.getAsFloat());			
+			if(!Double.isNaN(x) && !Double.isNaN(y) && !Double.isNaN(z)){
+				newPosition.setX(x);
+				newPosition.setY(y);
+				newPosition.setZ(z);
+				node.setPosition(newPosition);
+			}
+			
+			if(!Float.isNaN(p)){
+				node.setParticleKind(p);
+			}
 		}
 		return super.visitParticleNode(node);
 	}
