@@ -1435,6 +1435,7 @@ public class SPHSolverService implements ISolver {
 			}
 		}
 		
+		watchTree.setModified(true);
 		// unmap watchable buffers
 		_velocity.unmap(_queue, _positionPtr);
 	}
