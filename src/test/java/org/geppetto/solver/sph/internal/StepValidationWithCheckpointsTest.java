@@ -42,6 +42,7 @@ import java.util.Map;
 
 import junit.framework.Assert;
 
+import org.geppetto.core.model.runtime.AspectNode;
 import org.geppetto.core.simulation.TimeConfiguration;
 import org.geppetto.model.sph.Membrane;
 import org.geppetto.model.sph.Vector3D;
@@ -54,10 +55,19 @@ import org.geppetto.solver.sph.KernelsEnum;
 import org.geppetto.solver.sph.PCISPHCheckPoint;
 import org.geppetto.solver.sph.PCISPHTestUtilities;
 import org.geppetto.solver.sph.SPHSolverService;
+import org.junit.Before;
 import org.junit.Test;
 
 public class StepValidationWithCheckpointsTest {
 
+	AspectNode _sphAspect = null;
+
+	@Before
+	public void runBeforeEveryTest()
+	{
+		_sphAspect=new AspectNode();
+	}
+	
 	@Test
 	public void testCheckpoints_serg_membrane_test() throws Exception {
 		// load reference values at various steps from C++ version
@@ -335,8 +345,9 @@ public class StepValidationWithCheckpointsTest {
 		
 		Map<BuffersEnum, Integer> mismatchingValuesPerBuffers = new LinkedHashMap<BuffersEnum, Integer>();
 
+		AspectNode aspect= new AspectNode();
 		// calculate step
-		solver.solve(new TimeConfiguration(null, 1, null));
+		solver.solve(new TimeConfiguration(null, 1, null),aspect);
 		
 		// get checkpoint of interest
 		PCISPHCheckPoint checkpoint_values = solver.getCheckpointsMap().get(checkpoint);
@@ -794,7 +805,7 @@ public class StepValidationWithCheckpointsTest {
 				String fileContent = PCISPHTestUtilities.readFile(logs.get(entry.getKey()).getPath());
 				checkpointReferenceValuesMap.put(entry.getKey(), fileContent.split(System.getProperty("line.separator")));
 			}
-			solver.solve(new TimeConfiguration(null, 1, null));
+			solver.solve(new TimeConfiguration(null, 1, null),_sphAspect);
 			// get checkpoint of interest
 			PCISPHCheckPoint checkpoint_values = solver.getCheckpointsMap().get(checkpoint);
 	      	int j=0;

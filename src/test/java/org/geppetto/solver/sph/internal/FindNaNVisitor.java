@@ -32,11 +32,8 @@
  *******************************************************************************/
 package org.geppetto.solver.sph.internal;
 
-import junit.framework.Assert;
-
-import org.geppetto.core.model.state.SimpleStateNode;
+import org.geppetto.core.model.runtime.ParticleNode;
 import org.geppetto.core.model.state.visitors.DefaultStateVisitor;
-import org.geppetto.core.model.values.AValue;
 
 /**
  * @author matteo@openworm.org
@@ -44,34 +41,40 @@ import org.geppetto.core.model.values.AValue;
  */
 public class FindNaNVisitor extends DefaultStateVisitor
 {
-	private static final String NAN = "NaN";
-	
+
 	private boolean _hasNaN=false;
 	private String _particleWithNaN=null;
+
 	
 	public boolean hasNaN()
 	{
 		return _hasNaN;
 	}
 
+	/* (non-Javadoc)
+	 * @see org.geppetto.core.model.state.visitors.DefaultStateVisitor#visitParticleNode(org.geppetto.core.model.runtime.ParticleNode)
+	 */
 	@Override
-	public boolean visitSimpleStateNode(SimpleStateNode node)
+	public boolean visitParticleNode(ParticleNode node)
 	{
-		Assert.assertFalse(node.getValues().size() == 0);
-		
-		int i=0;
-		for(AValue v:node.getValues())
+		checkForNaN(node.getPosition().getX(),node);
+		checkForNaN(node.getPosition().getY(),node);
+		checkForNaN(node.getPosition().getZ(),node);
+		return super.visitParticleNode(node);
+	}
+
+	/**
+	 * @param n
+	 * @param node
+	 */
+	private void checkForNaN(Double n,ParticleNode node)
+	{
+		if(Double.isNaN(n))	
 		{
-			if(v.getStringValue().equals(NAN))	
-			{
-				doStopVisiting();
-				_particleWithNaN=node.getParent().getParent().getName()+"{"+i+"}";
-				_hasNaN=true;
-				break;
-			}
-			i++;
+			doStopVisiting();
+			_particleWithNaN=node.getInstancePath();
+			_hasNaN=true;
 		}
-		return super.visitSimpleStateNode(node);
 	}
 
 	public String getParticleWithNaN()

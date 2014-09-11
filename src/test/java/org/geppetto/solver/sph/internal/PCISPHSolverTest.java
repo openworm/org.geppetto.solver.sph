@@ -34,20 +34,21 @@
 package org.geppetto.solver.sph.internal;
 
 import java.net.URL;
-import java.util.Map;
 
 import junit.framework.Assert;
 
 import org.geppetto.core.model.IModel;
-import org.geppetto.core.model.state.CompositeStateNode;
-import org.geppetto.core.model.state.StateTreeRoot;
+import org.geppetto.core.model.runtime.ACompositeNode;
+import org.geppetto.core.model.runtime.ANode;
+import org.geppetto.core.model.runtime.AspectNode;
+import org.geppetto.core.model.runtime.AspectSubTreeNode;
+import org.geppetto.core.model.runtime.AspectSubTreeNode.AspectTreeType;
 import org.geppetto.core.simulation.TimeConfiguration;
 import org.geppetto.model.sph.services.SPHModelInterpreterService;
 import org.geppetto.model.sph.x.SPHModelX;
-import org.geppetto.solver.sph.KernelsEnum;
-import org.geppetto.solver.sph.PCISPHCheckPoint;
 import org.geppetto.solver.sph.PCISPHTestUtilities;
 import org.geppetto.solver.sph.SPHSolverService;
+import org.junit.Before;
 import org.junit.Test;
 
 /**
@@ -55,32 +56,47 @@ import org.junit.Test;
  * @author giovanni@openworm.org
  */
 public class PCISPHSolverTest
-{	
+{
+
+	AspectNode _sphAspect = null;
+
+	@Before
+	public void runBeforeEveryTest()
+	{
+		_sphAspect=new AspectNode();
+	}
+
 	/*
-	 * 296 boundary particles + 1 liquid particle
-	 * NOTE: particle is very close to the origin and it is shot towards it with high velocity
+	 * 296 boundary particles + 1 liquid particle NOTE: particle is very close to the origin and it is shot towards it with high velocity
 	 */
 	@Test
 	public void testSolve1_NoNaN() throws Exception
 	{
-		
+
 		URL url = this.getClass().getResource("/sphModel_1.xml");
 		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
-		IModel model = modelInterpreter.readModel(url,null,"");
-		
+		IModel model = modelInterpreter.readModel(url, null, "");
+
 		// check that we don't have particles with overlapping positions
-		PCISPHTestUtilities.checkModelForOverlappingParticles((SPHModelX)model, false);
-		
+		PCISPHTestUtilities.checkModelForOverlappingParticles((SPHModelX) model, false);
+
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
-		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 2, 1));
-		
+		solver.solve(new TimeConfiguration(0.1f, 2, 1),_sphAspect);
+		AspectSubTreeNode simulationTree=(AspectSubTreeNode) _sphAspect.getSubTree(AspectTreeType.VISUALIZATION_TREE);
+		solver.populateVisualTree(model, simulationTree);
+
 		// NOTE: this is commented out as it fails on Apple CPU - should pass everywhere else
 		// PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
-		
-		Assert.assertTrue("Particle count doesn't match.", stateSet.getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
+
+		Assert.assertTrue("Particle count doesn't match.", countLiquidParticles(simulationTree) == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX) model));
 	}
-	
+
+	private int countLiquidParticles(AspectSubTreeNode simulationTree)
+	{
+		return ((ACompositeNode)simulationTree.getChildren().get(0)).getChildren().size();
+	}
+
 	/*
 	 * 296 boundary particles + 14 liquid particles
 	 */
@@ -89,18 +105,21 @@ public class PCISPHSolverTest
 	{
 		URL url = this.getClass().getResource("/sphModel_14.xml");
 		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
-		IModel model = modelInterpreter.readModel(url,null,"");
-		
+		IModel model = modelInterpreter.readModel(url, null, "");
+
 		// we have one particle that overlaps with boundary particles in this test
-		PCISPHTestUtilities.checkModelForOverlappingParticles((SPHModelX)model, true);
-		
+		PCISPHTestUtilities.checkModelForOverlappingParticles((SPHModelX) model, true);
+
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
-		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 20, 1));
+		solver.solve(new TimeConfiguration(0.1f, 20, 1),_sphAspect);
+		AspectSubTreeNode simulationTree=(AspectSubTreeNode) _sphAspect.getSubTree(AspectTreeType.VISUALIZATION_TREE);
+		solver.populateVisualTree(model, simulationTree);
 		
 		// expect NaN values since in the initial conditions particle 309 overlaps with boundary particles
-		PCISPHTestUtilities.checkStateTreeForNaN(stateSet, true);
-		Assert.assertTrue("Particle count doesn't match.", stateSet.getSubTree(StateTreeRoot.SUBTREE.MODEL_TREE).getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
+		PCISPHTestUtilities.checkStateTreeForNaN(simulationTree, true);
+		Assert.assertTrue("Particle count doesn't match.",
+				countLiquidParticles(simulationTree) == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX) model));
 	}
 
 	/*
@@ -111,57 +130,65 @@ public class PCISPHSolverTest
 	{
 		URL url = this.getClass().getResource("/sphModel_small.xml");
 		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
-		IModel model = modelInterpreter.readModel(url,null,"");
-		
+		IModel model = modelInterpreter.readModel(url, null, "");
+
 		// check that we don't have particles with overlapping positions
-		PCISPHTestUtilities.checkModelForOverlappingParticles((SPHModelX)model, false);
-		
+		PCISPHTestUtilities.checkModelForOverlappingParticles((SPHModelX) model, false);
+
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
-		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 20, 1));
+		solver.solve(new TimeConfiguration(0.1f, 20, 1),_sphAspect);
+		AspectSubTreeNode simulationTree=(AspectSubTreeNode) _sphAspect.getSubTree(AspectTreeType.VISUALIZATION_TREE);
+		solver.populateVisualTree(model, simulationTree);
 		
-		PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
-		
-		Assert.assertTrue("Particle count doesn't match.", stateSet.getSubTree(StateTreeRoot.SUBTREE.MODEL_TREE).getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
+		PCISPHTestUtilities.checkStateTreeForNaN(_sphAspect.getSubTree(AspectTreeType.VISUALIZATION_TREE), false);
+
+		Assert.assertTrue("Particle count doesn't match.",
+				countLiquidParticles(simulationTree) == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX) model));
 	}
-	
+
 	/*
-	 * 296 boundary particles + 14 liquid particles
-	 * NOTE: compares results from running cycles in one go vs step by step
+	 * 296 boundary particles + 14 liquid particles NOTE: compares results from running cycles in one go vs step by step
 	 */
 	@Test
 	public void testSolve14_StepByStep_VS_OneGo() throws Exception
 	{
 		URL url = this.getClass().getResource("/sphModel_small.xml");
 		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
-		IModel model = modelInterpreter.readModel(url,null,"");
-		
+		IModel model = modelInterpreter.readModel(url, null, "");
+
 		// check that we don't have particles with overlapping positions
-		PCISPHTestUtilities.checkModelForOverlappingParticles((SPHModelX)model, false);
-		
+		PCISPHTestUtilities.checkModelForOverlappingParticles((SPHModelX) model, false);
+
 		int cycles = 20;
-		
+
 		// run cycles one by one
 		SPHSolverService solver1 = new SPHSolverService();
 		solver1.initialize(model);
-		StateTreeRoot stateTree1 = null;
-		for(int i = 0; i < cycles; i++){
-			stateTree1 = solver1.solve(new TimeConfiguration(0.1f, 1, 1));
-		}
 		
+		for(int i = 0; i < cycles; i++)
+		{
+			solver1.solve(new TimeConfiguration(0.1f, 1, 1),_sphAspect);
+		}
+		AspectSubTreeNode simulationTree1=(AspectSubTreeNode) _sphAspect.getSubTree(AspectTreeType.VISUALIZATION_TREE);
+		solver1.populateVisualTree(model, simulationTree1);
 		// run cycles at once
 		SPHSolverService solver2 = new SPHSolverService();
 		solver2.initialize(model);
-		StateTreeRoot stateTree2 = solver2.solve(new TimeConfiguration(0.1f, cycles, 1));
-		
-		//checks the trees are equivalent
-		Assert.assertEquals(stateTree1.toString(),stateTree2.toString());
-		
-		PCISPHTestUtilities.checkStateTreeForNaN(stateTree1, false);
-		PCISPHTestUtilities.checkStateTreeForNaN(stateTree2, false);
-		
-		Assert.assertTrue("Particle count doesn't match.", stateTree1.getSubTree(StateTreeRoot.SUBTREE.MODEL_TREE).getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
-		Assert.assertTrue("Particle count doesn't match.", stateTree2.getSubTree(StateTreeRoot.SUBTREE.MODEL_TREE).getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
+		AspectNode sphAspect2=new AspectNode();
+		solver2.solve(new TimeConfiguration(0.1f, cycles, 1),sphAspect2);
+		AspectSubTreeNode simulationTree2=(AspectSubTreeNode) _sphAspect.getSubTree(AspectTreeType.VISUALIZATION_TREE);
+		solver2.populateVisualTree(model, simulationTree2);
+		// checks the trees are equivalent
+		Assert.assertEquals(simulationTree1.toString(), simulationTree2.toString());
+
+		PCISPHTestUtilities.checkStateTreeForNaN(simulationTree1, false);
+		PCISPHTestUtilities.checkStateTreeForNaN(simulationTree2, false);
+
+		Assert.assertTrue("Particle count doesn't match.",
+				countLiquidParticles(simulationTree1) == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX) model));
+		Assert.assertTrue("Particle count doesn't match.",
+				countLiquidParticles(simulationTree2) == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX) model));
 	}
 
 	/*
@@ -172,18 +199,20 @@ public class PCISPHSolverTest
 	{
 		URL url = this.getClass().getResource("/sphModel_15.xml");
 		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
-		IModel model = modelInterpreter.readModel(url,null,"");
-		
+		IModel model = modelInterpreter.readModel(url, null, "");
+
 		// check that we don't have particles with overlapping positions
-		PCISPHTestUtilities.checkModelForOverlappingParticles((SPHModelX)model, false);
-		
+		PCISPHTestUtilities.checkModelForOverlappingParticles((SPHModelX) model, false);
+
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
-		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 20, 1));
-		
-		PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
-		
-		Assert.assertTrue("Particle count doesn't match.", stateSet.getSubTree(StateTreeRoot.SUBTREE.MODEL_TREE).getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
+		solver.solve(new TimeConfiguration(0.1f, 20, 1),_sphAspect);
+		AspectSubTreeNode simulationTree=(AspectSubTreeNode) _sphAspect.getSubTree(AspectTreeType.VISUALIZATION_TREE);
+		solver.populateVisualTree(model, simulationTree);
+		PCISPHTestUtilities.checkStateTreeForNaN(simulationTree, false);
+
+		Assert.assertTrue("Particle count doesn't match.",
+				countLiquidParticles(simulationTree) == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX) model));
 	}
 
 	/*
@@ -194,50 +223,58 @@ public class PCISPHSolverTest
 	{
 		URL url = this.getClass().getResource("/sphModel_216.xml");
 		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
-		IModel model = modelInterpreter.readModel(url,null,"");
-		
+		IModel model = modelInterpreter.readModel(url, null, "");
+
 		// check that we don't have particles with overlapping positions
-		PCISPHTestUtilities.checkModelForOverlappingParticles((SPHModelX)model, false);
-		
+		PCISPHTestUtilities.checkModelForOverlappingParticles((SPHModelX) model, false);
+
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
-		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 10, 1));
+		solver.solve(new TimeConfiguration(0.1f, 10, 1),_sphAspect);
+		AspectSubTreeNode simulationTree=(AspectSubTreeNode) _sphAspect.getSubTree(AspectTreeType.VISUALIZATION_TREE);
+		solver.populateVisualTree(model, simulationTree);
 		
-		PCISPHTestUtilities.checkStateTreeForNaN(stateSet, true);
-		
-		Assert.assertTrue("Particle count doesn't match.", stateSet.getSubTree(StateTreeRoot.SUBTREE.MODEL_TREE).getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
+		PCISPHTestUtilities.checkStateTreeForNaN(simulationTree, true);
+
+		Assert.assertTrue("Particle count doesn't match.",
+				countLiquidParticles(simulationTree) == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX) model));
 	}
+
 	@Test
 	public void testMembranesScene() throws Exception
 	{
 		URL url = this.getClass().getResource("/cube_with_membranes.xml");
 		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
-		IModel model = modelInterpreter.readModel(url,null,"");
-		
+		IModel model = modelInterpreter.readModel(url, null, "");
+
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
 		solver.setRecordCheckpoint(false);
-		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 100, 1));
+		solver.solve(new TimeConfiguration(0.1f, 100, 1),_sphAspect);
+		AspectSubTreeNode simulationTree=(AspectSubTreeNode) _sphAspect.getSubTree(AspectTreeType.VISUALIZATION_TREE);
+		solver.populateVisualTree(model, simulationTree);
 		Assert.assertTrue(true);
-		PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
-		
+		PCISPHTestUtilities.checkStateTreeForNaN(simulationTree, false);
+
 	}
-	
+
 	@Test
 	public void testMembranesWithWaterScene() throws Exception
 	{
 		URL url = this.getClass().getResource("/cube_with_membranes_water_inside.xml");
 		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
-		IModel model = modelInterpreter.readModel(url,null,"");
-		
+		IModel model = modelInterpreter.readModel(url, null, "");
+
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
-		//solver.setRecordCheckpoint(true);
-		StateTreeRoot stateSet = solver.solve(new TimeConfiguration(0.1f, 100, 1));
-		//Map<KernelsEnum, PCISPHCheckPoint> checkpoints = solver.getCheckpointsMap();
-		//PCISPHCheckPoint lastCheckPoint = checkpoints.get(KernelsEnum.COMPUTE_INTERACTION_WITH_MEMBRANES_FINALIZE);
+		// solver.setRecordCheckpoint(true);
+		solver.solve(new TimeConfiguration(0.1f, 100, 1),_sphAspect);
+		AspectSubTreeNode simulationTree=(AspectSubTreeNode) _sphAspect.getSubTree(AspectTreeType.VISUALIZATION_TREE);
+		solver.populateVisualTree(model, simulationTree);
+		// Map<KernelsEnum, PCISPHCheckPoint> checkpoints = solver.getCheckpointsMap();
+		// PCISPHCheckPoint lastCheckPoint = checkpoints.get(KernelsEnum.COMPUTE_INTERACTION_WITH_MEMBRANES_FINALIZE);
 		Assert.assertTrue(true);
-		//PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
-	
+		// PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
+
 	}
 }
