@@ -144,7 +144,7 @@ public class SPHSolverService implements ISolver {
 	private Pointer<Float> _activationSignalPtr;
 	private Pointer<Integer> _particleMembranesListPtr;
 	private Pointer<Integer> _membraneDataPtr;
-
+	
 	/*
 	 * Kernel declarations
 	 */
@@ -201,6 +201,8 @@ public class SPHSolverService implements ISolver {
 	
 	private int iterationNumber;
 	private boolean _recordCheckPoints = false;
+	private KernelsEnum checkKernel = null;
+	private BuffersEnum checkBuffer = null;
 	
 
 	/*
@@ -927,7 +929,8 @@ public class SPHSolverService implements ISolver {
 		logger.info("SPH hash particles");
 		CLEvent hashParticles = runHashParticles();
 		if (_recordCheckPoints) {
-			//recordCheckpoints(KernelsEnum.HASH_PARTICLES);
+			if(checkKernel == null || checkKernel == KernelsEnum.HASH_PARTICLES)
+				recordCheckpoints(KernelsEnum.HASH_PARTICLES);
 		}
 		end = System.currentTimeMillis();
 		logger.info("SPH hash particles end, took " + (end - start) + "ms");
@@ -939,7 +942,8 @@ public class SPHSolverService implements ISolver {
 		logger.info("SPH sort");
 		runSort();
 		if (_recordCheckPoints) {
-			//recordCheckpoints(KernelsEnum.SORT);
+			if(checkKernel == null || checkKernel == KernelsEnum.SORT)
+				recordCheckpoints(KernelsEnum.SORT);
 		}
 		end = System.currentTimeMillis();
 		logger.info("SPH sort end, took " + (end - start) + "ms");
@@ -948,7 +952,8 @@ public class SPHSolverService implements ISolver {
 		logger.info("SPH sort post pass");
 		runSortPostPass();
 		if (_recordCheckPoints) {
-			//recordCheckpoints(KernelsEnum.SORT_POST_PASS);
+			if(checkKernel == null || checkKernel == KernelsEnum.SORT_POST_PASS)
+				recordCheckpoints(KernelsEnum.SORT_POST_PASS);
 		}
 		end = System.currentTimeMillis();
 		logger.info("SPH sort post pass end, took " + (end - start) + "ms");
@@ -957,7 +962,8 @@ public class SPHSolverService implements ISolver {
 		logger.info("SPH index");
 		CLEvent runIndexx = runIndexx();
 		if (_recordCheckPoints) {
-			//recordCheckpoints(KernelsEnum.INDEX);
+			if(checkKernel == null || checkKernel == KernelsEnum.INDEX)
+				recordCheckpoints(KernelsEnum.INDEX);
 		}
 		end = System.currentTimeMillis();
 		logger.info("SPH index end, took " + (end - start) + "ms");
@@ -969,7 +975,8 @@ public class SPHSolverService implements ISolver {
 		logger.info("SPH index post pass");
 		runIndexPostPass();
 		if (_recordCheckPoints) {
-			//recordCheckpoints(KernelsEnum.INDEX_POST_PASS);
+			if(checkKernel == null || checkKernel == KernelsEnum.INDEX_POST_PASS)
+				recordCheckpoints(KernelsEnum.INDEX_POST_PASS);
 		}
 		end = System.currentTimeMillis();
 		logger.info("SPH index post pass end, took " + (end - start) + "ms");
@@ -978,7 +985,8 @@ public class SPHSolverService implements ISolver {
 		logger.info("SPH find neighbors");
 		runFindNeighbors();
 		if (_recordCheckPoints) {
-			//recordCheckpoints(KernelsEnum.FIND_NEIGHBORS);
+			if(checkKernel == null || checkKernel == KernelsEnum.FIND_NEIGHBORS)
+				recordCheckpoints(KernelsEnum.FIND_NEIGHBORS);
 		}
 		end = System.currentTimeMillis();
 		logger.info("SPH find neighbors end, took " + (end - start) + "ms");
@@ -988,7 +996,8 @@ public class SPHSolverService implements ISolver {
 		logger.info("PCI-SPH compute density");
 		run_pcisph_computeDensity();
 		if (_recordCheckPoints) {
-			//recordCheckpoints(KernelsEnum.COMPUTE_DENSITY);
+			if(checkKernel == null || checkKernel == KernelsEnum.COMPUTE_DENSITY)
+				recordCheckpoints(KernelsEnum.COMPUTE_DENSITY);
 		}
 		end = System.currentTimeMillis();
 		logger.info("PCI-SPH compute density end, took " + (end - start) + "ms");
@@ -997,7 +1006,8 @@ public class SPHSolverService implements ISolver {
 		logger.info("PCI-SPH compute forces and init pressure");
 		run_pcisph_computeForcesAndInitPressure();
 		if (_recordCheckPoints) {
-			//recordCheckpoints(KernelsEnum.COMPUTE_FORCES_INIT_PRESSURE);
+			if(checkKernel == null || checkKernel == KernelsEnum.COMPUTE_FORCES_INIT_PRESSURE)
+				recordCheckpoints(KernelsEnum.COMPUTE_FORCES_INIT_PRESSURE);
 		}
 		end = System.currentTimeMillis();
 		logger.info("PCI-SPH compute forces and init pressure end, took "
@@ -1009,7 +1019,8 @@ public class SPHSolverService implements ISolver {
 			logger.info("PCI-SPH compute elastic forces");
 			run_pcisph_computeElasticForces();
 			if (_recordCheckPoints) {
-				recordCheckpoints(KernelsEnum.COMPUTE_ELASTIC_FORCES);
+				if(checkKernel == null || checkKernel == KernelsEnum.COMPUTE_ELASTIC_FORCES)
+					recordCheckpoints(KernelsEnum.COMPUTE_ELASTIC_FORCES);
 			}
 			end = System.currentTimeMillis();
 			logger.info("PCI-SPH compute elastic forces end, took "
@@ -1030,7 +1041,8 @@ public class SPHSolverService implements ISolver {
 			iter++;
 		} while ((iter < maxIterations));
 		if (_recordCheckPoints) {
-			//recordCheckpoints(KernelsEnum.PREDICTIVE_LOOP);
+			if(checkKernel == null || checkKernel == KernelsEnum.PREDICTIVE_LOOP)
+				recordCheckpoints(KernelsEnum.PREDICTIVE_LOOP);
 		}
 		end = System.currentTimeMillis();
 		logger.info("PCI-SPH predict/correct loop end, took " + (end - start)
@@ -1040,7 +1052,8 @@ public class SPHSolverService implements ISolver {
 		logger.info("PCI-SPH integrate");
 		CLEvent event = run_pcisph_integrate();
 		if (_recordCheckPoints) {
-			//recordCheckpoints(KernelsEnum.INTEGRATE);
+			if(checkKernel == null || checkKernel == KernelsEnum.INTEGRATE)
+				recordCheckpoints(KernelsEnum.INTEGRATE);
 		}
 		end = System.currentTimeMillis();
 		logger.info("PCI-SPH integrate end, took " + (end - start) + "ms");
@@ -1051,16 +1064,19 @@ public class SPHSolverService implements ISolver {
 		   logger.info("PCI-SPH membrane interaction calculating");
 		   run_clearMembraneBuffers();
 		   if (_recordCheckPoints) {
-				//recordCheckpoints(KernelsEnum.CLEAR_MEMBRANE_BUFFERS);
+			   if(checkKernel == null || checkKernel == KernelsEnum.CLEAR_MEMBRANE_BUFFERS)
+				   recordCheckpoints(KernelsEnum.CLEAR_MEMBRANE_BUFFERS);
 		   }
 		   run_computeInteractionWithMembranes();
 		   if (_recordCheckPoints) {
-				//recordCheckpoints(KernelsEnum.COMPUTE_INTERACTION_WITH_MEMBRANES);
+			   if(checkKernel == null || checkKernel == KernelsEnum.COMPUTE_INTERACTION_WITH_MEMBRANES)
+				   recordCheckpoints(KernelsEnum.COMPUTE_INTERACTION_WITH_MEMBRANES);
 		   }
 		   // compute change of coordinates due to interactions with membranes
 		   event = run_computeInteractionWithMembranes_finalize();
 		   if (_recordCheckPoints) {
-				recordCheckpoints(KernelsEnum.COMPUTE_INTERACTION_WITH_MEMBRANES_FINALIZE);
+			   if(checkKernel == null || checkKernel == KernelsEnum.COMPUTE_INTERACTION_WITH_MEMBRANES_FINALIZE)
+				   recordCheckpoints(KernelsEnum.COMPUTE_INTERACTION_WITH_MEMBRANES_FINALIZE);
 		   }
 		   // wait for the end of the run_pcisph_integrate on device
 		   event.waitFor();
@@ -1377,48 +1393,63 @@ public class SPHSolverService implements ISolver {
 		PCISPHCheckPoint check = new PCISPHCheckPoint();
 
 		// read buffers into lists and populate checkpoint object
-		check.acceleration = this.<Float> getBufferValues(_accelerationPtr,
-				_acceleration,
-				this._buffersSizeMap.get(BuffersEnum.ACCELERATION));
-		check.gridCellIndex = this.<Integer> getBufferValues(_gridCellIndexPtr,
-				_gridCellIndex,
-				this._buffersSizeMap.get(BuffersEnum.GRID_CELL_INDEX));
-		check.gridCellIndexFixedUp = this.<Integer> getBufferValues(
-				_gridCellIndexFixedUpPtr, _gridCellIndexFixedUp,
-				this._buffersSizeMap.get(BuffersEnum.GRID_CELL_INDEX_FIXED));
-		check.neighborMap = this.<Float> getBufferValues(_neighborMapPtr,
-				_neighborMap,
-				this._buffersSizeMap.get(BuffersEnum.NEIGHBOR_MAP));
-		check.particleIndex = this.<Integer> getBufferValues(_particleIndexPtr,
-				_particleIndex,
-				this._buffersSizeMap.get(BuffersEnum.PARTICLE_INDEX));
-		check.particleIndexBack = this.<Integer> getBufferValues(
-				_particleIndexBackPtr, _particleIndexBack,
-				this._buffersSizeMap.get(BuffersEnum.PARTICLE_INDEX_BACK));
-		check.position = this.<Float> getBufferValues(_positionPtr, _position,
-				this._buffersSizeMap.get(BuffersEnum.POSITION));
-		check.pressure = this.<Float> getBufferValues(_pressurePtr, _pressure,
-				this._buffersSizeMap.get(BuffersEnum.PRESSURE));
-		check.rho = this.<Float> getBufferValues(_rhoPtr, _rho,
-				this._buffersSizeMap.get(BuffersEnum.RHO));
-		check.sortedPosition = this.<Float> getBufferValues(_sortedPositionPtr,
-				_sortedPosition,
-				this._buffersSizeMap.get(BuffersEnum.SORTED_POSITION));
-		check.sortedVelocity = this.<Float> getBufferValues(_sortedVelocityPtr,
-				_sortedVelocity,
-				this._buffersSizeMap.get(BuffersEnum.SORTED_VELOCITY));
-		check.velocity = this.<Float> getBufferValues(_velocityPtr, _velocity,
-				this._buffersSizeMap.get(BuffersEnum.VELOCITY));
+		if(checkBuffer == BuffersEnum.ACCELERATION || checkBuffer == null)
+			check.acceleration = this.<Float> getBufferValues(_accelerationPtr,
+					_acceleration,
+					this._buffersSizeMap.get(BuffersEnum.ACCELERATION));
+		if(checkBuffer == BuffersEnum.GRID_CELL_INDEX || checkBuffer == null)
+			check.gridCellIndex = this.<Integer> getBufferValues(_gridCellIndexPtr,
+					_gridCellIndex,
+					this._buffersSizeMap.get(BuffersEnum.GRID_CELL_INDEX));
+		if(checkBuffer ==BuffersEnum.GRID_CELL_INDEX_FIXED || checkBuffer == null)
+			check.gridCellIndexFixedUp = this.<Integer> getBufferValues(
+					_gridCellIndexFixedUpPtr, _gridCellIndexFixedUp,
+					this._buffersSizeMap.get(BuffersEnum.GRID_CELL_INDEX_FIXED));
+		if(checkBuffer ==BuffersEnum.NEIGHBOR_MAP || checkBuffer == null)
+			check.neighborMap = this.<Float> getBufferValues(_neighborMapPtr,
+					_neighborMap,
+					this._buffersSizeMap.get(BuffersEnum.NEIGHBOR_MAP));
+		if(checkBuffer ==BuffersEnum.PARTICLE_INDEX || checkBuffer == null)
+			check.particleIndex = this.<Integer> getBufferValues(_particleIndexPtr,
+					_particleIndex,
+					this._buffersSizeMap.get(BuffersEnum.PARTICLE_INDEX));
+		if(checkBuffer ==BuffersEnum.PARTICLE_INDEX_BACK || checkBuffer == null)
+			check.particleIndexBack = this.<Integer> getBufferValues(
+					_particleIndexBackPtr, _particleIndexBack,
+					this._buffersSizeMap.get(BuffersEnum.PARTICLE_INDEX_BACK));
+		if(checkBuffer ==BuffersEnum.POSITION || checkBuffer == null)
+			check.position = this.<Float> getBufferValues(_positionPtr, _position,
+					this._buffersSizeMap.get(BuffersEnum.POSITION));
+		if(checkBuffer ==BuffersEnum.PRESSURE || checkBuffer == null)
+			check.pressure = this.<Float> getBufferValues(_pressurePtr, _pressure,
+					this._buffersSizeMap.get(BuffersEnum.PRESSURE));
+		if(checkBuffer ==BuffersEnum.RHO || checkBuffer == null)
+			check.rho = this.<Float> getBufferValues(_rhoPtr, _rho,
+					this._buffersSizeMap.get(BuffersEnum.RHO));
+		if(checkBuffer ==BuffersEnum.SORTED_POSITION || checkBuffer == null)
+			check.sortedPosition = this.<Float> getBufferValues(_sortedPositionPtr,
+					_sortedPosition,
+					this._buffersSizeMap.get(BuffersEnum.SORTED_POSITION));
+		if(checkBuffer ==BuffersEnum.SORTED_VELOCITY || checkBuffer == null)
+			check.sortedVelocity = this.<Float> getBufferValues(_sortedVelocityPtr,
+					_sortedVelocity,
+					this._buffersSizeMap.get(BuffersEnum.SORTED_VELOCITY));
+		if(checkBuffer ==BuffersEnum.VELOCITY || checkBuffer == null)
+			check.velocity = this.<Float> getBufferValues(_velocityPtr, _velocity,
+					this._buffersSizeMap.get(BuffersEnum.VELOCITY));
 		if (_numOfElasticP > 0) {
-			check.elasticConnections = this.<Float> getBufferValues(
-					_elasticConnectionsDataPtr, _elasticConnectionsData,
-					this._buffersSizeMap.get(BuffersEnum.ELASTIC_CONNECTIONS));
+			if(checkBuffer ==BuffersEnum.ELASTIC_CONNECTIONS || checkBuffer == null)
+				check.elasticConnections = this.<Float> getBufferValues(
+						_elasticConnectionsDataPtr, _elasticConnectionsData,
+						this._buffersSizeMap.get(BuffersEnum.ELASTIC_CONNECTIONS));
 		}
 		if(_numOfMembranes > 0){
-			check.membranes = this.<Integer> getBufferValues(_membraneDataPtr, _membraneData, 
-					this._buffersSizeMap.get(BuffersEnum.MEMBRANES_DATA));
-			check.membranesParticleIndexList = this.<Integer> getBufferValues(_particleMembranesListPtr, _particleMembranesList, 
-					this._buffersSizeMap.get(BuffersEnum.MEMBRANES_PARTICLE_INDEX_LIST));
+			if(checkBuffer ==BuffersEnum.MEMBRANES_DATA || checkBuffer == null)
+				check.membranes = this.<Integer> getBufferValues(_membraneDataPtr, _membraneData, 
+						this._buffersSizeMap.get(BuffersEnum.MEMBRANES_DATA));
+			if(checkBuffer ==BuffersEnum.MEMBRANES_PARTICLE_INDEX_LIST || checkBuffer == null)
+				check.membranesParticleIndexList = this.<Integer> getBufferValues(_particleMembranesListPtr, _particleMembranesList, 
+						this._buffersSizeMap.get(BuffersEnum.MEMBRANES_PARTICLE_INDEX_LIST));
 		}
 		_checkpointsMap.put(kernelCheckpoint, check);
 	}
@@ -1542,5 +1573,28 @@ public class SPHSolverService implements ISolver {
 	public void clearWatchVariables() {
 		watchListVarNames.clear();
 	}
-
+	/**
+	 * @return the checkKernel
+	 */
+	public KernelsEnum getCheckKernel() {
+		return checkKernel;
+	}
+	/**
+	 * @param checkKernel the checkKernel to set
+	 */
+	public void setCheckKernel(KernelsEnum checkKernel) {
+		this.checkKernel = checkKernel;
+	}
+	/**
+	 * @return the checkBuffer
+	 */
+	public BuffersEnum getCheckBuffer() {
+		return checkBuffer;
+	}
+	/**
+	 * @param checkBuffer the checkBuffer to set
+	 */
+	public void setCheckBuffer(BuffersEnum checkBuffer) {
+		this.checkBuffer = checkBuffer;
+	}
 };
