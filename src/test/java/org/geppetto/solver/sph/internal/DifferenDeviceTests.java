@@ -33,6 +33,7 @@
 
 package org.geppetto.solver.sph.internal;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.PrintWriter;
@@ -45,6 +46,7 @@ import java.util.Map;
 
 import junit.framework.Assert;
 
+import org.geppetto.core.model.runtime.AspectNode;
 import org.geppetto.core.simulation.TimeConfiguration;
 import org.geppetto.model.sph.Membrane;
 import org.geppetto.model.sph.Vector3D;
@@ -60,13 +62,21 @@ import org.geppetto.solver.sph.SPHSolverService;
 
 public class DifferenDeviceTests {
 	
+	AspectNode _sphAspect = null;
+
+	@Before
+	public void runBeforeEveryTest()
+	{
+		_sphAspect=new AspectNode();
+	}
+	
 	@Test
 	public void test_different_machine_result() throws Exception{
 		/* I plane it will be work in two modes:
 		 * 1) First it logging information about data buffers into the files
 		 * 2) Second it compares information from logs with info from current run 
 		 */
-		boolean logInfo = false;
+		boolean logInfo = true;
 		logOrCompare(logInfo, this.getClass().getResource("/cube_with_membranes_water_inside.xml"), KernelsEnum.INTEGRATE);
 		
 	}
@@ -82,6 +92,7 @@ public class DifferenDeviceTests {
 	private void logOrCompare(boolean logInfo, URL modelURL, KernelsEnum checkpoint) throws Exception
 	{
 		// load reference values at various steps from logs version
+		String path = "/home/serg/git/openworm/org.geppetto.solver.sph/src/test/resources/results/DifferentMachinesTest/";
 		Map<BuffersEnum, String[]> checkpointReferenceValuesMap = new HashMap<BuffersEnum, String[]>();
 		
 		Map<BuffersEnum, URL> logs = new LinkedHashMap<BuffersEnum, URL>();
@@ -112,7 +123,7 @@ public class DifferenDeviceTests {
 					checkpointReferenceValuesMap.put(entry.getKey(), fileContent.split(System.getProperty("line.separator")));
 				}
 			}
-			solver.solve(new TimeConfiguration(null, 1, null));
+			solver.solve(new TimeConfiguration(null, 1, null),_sphAspect);
 			// get checkpoint of interest
 			PCISPHCheckPoint checkpoint_values = solver.getCheckpointsMap().get(checkpoint);
 	      	int j=0;
@@ -179,7 +190,6 @@ public class DifferenDeviceTests {
 	      		List<Float> pos_calculatedValues = checkpoint_values.position;
 	      		// As I understood I cannot write on a Resource folder (I cannot create file there)
 	      		// So I put here absolute path to folder it could be a relative.
-	      		String path = "/home/serg/git/openworm/org.geppetto.solver.sph/src/test/resources/results/DifferentMachinesTest/";
 	      		PrintWriter writer = new PrintWriter(path + "position_" + iteration + ".txt", "UTF-8");
 	      		for(int i = 0; i < dimensions.get(BuffersEnum.POSITION)/2; i = i + 4)
 		      	{
@@ -192,18 +202,22 @@ public class DifferenDeviceTests {
 	      	}
 	      	iteration++;
 		}
-		int j=0;
-		if(partcileEvolution.size() > 0)
-			System.out.println("Smulation shows different results comparing with what was found in resources/results/DifferentMachinesTest/ folder");
-		else
-			System.out.println("Smulation shows the same results comparing with what was found in resources/results/DifferentMachinesTest/ folder");
-		for(Map.Entry<BuffersEnum,List<Map<String,Vector3D>>> l:partcileEvolution.entrySet()){
-			System.out.println("Diffrents on step " + j);
-			for(Map<String,Vector3D> m:l.getValue()){
-				System.out.println("GEPPETTO LOGGED X = " + m.get("GEPPETTO_O").getX().floatValue() + " Y = " + m.get("GEPPETTO_O").getY().floatValue() + " Z = " + m.get("GEPPETTO_O").getZ().floatValue());
-	  			System.out.println("GEPPETTO CURRENT X = " + m.get("GEPPETTO_C").getX().floatValue() + " Y = " + m.get("GEPPETTO").getY().floatValue() + " Z = " + m.get("GEPPETTO").getZ().floatValue());
+		if(!logInfo){
+			int j=0;
+			if(partcileEvolution.size() > 0)
+				System.out.println("Smulation shows different results comparing with what was found in resources/results/DifferentMachinesTest/ folder");
+			else
+				System.out.println("Smulation shows the same results comparing with what was found in resources/results/DifferentMachinesTest/ folder");
+			for(Map.Entry<BuffersEnum,List<Map<String,Vector3D>>> l:partcileEvolution.entrySet()){
+				System.out.println("Diffrents on step " + j);
+				for(Map<String,Vector3D> m:l.getValue()){
+					System.out.println("GEPPETTO LOGGED X = " + m.get("GEPPETTO_O").getX().floatValue() + " Y = " + m.get("GEPPETTO_O").getY().floatValue() + " Z = " + m.get("GEPPETTO_O").getZ().floatValue());
+		  			System.out.println("GEPPETTO CURRENT X = " + m.get("GEPPETTO_C").getX().floatValue() + " Y = " + m.get("GEPPETTO").getY().floatValue() + " Z = " + m.get("GEPPETTO").getZ().floatValue());
+				}
+				j++;
 			}
-			j++;
+		}else{
+			System.out.println("Information about evolution of position is stored into the files in folder" + path);
 		}
 	}
 	
