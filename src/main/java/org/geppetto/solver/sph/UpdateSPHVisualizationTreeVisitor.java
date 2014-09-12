@@ -33,11 +33,15 @@
 package org.geppetto.solver.sph;
 
 import org.bridj.Pointer;
-import org.geppetto.core.model.state.CompositeStateNode;
-import org.geppetto.core.model.state.SimpleStateNode;
+import org.geppetto.core.model.runtime.ColladaNode;
+import org.geppetto.core.model.runtime.CylinderNode;
+import org.geppetto.core.model.runtime.ParticleNode;
+import org.geppetto.core.model.runtime.SphereNode;
+import org.geppetto.core.model.runtime.CompositeNode;
 import org.geppetto.core.model.state.visitors.DefaultStateVisitor;
 import org.geppetto.core.model.values.FloatValue;
 import org.geppetto.core.model.values.ValuesFactory;
+import org.geppetto.core.visualisation.model.Point;
 
 /**
  * @author matteocantarelli
@@ -45,64 +49,44 @@ import org.geppetto.core.model.values.ValuesFactory;
  * This method updates the particles already present in the tree
  * adding new values as found on the position pointer
  */
-public class UpdateSPHStateTreeVisitor extends DefaultStateVisitor
+public class UpdateSPHVisualizationTreeVisitor extends DefaultStateVisitor
 {
 
 	private FloatValue _xV, _yV, _zV, _pV;
 	private Pointer<Float> _positionPtr;
-
-	public UpdateSPHStateTreeVisitor(Pointer<Float> positionPtr)
+	
+	public UpdateSPHVisualizationTreeVisitor(Pointer<Float> positionPtr)
 	{
-		_positionPtr = positionPtr;
-
+		this._positionPtr = positionPtr;
 	}
-
+	
 	@Override
-	public boolean inCompositeStateNode(CompositeStateNode node)
-	{
-		if(node.isArray())
-		{
-			int index = node.getIndex()*4;
-
+	public boolean visitParticleNode(ParticleNode node){
+		if(node.getPosition() != null){
+			
+			int index = node.getIndex() * 4;
 			_xV = ValuesFactory.getFloatValue(_positionPtr.get(index));
 			_yV = ValuesFactory.getFloatValue(_positionPtr.get(index + 1));
 			_zV = ValuesFactory.getFloatValue(_positionPtr.get(index + 2));
-			_pV = ValuesFactory.getFloatValue(_positionPtr.get(index + 3));
-				
+ 			_pV = ValuesFactory.getFloatValue(_positionPtr.get(index + 3));
+			
+ 			Point newPosition = new Point();
+			double x = this._xV.getAsDouble();
+			double y = this._yV.getAsDouble();
+			double z = this._zV.getAsDouble();
+			float p = this._pV.getAsFloat();
+			
+			if(!Double.isNaN(x) && !Double.isNaN(y) && !Double.isNaN(z)){
+				newPosition.setX(x);
+				newPosition.setY(y);
+				newPosition.setZ(z);
+				node.setPosition(newPosition);
+			}
+			
+			if(!Float.isNaN(p)){
+				node.setParticleKind(p);
+			}
 		}
-		return super.inCompositeStateNode(node);
+		return super.visitParticleNode(node);
 	}
-
-	@Override
-	public boolean outCompositeStateNode(CompositeStateNode node)
-	{
-		if(node.isArray())
-		{
-			_xV = _yV = _zV = _pV = null;
-		}
-		return super.outCompositeStateNode(node);
-	}
-
-	@Override
-	public boolean visitSimpleStateNode(SimpleStateNode node)
-	{
-		if(node.getName()=="x")
-		{
-			node.addValue(_xV);
-		}
-		else if(node.getName()=="y")
-		{
-			node.addValue(_yV);
-		}
-		else if(node.getName()=="z")
-		{
-			node.addValue(_zV);
-		}
-		else if(node.getName()=="p")
-		{
-			node.addValue(_pV);
-		}
-		return super.visitSimpleStateNode(node);
-	}
-
 }
