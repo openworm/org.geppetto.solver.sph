@@ -1028,7 +1028,8 @@ public class SPHSolverService implements ISolver {
 		// NOTE: position is mapped for scene generation - improving performance by not mapping it again
 		_velocityPtr = _velocity.map(_queue, CLMem.MapFlags.Read);
 
-		if (simulationTree.getChildren().isEmpty()) {	
+		if (simulationTree.getChildren().isEmpty()) {
+			simulationTree.setId(AspectTreeType.WATCH_TREE.toString());
 			populateSimulationTree(simulationTree);			
 		} else {
 			// watch tree not empty populate new values
