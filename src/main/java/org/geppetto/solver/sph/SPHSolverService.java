@@ -1014,6 +1014,8 @@ public class SPHSolverService implements ISolver {
 		
 		_position.unmap(_queue, _positionPtr);
 
+		visualTree.setModified(true);
+		simulationTree.setModified(true);
 	}
 
 	/**
@@ -1026,7 +1028,8 @@ public class SPHSolverService implements ISolver {
 		// NOTE: position is mapped for scene generation - improving performance by not mapping it again
 		_velocityPtr = _velocity.map(_queue, CLMem.MapFlags.Read);
 
-		if (simulationTree.getChildren().isEmpty()) {	
+		if (simulationTree.getChildren().isEmpty()) {
+			simulationTree.setId(AspectTreeType.WATCH_TREE.toString());
 			populateSimulationTree(simulationTree);			
 		} else {
 			// watch tree not empty populate new values
@@ -1389,7 +1392,8 @@ public class SPHSolverService implements ISolver {
 									}
 
 									CompositeNode newNode = new CompositeNode(nodeName);
-
+									newNode.setId(nodeName);
+									
 									boolean addNewNode = containsNode(node, newNode.getName());
 
 									if(addNewNode){
@@ -1402,7 +1406,8 @@ public class SPHSolverService implements ISolver {
 								} else {
 									// it's a leaf node
 									VariableNode newNode = new VariableNode(current);
-
+									newNode.setId(current);
+									
 									FloatValue val = null;
 
 									// get value
@@ -1431,6 +1436,7 @@ public class SPHSolverService implements ISolver {
 			}
 		}
 		
+		watchTree.setModified(true);
 		// unmap watchable buffers
 		_velocity.unmap(_queue, _positionPtr);
 	}
