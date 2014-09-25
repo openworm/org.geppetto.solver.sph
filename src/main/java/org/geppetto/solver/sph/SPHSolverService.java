@@ -64,10 +64,11 @@ import org.geppetto.core.model.runtime.ACompositeNode;
 import org.geppetto.core.model.runtime.ANode;
 import org.geppetto.core.model.runtime.AspectNode;
 import org.geppetto.core.model.runtime.AspectSubTreeNode;
+import org.geppetto.core.model.runtime.AspectSubTreeNode.AspectTreeType;
 import org.geppetto.core.model.runtime.CompositeNode;
+import org.geppetto.core.model.runtime.EntityNode;
 import org.geppetto.core.model.runtime.ParticleNode;
 import org.geppetto.core.model.runtime.VariableNode;
-import org.geppetto.core.model.runtime.AspectSubTreeNode.AspectTreeType;
 import org.geppetto.core.model.values.FloatValue;
 import org.geppetto.core.model.values.ValuesFactory;
 import org.geppetto.core.simulation.IRunConfiguration;
@@ -971,8 +972,10 @@ public class SPHSolverService implements ISolver {
 	}
 
 	@Override
-	public void solve(IRunConfiguration timeConfiguration, AspectNode aspect) throws GeppettoExecutionException {
-		// TODO: extend this to use time configuration to do multiple steps in one go
+	public void solve(IRunConfiguration timeConfiguration, AspectNode aspect)
+			throws GeppettoExecutionException {
+		// TODO: extend this to use time configuration to do multiple steps in
+		// one go
 		long time = System.currentTimeMillis();
 		logger.info("SPH solver start");
 
@@ -989,12 +992,15 @@ public class SPHSolverService implements ISolver {
 			logger.info("SPH STEP END, took " + (end - start) + "ms");
 		}
 
-		logger.info("SPH solver end, took: " + (System.currentTimeMillis() - time) + "ms");
+		logger.info("SPH solver end, took: "
+				+ (System.currentTimeMillis() - time) + "ms");
 	}
 
 	private void updateStateTree(AspectNode aspect) {
-		AspectSubTreeNode visualTree = (AspectSubTreeNode) aspect.getSubTree(AspectTreeType.VISUALIZATION_TREE);
-		AspectSubTreeNode simulationTree = (AspectSubTreeNode) aspect.getSubTree(AspectTreeType.WATCH_TREE);
+		AspectSubTreeNode visualTree = (AspectSubTreeNode) aspect
+				.getSubTree(AspectTreeType.VISUALIZATION_TREE);
+		AspectSubTreeNode simulationTree = (AspectSubTreeNode) aspect
+				.getSubTree(AspectTreeType.WATCH_TREE);
 
 		_positionPtr = _position.map(_queue, CLMem.MapFlags.Read);
 
@@ -1005,35 +1011,43 @@ public class SPHSolverService implements ISolver {
 		// reason to revoke this assumption we need to add code that at every
 		// cycle checks
 		// if some new states exist to eventually add them to the stateTree
-		UpdateSPHVisualizationTreeVisitor updateSPHStateTreeVisitor = new UpdateSPHVisualizationTreeVisitor(_positionPtr);
+		UpdateSPHVisualizationTreeVisitor updateSPHStateTreeVisitor = new UpdateSPHVisualizationTreeVisitor(
+				_positionPtr);
 		visualTree.apply(updateSPHStateTreeVisitor);
 
 		if (watching) {
 			updateSimulationTree(simulationTree);
 		}
-		
+
 		_position.unmap(_queue, _positionPtr);
 
 		visualTree.setModified(true);
 		simulationTree.setModified(true);
+		AspectNode aspectNode = (AspectNode) simulationTree.getParent();
+		aspectNode.setModified(true);
+		((EntityNode) aspectNode.getParentEntity())
+				.updateParentEntitiesFlags(true);
 	}
 
 	/**
-	 * Updates nodes for simulation tree, if tree is empty call method to populate it.
+	 * Updates nodes for simulation tree, if tree is empty call method to
+	 * populate it.
 	 * 
 	 * @param simulationTree
 	 */
 	private void updateSimulationTree(AspectSubTreeNode simulationTree) {
 		// map watchable buffers that are not already mapped
-		// NOTE: position is mapped for scene generation - improving performance by not mapping it again
+		// NOTE: position is mapped for scene generation - improving performance
+		// by not mapping it again
 		_velocityPtr = _velocity.map(_queue, CLMem.MapFlags.Read);
 
 		if (simulationTree.getChildren().isEmpty()) {
 			simulationTree.setId(AspectTreeType.WATCH_TREE.toString());
-			populateSimulationTree(simulationTree);			
+			populateSimulationTree(simulationTree);
 		} else {
 			// watch tree not empty populate new values
-			UpdateSPHSimulationTreeVisitor visitor = new UpdateSPHSimulationTreeVisitor(_positionPtr);
+			UpdateSPHSimulationTreeVisitor visitor = new UpdateSPHSimulationTreeVisitor(
+					_positionPtr);
 			simulationTree.apply(visitor);
 		}
 
@@ -1041,52 +1055,52 @@ public class SPHSolverService implements ISolver {
 		_velocity.unmap(_queue, _positionPtr);
 	}
 
-	private boolean containsNode(ACompositeNode node, String name){
+	private boolean containsNode(ACompositeNode node, String name) {
 		List<ANode> children = node.getChildren();
-		
+
 		boolean addNewNode = true;
-		for(ANode child : children){
-			if(child.getName().equals(name)){
+		for (ANode child : children) {
+			if (child.getName().equals(name)) {
 				addNewNode = false;
 				return addNewNode;
 			}
-			if(child instanceof ACompositeNode){
-				if(((ACompositeNode)child).getChildren() != null){
+			if (child instanceof ACompositeNode) {
+				if (((ACompositeNode) child).getChildren() != null) {
 					addNewNode = containsNode((ACompositeNode) child, name);
 				}
 			}
 
 		}
-		
+
 		return addNewNode;
 	}
-	
-	private ACompositeNode getNode(ACompositeNode node, String name){
+
+	private ACompositeNode getNode(ACompositeNode node, String name) {
 		ACompositeNode newNode = null;
-		
+
 		List<ANode> children = node.getChildren();
-		
+
 		boolean addNewNode = true;
-		for(ANode child : children){
-			if(child.getName().equals(name)){
+		for (ANode child : children) {
+			if (child.getName().equals(name)) {
 				newNode = (ACompositeNode) child;
 				return newNode;
 			}
-			if(child instanceof ACompositeNode){
-				if(((ACompositeNode)child).getChildren() != null){
+			if (child instanceof ACompositeNode) {
+				if (((ACompositeNode) child).getChildren() != null) {
 					newNode = getNode((ACompositeNode) child, name);
 				}
 			}
 
 		}
-		
+
 		return newNode;
 	}
-	
+
 	@Override
 	public void initialize(IModel model) {
 		_model = (SPHModelX) model;
-		
+
 		setBuffersFromModel();
 
 		setWatchableVariables();
@@ -1275,61 +1289,63 @@ public class SPHSolverService implements ISolver {
 	}
 
 	@Override
-	public void populateVisualTree(IModel model, AspectSubTreeNode visualTree) throws GeppettoInitializationException
-	{
+	public void populateVisualTree(IModel model, AspectSubTreeNode visualTree)
+			throws GeppettoInitializationException {
 		_positionPtr = _position.map(_queue, CLMem.MapFlags.Read);
 
-		CompositeNode _liquidModel = new CompositeNode("LIQUID_" + model.getId());
-		CompositeNode _boundaryModel = new CompositeNode("BOUNDARY_" + model.getId());
-		CompositeNode _elasticModel = new CompositeNode("ELASTIC_" + model.getId());
-		
+		CompositeNode _liquidModel = new CompositeNode("LIQUID_"
+				+ model.getId());
+		CompositeNode _boundaryModel = new CompositeNode("BOUNDARY_"
+				+ model.getId());
+		CompositeNode _elasticModel = new CompositeNode("ELASTIC_"
+				+ model.getId());
+
 		// the state tree is empty, let's create it
 		for (int i = 0, index = 0; i < _particleCount; i++, index = index + 4) {
 			String particleId = SPHModelInterpreterService.getParticleId(i);
-			FloatValue xV = ValuesFactory.getFloatValue(_positionPtr.get(index));
-			FloatValue yV = ValuesFactory.getFloatValue(_positionPtr.get(index + 1));
-			FloatValue zV = ValuesFactory.getFloatValue(_positionPtr.get(index + 2));
-			FloatValue pV = ValuesFactory.getFloatValue(_positionPtr.get(index + 3));
+			FloatValue xV = ValuesFactory
+					.getFloatValue(_positionPtr.get(index));
+			FloatValue yV = ValuesFactory.getFloatValue(_positionPtr
+					.get(index + 1));
+			FloatValue zV = ValuesFactory.getFloatValue(_positionPtr
+					.get(index + 2));
+			FloatValue pV = ValuesFactory.getFloatValue(_positionPtr
+					.get(index + 3));
 
 			if (pV.getAsFloat() != SPHConstants.BOUNDARY_TYPE) {
 				// don't need to create a state for the boundary particles,
 				// they don't move.
 				ParticleNode particle = new ParticleNode(particleId);
-				Point pos=new Point();
+				Point pos = new Point();
 				pos.setX(xV.getAsDouble());
 				pos.setY(yV.getAsDouble());
 				pos.setZ(zV.getAsDouble());
 				particle.setPosition(pos);
 				particle.setParticleKind(pV.getAsFloat());
 				particle.setId(particleId);
-				
-				if(pV.getAsFloat() == (SPHConstants.LIQUID_TYPE))
-				{
+
+				if (pV.getAsFloat() == (SPHConstants.LIQUID_TYPE)) {
 					_liquidModel.addChild(particle);
-				}
-				else if(pV.getAsFloat() == (SPHConstants.ELASTIC_TYPE))
-				{
+				} else if (pV.getAsFloat() == (SPHConstants.ELASTIC_TYPE)) {
 					_elasticModel.addChild(particle);
-				}
-				else if(pV.getAsFloat() == (SPHConstants.BOUNDARY_TYPE))
-				{
+				} else if (pV.getAsFloat() == (SPHConstants.BOUNDARY_TYPE)) {
 					_boundaryModel.addChild(particle);
 				}
 			}
-		} 
-		
+		}
+
 		visualTree.addChild(_liquidModel);
 		visualTree.addChild(_elasticModel);
-		visualTree.addChild(_boundaryModel);		
-		
+		visualTree.addChild(_boundaryModel);
+
 		_position.unmap(_queue, _positionPtr);
 	}
 
 	@Override
-	public void populateSimulationTree(AspectSubTreeNode watchTree)
-	{
+	public void populateSimulationTree(AspectSubTreeNode watchTree) {
 		// map watchable buffers that are not already mapped
-		// NOTE: position is mapped for scene generation - improving performance by not mapping it again
+		// NOTE: position is mapped for scene generation - improving performance
+		// by not mapping it again
 		_velocityPtr = _velocity.map(_queue, CLMem.MapFlags.Read);
 
 		// check which watchable variables are being watched
@@ -1337,16 +1353,21 @@ public class SPHSolverService implements ISolver {
 			for (String varName : watchListVarNames) {
 				// get watchable variables path
 				List<String> watchableVarsPaths = new ArrayList<String>();
-				VariablePathSerializer.GetFullVariablePath(var, "", watchableVarsPaths);
+				VariablePathSerializer.GetFullVariablePath(var, "",
+						watchableVarsPaths);
 
-				varName = varName.replace(watchTree.getInstancePath()+".", "");
+				varName = varName
+						.replace(watchTree.getInstancePath() + ".", "");
 				// remove array bracket arguments from variable paths
 				String varNameNoBrackets = varName;
 				String particleID = null;
-				if(varName.indexOf("[")!=-1)
-				{
-					varNameNoBrackets = varName.substring(0,varName.indexOf("["))+varName.substring(varName.indexOf("]")+1,varName.length());
-					particleID = varName.substring(varName.indexOf("[")+1, varName.indexOf("]"));
+				if (varName.indexOf("[") != -1) {
+					varNameNoBrackets = varName.substring(0,
+							varName.indexOf("["))
+							+ varName.substring(varName.indexOf("]") + 1,
+									varName.length());
+					particleID = varName.substring(varName.indexOf("[") + 1,
+							varName.indexOf("]"));
 				}
 
 				// loop through paths and look for matching paths
@@ -1359,13 +1380,14 @@ public class SPHSolverService implements ISolver {
 							// check that paticleID is valid
 							ID = Integer.parseInt(particleID);
 							if (!(ID < _particleCount)) {
-								throw new IllegalArgumentException("SPHSolverService:updateStateTreeForWatch - particle index is out of boundaries");
+								throw new IllegalArgumentException(
+										"SPHSolverService:updateStateTreeForWatch - particle index is out of boundaries");
 							}
 						}
 
 						// tokenize variable path in watch list via dot
 						// separator (handle array brackets)
-						StringTokenizer tokenizer = new StringTokenizer(s,".");
+						StringTokenizer tokenizer = new StringTokenizer(s, ".");
 						ACompositeNode node = watchTree;
 						while (tokenizer.hasMoreElements()) {
 							// loop through tokens and build tree
@@ -1386,41 +1408,49 @@ public class SPHSolverService implements ISolver {
 								if (tokenizer.hasMoreElements()) {
 									// not a leaf, create a composite statenode
 									String nodeName = current;
-									if(current.equals("particle"))
-									{
-										nodeName = current + "[" + particleID + "]";
+									if (current.equals("particle")) {
+										nodeName = current + "[" + particleID
+												+ "]";
 									}
 
-									CompositeNode newNode = new CompositeNode(nodeName);
+									CompositeNode newNode = new CompositeNode(
+											nodeName);
 									newNode.setId(nodeName);
-									
-									boolean addNewNode = containsNode(node, newNode.getName());
 
-									if(addNewNode){
+									boolean addNewNode = containsNode(node,
+											newNode.getName());
+
+									if (addNewNode) {
 										node.addChild(newNode);
 										node = newNode;
-									}
-									else{
+									} else {
 										node = getNode(node, newNode.getName());
 									}
 								} else {
 									// it's a leaf node
-									VariableNode newNode = new VariableNode(current);
+									VariableNode newNode = new VariableNode(
+											current);
 									newNode.setId(current);
-									
+
 									FloatValue val = null;
 
 									// get value
 									switch (current) {
-										case "x":
-											val = ValuesFactory.getFloatValue(_positionPtr.get(ID));
-											break;
-										case "y":
-											val = ValuesFactory.getFloatValue(_positionPtr.get(ID + 1));
-											break;
-										case "z":
-											val = ValuesFactory.getFloatValue(_positionPtr.get(ID + 2));
-											break;
+									case "x":
+										val = ValuesFactory
+												.getFloatValue(_positionPtr
+														.get(ID));
+										break;
+									case "y":
+										val = ValuesFactory
+												.getFloatValue(_positionPtr
+														.get(ID + 1));
+										break;
+									case "z":
+										val = ValuesFactory
+												.getFloatValue(_positionPtr
+														.get(ID + 2));
+										break;
 									}
 
 									PhysicalQuantity q = new PhysicalQuantity();
@@ -1435,7 +1465,7 @@ public class SPHSolverService implements ISolver {
 				}
 			}
 		}
-		
+
 		watchTree.setModified(true);
 		// unmap watchable buffers
 		_velocity.unmap(_queue, _positionPtr);
