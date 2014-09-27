@@ -1025,8 +1025,11 @@ public class SPHSolverService implements ISolver {
 		simulationTree.setModified(true);
 		AspectNode aspectNode = (AspectNode) simulationTree.getParent();
 		aspectNode.setModified(true);
-		((EntityNode) aspectNode.getParentEntity())
-				.updateParentEntitiesFlags(true);
+		if(aspectNode.getParent()!=null)
+		{
+			((EntityNode) aspectNode.getParentEntity()).updateParentEntitiesFlags(true);
+		}
+
 	}
 
 	/**
