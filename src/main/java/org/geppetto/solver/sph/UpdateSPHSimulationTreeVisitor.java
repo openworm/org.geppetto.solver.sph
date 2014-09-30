@@ -68,19 +68,19 @@ public class UpdateSPHSimulationTreeVisitor extends DefaultStateVisitor {
 		FloatValue _zV = ValuesFactory.getFloatValue(_positionPtr.get(particleIndex + 2));
 		
 		// 3. node.addValue
-		if(node.getName().equals("x"))
+		if(node.getId().equals("x"))
 		{
 			PhysicalQuantity q = new PhysicalQuantity();
 			q.setValue(_xV);
 			node.addPhysicalQuantity(q);
 		}
-		else if(node.getName().equals("y"))
+		else if(node.getId().equals("y"))
 		{
 			PhysicalQuantity q = new PhysicalQuantity();
 			q.setValue(_yV);
 			node.addPhysicalQuantity(q);
 		}
-		else if(node.getName().equals("z"))
+		else if(node.getId().equals("z"))
 		{
 			PhysicalQuantity q = new PhysicalQuantity();
 			q.setValue(_zV);

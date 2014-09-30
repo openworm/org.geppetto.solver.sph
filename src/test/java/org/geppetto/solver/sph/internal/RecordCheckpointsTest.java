@@ -66,7 +66,7 @@ public class RecordCheckpointsTest {
 		// use default constructor - doesn't record checkpoints
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
-		AspectNode stateSet = new AspectNode();
+		AspectNode stateSet = new AspectNode("Aspect");
 
 		solver.solve(new TimeConfiguration(0.1f, 1, 1),stateSet);
 		
@@ -90,7 +90,7 @@ public class RecordCheckpointsTest {
 		SPHSolverService solver = new SPHSolverService(true);
 		solver.initialize(model);
 		
-		AspectNode stateSet = new AspectNode();
+		AspectNode stateSet = new AspectNode("Aspect");
 		solver.solve(new TimeConfiguration(0.1f, 1, 1),stateSet);
 		
 		PCISPHTestUtilities.checkStateTreeForNaN((AspectSubTreeNode) stateSet.getSubTree(AspectTreeType.VISUALIZATION_TREE), false);
@@ -150,7 +150,7 @@ public class RecordCheckpointsTest {
 		SPHSolverService solver = new SPHSolverService(true);
 		solver.initialize(model);
 		
-		AspectNode stateSet = new AspectNode();
+		AspectNode stateSet = new AspectNode("Aspect");
 		// run many steps - test should give same results
 		solver.solve(new TimeConfiguration(0.1f, 10, 1),stateSet);
 		
@@ -208,7 +208,7 @@ public class RecordCheckpointsTest {
 		SPHSolverService solver = new SPHSolverService(true);
 		solver.initialize(model);
 		
-		AspectNode stateSet = new AspectNode();
+		AspectNode stateSet = new AspectNode("Aspect");
 		solver.solve(new TimeConfiguration(null, 1, null),stateSet);
 		
 		PCISPHTestUtilities.checkStateTreeForNaN((AspectSubTreeNode) stateSet.getSubTree(AspectTreeType.VISUALIZATION_TREE), false);
