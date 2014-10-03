@@ -1063,7 +1063,7 @@ public class SPHSolverService implements ISolver {
 
 		boolean addNewNode = true;
 		for (ANode child : children) {
-			if (child.getName().equals(name)) {
+			if (child.getId().equals(name)) {
 				addNewNode = false;
 				return addNewNode;
 			}
@@ -1085,7 +1085,7 @@ public class SPHSolverService implements ISolver {
 
 		boolean addNewNode = true;
 		for (ANode child : children) {
-			if (child.getName().equals(name)) {
+			if (child.getId().equals(name)) {
 				newNode = (ACompositeNode) child;
 				return newNode;
 			}
@@ -1397,7 +1397,7 @@ public class SPHSolverService implements ISolver {
 							String current = tokenizer.nextToken();
 							boolean found = false;
 							for (ANode child : node.getChildren()) {
-								if (child.getName().equals(current)) {
+								if (child.getId().equals(current)) {
 									if (child instanceof ACompositeNode) {
 										node = (ACompositeNode) child;
 									}
@@ -1421,13 +1421,13 @@ public class SPHSolverService implements ISolver {
 									newNode.setId(nodeName);
 
 									boolean addNewNode = containsNode(node,
-											newNode.getName());
+											newNode.getId());
 
 									if (addNewNode) {
 										node.addChild(newNode);
 										node = newNode;
 									} else {
-										node = getNode(node, newNode.getName());
+										node = getNode(node, newNode.getId());
 									}
 								} else {
 									// it's a leaf node

@@ -318,7 +318,7 @@ public class StepValidationWithCheckpointsTest {
 		
 		Map<BuffersEnum, Integer> mismatchingValuesPerBuffers = new LinkedHashMap<BuffersEnum, Integer>();
 
-		AspectNode aspect= new AspectNode();
+		AspectNode aspect= new AspectNode("Aspect");
 		// calculate step
 		solver.solve(new TimeConfiguration(null, 1, null),aspect);
 		

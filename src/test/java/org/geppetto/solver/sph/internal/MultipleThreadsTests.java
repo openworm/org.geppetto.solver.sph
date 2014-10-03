@@ -84,11 +84,11 @@ public class MultipleThreadsTests {
 		SPHSolverService solver5 = new SPHSolverService();
 		solver5.initialize(model);
 		
-		AspectNode stateSet = new AspectNode();
-		AspectNode stateSet2 = new AspectNode();
-		AspectNode stateSet3 = new AspectNode();
-		AspectNode stateSet4 = new AspectNode();
-		AspectNode stateSet5 = new AspectNode();
+		AspectNode stateSet = new AspectNode("StateSet");
+		AspectNode stateSet2 = new AspectNode("StateSet2");
+		AspectNode stateSet3 = new AspectNode("StateSet3");
+		AspectNode stateSet4 = new AspectNode("StateSet4");
+		AspectNode stateSet5 = new AspectNode("StateSet5");
 
 		solver.solve(new TimeConfiguration(0.1f, 2, 1), stateSet);
 		solver2.solve(new TimeConfiguration(0.2f, 4, 1),stateSet2);
