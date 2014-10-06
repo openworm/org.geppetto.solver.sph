@@ -67,7 +67,7 @@ public class DifferenDeviceTests {
 	@Before
 	public void runBeforeEveryTest()
 	{
-		_sphAspect=new AspectNode();
+		_sphAspect=new AspectNode("test");
 	}
 	
 	@Test

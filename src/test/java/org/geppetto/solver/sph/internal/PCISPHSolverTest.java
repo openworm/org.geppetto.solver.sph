@@ -63,7 +63,7 @@ public class PCISPHSolverTest
 	@Before
 	public void runBeforeEveryTest()
 	{
-		_sphAspect=new AspectNode();
+		_sphAspect=new AspectNode("test");
 	}
 
 	/*
@@ -175,7 +175,7 @@ public class PCISPHSolverTest
 		// run cycles at once
 		SPHSolverService solver2 = new SPHSolverService();
 		solver2.initialize(model);
-		AspectNode sphAspect2=new AspectNode();
+		AspectNode sphAspect2=new AspectNode("test");
 		solver2.solve(new TimeConfiguration(0.1f, cycles, 1),sphAspect2);
 		AspectSubTreeNode simulationTree2=(AspectSubTreeNode) _sphAspect.getSubTree(AspectTreeType.VISUALIZATION_TREE);
 		solver2.populateVisualTree(model, simulationTree2);
