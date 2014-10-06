@@ -77,19 +77,22 @@ public class DifferenDeviceTests {
 		 * 2) Second it compares information from logs with info from current run 
 		 */
 		boolean logInfo = true;
-		logOrCompare(logInfo, this.getClass().getResource("/cube_with_membranes_water_inside.xml"), KernelsEnum.INTEGRATE);
+		int iterationCount = 10;
+		logOrCompare(logInfo, this.getClass().getResource("/cube_with_membranes_water_inside.xml"), KernelsEnum.INTEGRATE, iterationCount);
 		
 	}
 	/**Logging information or compare simulation results with results 
-	 * took from another source  
+	 * took from another source. We consider only position for now.
 	 * @param logInfo
 	 * indicate should test compare or logging data
 	 * @param modelURL
 	 * @param kernel
 	 * which kernel should be logged you can use any kernel from enumeration KernelsEnum if
+	 * @param iterationCount
+	 * number of iteration 
 	 * @throws Exception
 	 */
-	private void logOrCompare(boolean logInfo, URL modelURL, KernelsEnum checkpoint) throws Exception
+	private void logOrCompare(boolean logInfo, URL modelURL, KernelsEnum checkpoint, int iterationCount) throws Exception
 	{
 		// load reference values at various steps from logs version
 		String path = "/home/serg/git/openworm/org.geppetto.solver.sph/src/test/resources/results/DifferentMachinesTest/";
@@ -109,7 +112,6 @@ public class DifferenDeviceTests {
 		}
 		Map<BuffersEnum, Integer> mismatchingValuesPerBuffers = new LinkedHashMap<BuffersEnum, Integer>();
 		// calculate step
-		int iterationCount = 5;
 		int iteration = 0;
 		// get buffer sizes
 		Map<BuffersEnum, Integer> dimensions = solver.getBuffersSizeMap();
