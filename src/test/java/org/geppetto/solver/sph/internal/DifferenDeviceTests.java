@@ -214,7 +214,7 @@ public class DifferenDeviceTests {
 				System.out.println("Diffrents on step " + j);
 				for(Map<String,Vector3D> m:l.getValue()){
 					System.out.println("GEPPETTO LOGGED X = " + m.get("GEPPETTO_O").getX().floatValue() + " Y = " + m.get("GEPPETTO_O").getY().floatValue() + " Z = " + m.get("GEPPETTO_O").getZ().floatValue());
-		  			System.out.println("GEPPETTO CURRENT X = " + m.get("GEPPETTO_C").getX().floatValue() + " Y = " + m.get("GEPPETTO").getY().floatValue() + " Z = " + m.get("GEPPETTO").getZ().floatValue());
+					System.out.println("GEPPETTO CURRENT X = " + m.get("GEPPETTO_C").getX().floatValue() + " Y = " + m.get("GEPPETTO_C").getY().floatValue() + " Z = " + m.get("GEPPETTO_C").getZ().floatValue());
 				}
 				j++;
 			}
