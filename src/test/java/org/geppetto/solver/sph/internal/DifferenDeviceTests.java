@@ -77,7 +77,7 @@ public class DifferenDeviceTests {
 		 * 2) Second it compares information from logs with info from current run 
 		 */
 		boolean logInfo = true;
-		int iterationCount = 10;
+		int iterationCount = 100;
 		logOrCompare(logInfo, this.getClass().getResource("/cube_with_membranes_water_inside.xml"), KernelsEnum.INTEGRATE, iterationCount);
 		
 	}

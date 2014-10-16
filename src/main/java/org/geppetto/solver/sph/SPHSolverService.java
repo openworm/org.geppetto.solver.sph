@@ -95,7 +95,9 @@ import com.nativelibs4java.opencl.CLProgram;
 import com.nativelibs4java.opencl.CLQueue;
 import com.nativelibs4java.opencl.JavaCL;
 import com.nativelibs4java.util.IOUtils;
-
+/**
+ * Class SPHSolverService has definitions and realizations for all main physical algorithms
+ */
 @Service
 public class SPHSolverService implements ISolver {
 
@@ -111,28 +113,29 @@ public class SPHSolverService implements ISolver {
 	public CLQueue _queue;
 	private CLProgram _program;
 	private CLDevice _device;
-	private CLBuffer<Float> _acceleration;
-	private CLBuffer<Integer> _gridCellIndex;
-	private CLBuffer<Integer> _gridCellIndexFixedUp;
-	private CLBuffer<Float> _neighborMap;
-	private CLBuffer<Integer> _particleIndex;
-	private CLBuffer<Integer> _particleIndexBack;
-	private CLBuffer<Float> _position;
-	private CLBuffer<Float> _pressure;
-	private CLBuffer<Float> _rho;
-	private CLBuffer<Float> _sortedPosition;
-	private CLBuffer<Float> _sortedVelocity;
-	private CLBuffer<Float> _velocity;
-	private CLBuffer<Float> _elasticConnectionsData;
-	private CLBuffer<Float> _activationSignal;
-	private CLBuffer<Integer> _particleMembranesList; // potentially any particle can be connected with others via membrane(s)
-													   // this buffer contains MAX_MEMBRANES_INCLUDING_SAME_PARTICLE integer data cells per particle
-													   // each cell can contain -1 in case when no or no more membranes are associated with this particle,
-													   // or the index of corresponding membrane in membraneData list othewize
-	private CLBuffer<Integer> _membraneData;// elementary membrane is built on 3 adjacent particles (i,j,k) and should have a form of triangle
-											 // highly recommended that i-j, j-k and k-i are already connected with springs to keep them close 
-											 // to each other during whole lifetime of the simulation (user should control this by him(her)self)
-
+	private CLBuffer<Float> _acceleration;				// Acceleration buffer
+	private CLBuffer<Integer> _gridCellIndex;			// buffer with position of in particleIndex from which  located in the cell right now gridCellIndex[i] = someNumber, if cell has no particles it's equal -1
+	private CLBuffer<Integer> _gridCellIndexFixedUp;	// the same that gridCellIndex but without empty cells
+	private CLBuffer<Float> _neighborMap;				// Contains information about neighbors for all particles size = PARTICLE_COUNT * MAX_NEIGHBOR_COUNT
+	private CLBuffer<Integer> _particleIndex;			// list of pairs [CellIndex, particleIndex]
+	private CLBuffer<Integer> _particleIndexBack;		// list of indexes of particles before sort
+	private CLBuffer<Float> _position;					// Buffer with position
+	private CLBuffer<Float> _pressure;					// Pressure buffer size * (1+1extra[for membrane handling])
+	private CLBuffer<Float> _rho;						// density buffer size * 2
+	private CLBuffer<Float> _sortedPosition;			// buffer with sorted position size * 2
+	private CLBuffer<Float> _sortedVelocity;			// buffer with sorted velocity size * 2
+	private CLBuffer<Float> _velocity;					// buffer with velocity size * (1+1extra[for membrane handling])
+	private CLBuffer<Float> _elasticConnectionsData;	// list of particle pairs connected with springs and rest distance between them
+	private CLBuffer<Float> _activationSignal;			// array storing data (activation signals) for an array of muscles. 
+    													// now each can be activated by user independently
+	private CLBuffer<Integer> _particleMembranesList; 	// potentially any particle can be connected with others via membrane(s)
+													   	// this buffer contains MAX_MEMBRANES_INCLUDING_SAME_PARTICLE integer data cells per particle
+													   	// each cell can contain -1 in case when no or no more membranes are associated with this particle,
+													   	// or the index of corresponding membrane in membraneData list othewize
+	private CLBuffer<Integer> _membraneData;			// elementary membrane is built on 3 adjacent particles (i,j,k) and should have a form of triangle
+											 			// highly recommended that i-j, j-k and k-i are already connected with springs to keep them close 
+											 			// to each other during whole lifetime of the simulation (user should control this by him(her)self)
+	/*Pointer definition through which interaction between OpenCL buffers and host buffers is going*/
 	private Pointer<Float> _accelerationPtr;
 	private Pointer<Integer> _gridCellIndexPtr;
 	private Pointer<Integer> _gridCellIndexFixedUpPtr;
@@ -173,7 +176,7 @@ public class SPHSolverService implements ISolver {
 	private CLKernel _clearMembraneBuffers;
 	private CLKernel _computeInteractionWithMembranes;
 	private CLKernel _computeInteractionWithMembranes_finalize;
-
+	
 	public float _xMax;
 	public float _xMin;
 	public float _yMax;
@@ -201,12 +204,12 @@ public class SPHSolverService implements ISolver {
 	public int _numOfMembranes;
 	
 
-	private SPHModelX _model;
+	private SPHModelX _model;			// This variable contains information about initial configuration 
 	
-	private int iterationNumber;
+	private int iterationNumber;		// Number of current iteration
 	private boolean _recordCheckPoints = false;
-	private KernelsEnum checkKernel = null;
-	private BuffersEnum checkBuffer = null;
+	private KernelsEnum checkKernel = null; // OpenCL kernel work of which we'd like to check
+	private BuffersEnum checkBuffer = null;	// OpenCL buffer which we'd like to check
 	
 
 	/*
@@ -237,7 +240,7 @@ public class SPHSolverService implements ISolver {
 			throws Exception {
 		this.onceOffInit(hardwareProfile);
 	}
-
+	
 	public SPHSolverService() throws Exception {
 		this(HardwareProfileEnum.CPU);
 	}
@@ -247,11 +250,17 @@ public class SPHSolverService implements ISolver {
 
 		_recordCheckPoints = recordCheckpoints;
 	}
-
+	/** 
+	 * Initialization OpenCL entities
+	 * Method inits all required entities for work with OpenCL code.
+	 *
+	 *  @param hwProfile
+	 *  type of device 
+	 */
 	private void onceOffInit(HardwareProfileEnum hwProfile) throws IOException {
 		// TODO: check if the selected profile is actually available
 		DeviceFeature feature = (hwProfile == HardwareProfileEnum.CPU) ? DeviceFeature.CPU
-				: DeviceFeature.CPU;
+				: DeviceFeature.GPU;
 
 		_context = JavaCL.createBestContext(feature);
 
@@ -314,7 +323,9 @@ public class SPHSolverService implements ISolver {
 		_computeInteractionWithMembranes = _program.createKernel(KernelsEnum.COMPUTE_INTERACTION_WITH_MEMBRANES.toString());
 		_computeInteractionWithMembranes_finalize = _program.createKernel( KernelsEnum.COMPUTE_INTERACTION_WITH_MEMBRANES_FINALIZE.toString() );
 	}
-
+	/**
+	 * Allocate buffers on OpenCL device
+	 */
 	private void allocateBuffers() {
 		// init buffer size map
 		_buffersSizeMap.put(BuffersEnum.ACCELERATION, _particleCount * 4 * 3);
@@ -374,7 +385,11 @@ public class SPHSolverService implements ISolver {
 		_velocity = _context.createFloatBuffer(CLMem.Usage.InputOutput,
 				_buffersSizeMap.get(BuffersEnum.VELOCITY));
 	}
-
+	/**
+	 * Initialize OpenCL buffer with start values
+	 * Initialization of main simulation Constant which depends on
+	 * particle mass.
+	 */
 	private void setBuffersFromModel() {
 		// set dimensions
 		_xMax = _model.getXMax();
@@ -560,11 +575,16 @@ public class SPHSolverService implements ISolver {
 					"SPHSolverService:setModels - particle counts do not add up");
 		}
 	}
-
+	
 	public void cleanContext() {
 		_context.release();
 	}
 	//TODO depricated method will be removed after determenistic test
+	/** 
+	 *  Run clearing neighbor map
+	 *
+	 *  This function is depreciated and will be removed in next releases.
+	 */
 	private int runClearBuffers() {
 		
 		_clearBuffers.setArg(0, _neighborMap);
@@ -573,7 +593,12 @@ public class SPHSolverService implements ISolver {
 				new int[] { getParticleCountRoundedUp() });
 		return 0;
 	}
-
+	/** 
+	 *  Run hash particle kernel
+	 *
+	 *  This kernel runs algorithm for calculating cell number
+	 *  for all particles.
+	 */
 	private CLEvent runHashParticles() {
 		// Stage HashParticles
 		_hashParticles.setArg(0, _position);
@@ -591,6 +616,12 @@ public class SPHSolverService implements ISolver {
 
 		return event;
 	}
+	/** 
+	 *  Run indexx kernel
+	 *
+	 *  Fill up gridCellIndex array with start correct
+	 *  value in partcileIndex array.
+	 */
 	private CLEvent runIndexx() {
 		// Stage Indexx
 		_indexx.setArg(0, _particleIndex);
@@ -604,6 +635,20 @@ public class SPHSolverService implements ISolver {
 
 		return event;
 	}
+	
+	/** 
+	 *  Run index post pass function
+	 *
+	 *  Fill up all empty cell in gridCellIndex. If value in particular cell == -1
+	 *  it fills with value from last non empty cell. It need for optimization
+	 *  of neighbor search.
+	 *  EXAMPLE: particleIndex after sorting [[1,1],[1,2],[2,3],[3,0],[3,7],[4,5],[6,8]...]
+	 *                                          ^           ^     ^           ^     ^
+	 *           gridCellIndex               [  0,          2,    3,          5,-1, 6,....]
+	 *
+	 *  @return value taking after enqueue a command to write buffet to a device.
+	 *  More info here (http://www.khronos.org/registry/cl/sdk/1.0/docs/man/xhtml/clEnqueueWriteBuffer.html)
+	 */
 	private int runIndexPostPass() {
 		// get values out of buffer
 		_gridCellIndexPtr = _gridCellIndex.map(_queue, CLMem.MapFlags.Read);
@@ -627,7 +672,20 @@ public class SPHSolverService implements ISolver {
 
 		return 0;
 	}
-	
+	/** 
+	 *  Sorting of particleIndex list
+	 *
+	 *  particleIndex list contains for every particle information about current
+	 *  cell in which it contains in format {cell_id, partcile_id}. Before sorting
+	 *  particleIndex list arranged by particle id. This method sort particleIndex
+	 *  in accordance with order of cell.
+	 *  EXAMPLE: before sorting [[3,0],[1,1],[1,2],[2,3],..]
+	 *           after sorting  [[1,1],[1,2],[2,3],[3,0],..]
+	 *  For sorting method's using standard library quick sort algorithm.
+	 *
+	 *  @return value taking after enqueue a command to execute a kernel on a device.
+	 *  More info here (http://www.khronos.org/registry/cl/sdk/1.0/docs/man/xhtml/clEnqueueNDRangeKernel.html)
+	 */
 	private int runSort() {
 		// this version work with qsort
 		int index = 0;
@@ -656,7 +714,23 @@ public class SPHSolverService implements ISolver {
 
 		return 0;
 	}
-	
+	/** 
+	 *  Run sorting of position and velocity arrays
+	 *
+	 *  After sorting particleIndex list's order isn't correspond
+	 *  to order of particles in position and velocity arrays.
+	 *  It also need to be arranged in correct order.
+	 *  NOTE: this kernel doesn't change an order of position and velocity buffers,
+	 *  it's using special created buffers sortedPosition and sortedVelocity.
+	 *  NOTE: for tracking info about particular particle using particleIndexBack list
+	 *  which == particleIndex before sorting.
+	 *  EXAMPLE:  particleIndex list after sorting  [[1,1],[1,2],[2,3],[3,0],..]
+	 *            position list                     [ pos_0, pos_1, pos_2, pos_3, ...]
+	 *            sortingPosition list after sorting[ pos_1, pos_2, pos_3, pos_0, ...]
+	 *
+	 *  @return value taking after enqueue a command to execute a kernel on a device.
+	 *  More info here (http://www.khronos.org/registry/cl/sdk/1.0/docs/man/xhtml/clEnqueueNDRangeKernel.html)
+	 */
 	private int runSortPostPass() {
 		// Stage SortPostPass
 		_sortPostPass.setArg(0, _particleIndex);
@@ -670,7 +744,16 @@ public class SPHSolverService implements ISolver {
 				new int[] { getParticleCountRoundedUp() });
 		return 0;
 	}
-	
+	/** 
+	 *  Run search for neighbors kernel
+	 *
+	 *  After preparing all required data: particleIndex list,
+	 *  sortedPosition and sortedVelocity, neighbor search starting.
+	 *  Kernel looking for a nearest particles for all particles.
+	 *
+	 *  @return value taking after enqueue a command to execute a kernel on a device.
+	 *  More info here (http://www.khronos.org/registry/cl/sdk/1.0/docs/man/xhtml/clEnqueueNDRangeKernel.html)
+	 */
 	private int runFindNeighbors() {
 		_findNeighbors.setArg(0, _gridCellIndexFixedUp);
 		_findNeighbors.setArg(1, _sortedPosition);
@@ -692,7 +775,14 @@ public class SPHSolverService implements ISolver {
 				new int[] { getParticleCountRoundedUp() });
 		return 0;
 	}
-	
+	/** 
+	 *  Run pcisph_computeDensity kernel
+	 *
+	 *  The kernel's calculating density for every particle.
+	 *
+	 *  @return value taking after enqueue a command to execute a kernel on a device.
+	 *  More info here (http://www.khronos.org/registry/cl/sdk/1.0/docs/man/xhtml/clEnqueueNDRangeKernel.html)
+	 */
 	private int run_pcisph_computeDensity() {
 		// Stage ComputeDensityPressure
 		_pcisph_computeDensity.setArg(0, _neighborMap);
@@ -706,7 +796,18 @@ public class SPHSolverService implements ISolver {
 
 		return 0;
 	}
-
+	/** 
+	 *  Run pcisph_computeForcesAndInitPressure kernel
+	 *
+	 *  The kernel initializes pressure by 0.
+	 *  Calculating viscosity and surface tension forces
+	 *  and acceleration of particle
+	 *  acceleration[id] = (ViscosityForces + SurfaceTensiion +GravityForces)/mass
+	 *  tempAcceleration[id] = acceleration[id + PARTICLE_COUNT]=0.
+	 *
+	 *  @return value taking after enqueue a command to execute a kernel on a device.
+	 *  More info here (http://www.khronos.org/registry/cl/sdk/1.0/docs/man/xhtml/clEnqueueNDRangeKernel.html)
+	 */
 	private int run_pcisph_computeForcesAndInitPressure() {
 		_pcisph_computeForcesAndInitPressure.setArg(0, _neighborMap);
 		_pcisph_computeForcesAndInitPressure.setArg(1, _rho);
@@ -731,7 +832,17 @@ public class SPHSolverService implements ISolver {
 
 		return 0;
 	}
-
+	/** 
+	 *  Run pcisph_computeElasticForces kernel
+	 *
+	 *  The kernel calculates elastic forces and muscle
+	 *  contraction forces if particle has muscle connection
+	 *  acceleration[id] += (ElasticForces + MuscleForce)/mass.
+	 *  NOTE: this kernel works only with elastic particles
+	 *
+	 *  @return value taking after enqueue a command to execute a kernel on a device.
+	 *  More info here (http://www.khronos.org/registry/cl/sdk/1.0/docs/man/xhtml/clEnqueueNDRangeKernel.html)
+	 */
 	private int run_pcisph_computeElasticForces() {
 		_pcisph_computeElasticForces.setArg(0, _neighborMap);
 		_pcisph_computeElasticForces.setArg(1, _sortedPosition);
@@ -757,7 +868,17 @@ public class SPHSolverService implements ISolver {
 
 		return 0;
 	}
-
+	/** 
+	 *  Run pcisph_predictPositions kernel
+	 *
+	 *  The kernel predicts possible position value of particles
+	 *  what leads to incompressibility. Temp value of position
+	 *  is calculating from temp value of velocity which's tacking from predicted value of
+	 *  tempacceleration[id].
+	 *
+	 *  @return value taking after enqueue a command to execute a kernel on a device.
+	 *  More info here (http://www.khronos.org/registry/cl/sdk/1.0/docs/man/xhtml/clEnqueueNDRangeKernel.html)
+	 */
 	private int run_pcisph_predictPositions() {
 		_pcisph_predictPositions.setArg(0, _acceleration);
 		_pcisph_predictPositions.setArg(1, _sortedPosition);
@@ -779,7 +900,15 @@ public class SPHSolverService implements ISolver {
 
 		return 0;
 	}
-
+	/** 
+	 *  Run pcisph_predictDensity kernel
+	 *
+	 *  The kernel predicts possible value of density
+	 *  taking into account predicted value of particle's position
+	 *
+	 *  @return value taking after enqueue a command to execute a kernel on a device.
+	 *  More info here (http://www.khronos.org/registry/cl/sdk/1.0/docs/man/xhtml/clEnqueueNDRangeKernel.html)
+	 */
 	private int run_pcisph_predictDensity() {
 		// Stage predict density
 		_pcisph_predictDensity.setArg(0, _neighborMap);
@@ -798,7 +927,15 @@ public class SPHSolverService implements ISolver {
 
 		return 0;
 	}
-
+	/** 
+	 *  Run pcisph_correctPressure kernel
+	 *
+	 *  The kernel corrects the pressure
+	 *  taking into account predicted values of density.
+	 *
+	 *  @return value taking after enqueue a command to execute a kernel on a device.
+	 *  More info here (http://www.khronos.org/registry/cl/sdk/1.0/docs/man/xhtml/clEnqueueNDRangeKernel.html)
+	 */
 	private int run_pcisph_correctPressure() {
 		// Stage correct pressure
 		_pcisph_correctPressure.setArg(0, _particleIndexBack);
@@ -812,7 +949,15 @@ public class SPHSolverService implements ISolver {
 
 		return 0;
 	}
-
+	/** 
+	 *  Run pcisph_computePressureForceAcceleration kernel
+	 *
+	 *  The kernel calculating pressure forces
+	 *  and calculating new value of tempacceleration[id].
+	 *
+	 *  @return value taking after enqueue a command to execute a kernel on a device.
+	 *  More info here (http://www.khronos.org/registry/cl/sdk/1.0/docs/man/xhtml/clEnqueueNDRangeKernel.html)
+	 */
 	private int run_pcisph_computePressureForceAcceleration() {
 		// Stage ComputeAcceleration
 		_pcisph_computePressureForceAcceleration.setArg(0, _neighborMap);
@@ -838,7 +983,18 @@ public class SPHSolverService implements ISolver {
 
 		return 0;
 	}
-
+	/** 
+	 *  Run pcisph_integrate kernel
+	 *
+	 *  The kernel run numerical integration method.
+	 *  Calculating value of position and velocity on step (t+1)
+	 *  NOTE: for now simulation using Semi-implicit Euler method
+	 *        for integration 1th order
+	 *  NOTE: soon we plan to add Leap-frog 2th order
+	 *
+	 *  @return value taking after enqueue a command to execute a kernel on a device.
+	 *  More info here (http://www.khronos.org/registry/cl/sdk/1.0/docs/man/xhtml/clEnqueueNDRangeKernel.html)
+	 */
 	private CLEvent run_pcisph_integrate() {
 		// Stage Integrate
 		_pcisph_integrate.setArg(0, _acceleration);
@@ -870,6 +1026,14 @@ public class SPHSolverService implements ISolver {
 
 		return event;
 	}
+	/** 
+	 *  Run clearMembraneBuffers kernel
+	 *
+	 *  The kernel clears membranes data buffers.
+	 *
+	 *  @return value taking after enqueue a command to execute a kernel on a device.
+	 *  More info here (http://www.khronos.org/registry/cl/sdk/1.0/docs/man/xhtml/clEnqueueNDRangeKernel.html)
+	 */
 	private int run_clearMembraneBuffers(){
 		// Stage Clear membrane Buffeers
 		_clearMembraneBuffers.setArg(0, _position);
@@ -879,6 +1043,14 @@ public class SPHSolverService implements ISolver {
 		_clearMembraneBuffers.enqueueNDRange( _queue, new int[]{ getParticleCountRoundedUp() } );
 		return 0;
 	}
+	/** 
+	 *  Run computeInteractionWithMembranes kernel
+	 *
+	 *  The kernel handles interaction particles and membranes.
+	 *
+	 *  @return value taking after enqueue a command to execute a kernel on a device.
+	 *  More info here (http://www.khronos.org/registry/cl/sdk/1.0/docs/man/xhtml/clEnqueueNDRangeKernel.html)
+	 */
 	private int run_computeInteractionWithMembranes(){
 		_computeInteractionWithMembranes.setArg( 0, _position );
 		_computeInteractionWithMembranes.setArg( 1, _velocity );
@@ -894,6 +1066,15 @@ public class SPHSolverService implements ISolver {
 		_computeInteractionWithMembranes.enqueueNDRange(_queue, new int[]{ getParticleCountRoundedUp() } );
 		return 0;
 	}
+	/** 
+	 *  Run computeInteractionWithMembranes_finalize kernel
+	 *
+	 *  The kernel corrects position and velocity
+	 *  of particles after interaction with membranes.
+	 *
+	 *  @return value taking after enqueue a command to execute a kernel on a device.
+	 *  More info here (http://www.khronos.org/registry/cl/sdk/1.0/docs/man/xhtml/clEnqueueNDRangeKernel.html)
+	 */
 	private CLEvent run_computeInteractionWithMembranes_finalize(){
 		_computeInteractionWithMembranes_finalize.setArg( 0, _position );
 		_computeInteractionWithMembranes_finalize.setArg( 1, _velocity );
@@ -903,8 +1084,21 @@ public class SPHSolverService implements ISolver {
 		CLEvent event = _computeInteractionWithMembranes_finalize.enqueueNDRange(_queue, new int[] { getParticleCountRoundedUp() });
 		return event;
 	}
-	
+	/**
+	 * Comparator class
+	 * @author serg
+	 */
 	class MyCompare implements Comparator<int[]> {
+		/** 
+		 * Comparator method
+		 *
+		 *  This needs for quick sort standard method.
+		 *  More info (http://docs.oracle.com/javase/6/docs/api/java/util/Collections.html#sort(java.util.List, java.util.Comparator)).
+		 *
+		 *  @param o1
+		 *  @param o2
+		 *  @return -1 if value o1[0] > o2[0], +1 o1[0] < o2[0] else 0.
+		 */
 		public int compare(int[] o1, int[] o2) {
 			if (o1[0] < o2[0])
 				return -1;
@@ -913,12 +1107,25 @@ public class SPHSolverService implements ISolver {
 			return 0;
 		}
 	}
-
+	/** 
+	 * Run one simulation step
+	 *
+	 *  Run simulation step in pipeline manner.
+	 *  It starts with neighbor search algorithm than
+	 *  physic simulation algorithms: PCI SPH [1],
+	 *  elastic matter simulation, boundary handling [2],
+	 *  membranes handling and finally numerical integration.
+	 *  [1] http://www.ifi.uzh.ch/vmml/publications/pcisph/pcisph.pdf
+	 *  [2] M. Ihmsen, N. Akinci, M. Gissler, M. Teschner,
+	 *      Boundary Handling and Adaptive Time-stepping for PCISPH
+	 *      Proc. VRIPHYS, Copenhagen, Denmark, pp. 79-88, Nov 11-12, 2010
+	 */
 	private void step() {
 		long endStep = 0;
 		long startStep = System.currentTimeMillis();
 		long end = 0;
 		long start = System.currentTimeMillis();
+		//SEARCH FOR NEIGHBOURS PART
 		//DEPRICATED FUNCTION
 		/*logger.info("SPH clear buffer");
 		runClearBuffers();
@@ -995,7 +1202,7 @@ public class SPHSolverService implements ISolver {
 		logger.info("SPH find neighbors end, took " + (end - start) + "ms");
 		start = end;
 
-		// PCISPH stuff starts here
+		//PCISPH PART
 		logger.info("PCI-SPH compute density");
 		run_pcisph_computeDensity();
 		if (_recordCheckPoints) {
@@ -1063,6 +1270,7 @@ public class SPHSolverService implements ISolver {
 		start = end;
 		// wait for the end of the run_pcisph_integrate on device
 		event.waitFor();
+		//Handling of Interaction with membranes
 		if(_numOfMembranes!=0){
 		   logger.info("PCI-SPH membrane interaction calculating");
 		   run_clearMembraneBuffers();
@@ -1108,7 +1316,9 @@ public class SPHSolverService implements ISolver {
 	private int getParticleCountRoundedUp() {
 		return (((_particleCount - 1) / 256) + 1) * 256;
 	}
-
+	/**
+	 * Run simulation method
+	 */
 	@Override
 	public void solve(IRunConfiguration timeConfiguration, AspectNode aspect)
 			throws GeppettoExecutionException {
@@ -1137,7 +1347,7 @@ public class SPHSolverService implements ISolver {
 		logger.info("SPH solver end, took: "
 				+ (System.currentTimeMillis() - time) + "ms");
 	}
-
+	
 	private void updateStateTree(AspectNode aspect) {
 		AspectSubTreeNode visualTree = (AspectSubTreeNode) aspect
 				.getSubTree(AspectTreeType.VISUALIZATION_TREE);
