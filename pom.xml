@@ -6,7 +6,7 @@
 	<artifactId>solver.sph</artifactId>
 	<name>Geppetto SPH Solver Bundle</name>
 	<packaging>bundle</packaging>
-	<version>0.1.7</version>
+	<version>0.1.8</version>
 	<properties>
 		<spring.version>3.0.0.RELEASE</spring.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -77,12 +77,12 @@
 		<dependency>
 			<groupId>org.geppetto</groupId>
 			<artifactId>core</artifactId>
-			<version>0.1.7</version>
+			<version>${version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.geppetto</groupId>
 			<artifactId>model.sph</artifactId>
-			<version>0.1.7</version>
+			<version>${version}</version>
 		</dependency>
 	</dependencies>
 	<repositories>
