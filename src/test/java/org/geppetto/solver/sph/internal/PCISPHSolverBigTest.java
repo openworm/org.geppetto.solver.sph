@@ -66,7 +66,7 @@ public class PCISPHSolverBigTest {
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
 		
-		AspectNode stateSet = new AspectNode();
+		AspectNode stateSet = new AspectNode("StateSet");
 		solver.solve(new TimeConfiguration(0.1f, 1, 1),stateSet);
 		
 		PCISPHTestUtilities.checkStateTreeForNaN((AspectSubTreeNode) stateSet.getSubTree(AspectSubTreeNode.AspectTreeType.VISUALIZATION_TREE), false);
@@ -93,7 +93,7 @@ public class PCISPHSolverBigTest {
 		// run cycles one by one
 		SPHSolverService solver1 = new SPHSolverService();
 		solver1.initialize(model);
-		AspectNode stateTree1 = new AspectNode();
+		AspectNode stateTree1 = new AspectNode("StateSet1");
 		for(int i = 0; i < cycles; i++){
 			solver1.solve(new TimeConfiguration(0.1f, 1, 1),stateTree1);
 		}
@@ -102,7 +102,7 @@ public class PCISPHSolverBigTest {
 		SPHSolverService solver2 = new SPHSolverService();
 		solver2.initialize(model);
 		
-		AspectNode stateTree2 = new AspectNode();
+		AspectNode stateTree2 = new AspectNode("StateSet2");
 		solver2.solve(new TimeConfiguration(0.1f, cycles, 1),stateTree2);
 		
 		//checks the trees are equivalent
@@ -130,7 +130,7 @@ public class PCISPHSolverBigTest {
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
 		
-		AspectNode stateSet = new AspectNode();
+		AspectNode stateSet = new AspectNode("StateSet");
 		solver.solve(new TimeConfiguration(null, 1, null),stateSet);
 		
 		PCISPHTestUtilities.checkStateTreeForNaN((AspectSubTreeNode) stateSet.getSubTree(AspectTreeType.VISUALIZATION_TREE), false);
@@ -157,7 +157,7 @@ public class PCISPHSolverBigTest {
 		// run cycles one by one
 		SPHSolverService solver1 = new SPHSolverService();
 		solver1.initialize(model);		
-		AspectNode stateTree = new AspectNode();
+		AspectNode stateTree = new AspectNode("State Tree");
 		for(int i = 0; i < cycles; i++){
 			solver1.solve(new TimeConfiguration(0.1f, 1, 1),stateTree);
 			if (i > 0) {
@@ -189,7 +189,7 @@ public class PCISPHSolverBigTest {
 		// run cycles one by one
 		SPHSolverService solver1 = new SPHSolverService();
 		solver1.initialize(model);
-		AspectNode stateTree1 = new AspectNode();
+		AspectNode stateTree1 = new AspectNode("Aspect");
 		for(int i = 0; i < cycles; i++){
 			solver1.solve(new TimeConfiguration(0.1f, 1, 1),stateTree1);
 		}
@@ -198,7 +198,7 @@ public class PCISPHSolverBigTest {
 		SPHSolverService solver2 = new SPHSolverService();
 		solver2.initialize(model);
 		
-		AspectNode stateTree2 = new AspectNode();
+		AspectNode stateTree2 = new AspectNode("Aspect");
 		solver2.solve(new TimeConfiguration(0.1f, cycles, 1),stateTree2);
 		
 		//checks the trees are equivalent
@@ -224,7 +224,7 @@ public class PCISPHSolverBigTest {
 		SPHSolverService solver = new SPHSolverService();
 		solver.initialize(model);
 		
-		AspectNode stateSet = new AspectNode();
+		AspectNode stateSet = new AspectNode("Aspect");
 		solver.solve(new TimeConfiguration(null, 1, null),stateSet);
 		
 		PCISPHTestUtilities.checkStateTreeForNaN((AspectSubTreeNode) stateSet.getSubTree(AspectTreeType.VISUALIZATION_TREE), false);

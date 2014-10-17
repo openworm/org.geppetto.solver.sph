@@ -104,7 +104,7 @@ public class StepValidationTest {
 			// get reference values
 			String[] referenceValues = referenceValuesMap.get(step);
 
-			AspectNode stateSet = new AspectNode();
+			AspectNode stateSet = new AspectNode("Aspect");
 
 			// compare state tree with logged values for each recorded step
 			CompareStateVisitor compareVisitor = new CompareStateVisitor(referenceValues);
@@ -112,7 +112,7 @@ public class StepValidationTest {
 			mismatchingSetsMap.put(step, compareVisitor.getMismatches());
 		}
 		
-		AspectNode stateSet = new AspectNode();
+		AspectNode stateSet = new AspectNode("Aspect");
 		for(int i = 0; i < 50; i++)
 		{
 			// calculate step
@@ -193,7 +193,7 @@ public class StepValidationTest {
 			// get reference values
 			String[] referenceValues = referenceValuesMap.get(step);
 			
-			AspectNode stateSet = new AspectNode();
+			AspectNode stateSet = new AspectNode("Aspect");
 
 			// compare state tree with logged values for each recorded step
 			CompareStateVisitor compareVisitor = new CompareStateVisitor(referenceValues);
@@ -201,7 +201,7 @@ public class StepValidationTest {
 			mismatchingSetsMap.put(step, compareVisitor.getMismatches());
 		}
 
-		AspectNode stateSet = new AspectNode();
+		AspectNode stateSet = new AspectNode("Aspect");
 
 		for(int i = 0; i < 10; i++)
 		{
@@ -297,7 +297,7 @@ public class StepValidationTest {
 			// get reference values
 			String[] referenceValues = referenceValuesMap.get(step);
 
-			AspectNode stateSet = new AspectNode();
+			AspectNode stateSet = new AspectNode("Aspect");
 
 			// compare state tree with logged values for each recorded step
 			CompareStateVisitor compareVisitor = new CompareStateVisitor(referenceValues);
@@ -305,7 +305,7 @@ public class StepValidationTest {
 			mismatchingSetsMap.put(step, compareVisitor.getMismatches());
 		}
 		
-		AspectNode stateSet = new AspectNode();
+		AspectNode stateSet = new AspectNode("Aspect");
 
 		for(int i = 0; i < 100; i++)
 		{
