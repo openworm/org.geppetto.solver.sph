@@ -56,7 +56,7 @@ public class PhysicsLawsTest {
 		v1.setY((float) (v0.getY() + SPHConstants.GRAVITY_Y*t));
 		v1.setZ((float) (v0.getZ() + SPHConstants.GRAVITY_Z*t));
 		
-		AspectNode stateSet = new AspectNode();
+		AspectNode stateSet = new AspectNode("Aspect");
 
 		solver.solve(new TimeConfiguration(null, steps, null),stateSet);
 		
@@ -99,7 +99,7 @@ public class PhysicsLawsTest {
 		int steps = 1;
 		Vector3DX end_p;
 		GetPositionVisitor positionVisitor = new GetPositionVisitor();
-		AspectNode stateSet = new AspectNode();
+		AspectNode stateSet = new AspectNode("Aspect");
 		while(s * SPHConstants.SIMULATION_SCALE <= destination_dis){
 			s_b = s;
 			solver.solve(new TimeConfiguration(null, steps, null),stateSet);
@@ -142,7 +142,7 @@ public class PhysicsLawsTest {
 		int steps = 1;
 		Vector3DX end_p;
 		GetPositionVisitor positionVisitor = new GetPositionVisitor();
-		AspectNode stateSet = new AspectNode();
+		AspectNode stateSet = new AspectNode("Aspect");
 		while(s * SPHConstants.SIMULATION_SCALE <= destination_dis){
 			solver.solve(new TimeConfiguration(null, steps, null),stateSet);
 			stateSet.apply(positionVisitor);
@@ -167,7 +167,7 @@ public class PhysicsLawsTest {
 		int i = 1;
 		int steps = 100;
 		GetPositionVisitor positionVisitor = new GetPositionVisitor();
-		AspectNode stateSet = new AspectNode();
+		AspectNode stateSet = new AspectNode("Aspect");
 		SPHParticleX p = null;
 		int particleCount = 0;
 		for(int j=0; j<model.getNumberOfParticles(); j++){
