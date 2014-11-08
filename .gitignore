@@ -2,3 +2,7 @@
 src/main/java/META-INF/MANIFEST.MF
 *.DS_Store
 *.iml
++/.externalToolBuilders/
++/.settings/
++/.project
++/.classpath
