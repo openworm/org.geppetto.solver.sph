@@ -4,5 +4,4 @@ src/main/java/META-INF/MANIFEST.MF
 *.iml
 /.externalToolBuilders/
 /.settings/
-/.project
-/.classpath
+.classpath
