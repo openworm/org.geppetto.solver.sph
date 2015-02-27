@@ -277,4 +277,24 @@ public class PCISPHSolverTest
 		// PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
 
 	}
+	
+	@Test
+	public void test_simple_liquid_scene_780() throws Exception
+	{
+		URL url = this.getClass().getResource("/sphModel_liquid_780.xml");
+		SPHModelInterpreterService modelInterpreter = new SPHModelInterpreterService();
+		IModel model = modelInterpreter.readModel(url, null, "");
+
+		SPHSolverService solver = new SPHSolverService();
+		solver.initialize(model);
+		// solver.setRecordCheckpoint(true);
+		solver.solve(new TimeConfiguration(0.1f, 100, 1),_sphAspect);
+		AspectSubTreeNode simulationTree=(AspectSubTreeNode) _sphAspect.getSubTree(AspectTreeType.VISUALIZATION_TREE);
+		solver.populateVisualTree(model, simulationTree);
+		// Map<KernelsEnum, PCISPHCheckPoint> checkpoints = solver.getCheckpointsMap();
+		// PCISPHCheckPoint lastCheckPoint = checkpoints.get(KernelsEnum.COMPUTE_INTERACTION_WITH_MEMBRANES_FINALIZE);
+		Assert.assertTrue(true);
+		// PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
+
+	}
 }
