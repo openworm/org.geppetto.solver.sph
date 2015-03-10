@@ -78,7 +78,7 @@ public class DifferenDeviceTests {
 		 */
 		boolean logInfo = true;
 		int iterationCount = 100;
-		logOrCompare(logInfo, this.getClass().getResource("/cube_with_membranes_water_inside.xml"), KernelsEnum.INTEGRATE, iterationCount);
+		logOrCompare(logInfo, this.getClass().getResource("/sphModel_liquid_780.xml"/*"/cube_with_membranes_water_inside.xml"*/), KernelsEnum.HASH_PARTICLES/*KernelsEnum.INTEGRATE*/, iterationCount);
 		
 	}
 	/**Logging information or compare simulation results with results 
@@ -95,7 +95,7 @@ public class DifferenDeviceTests {
 	private void logOrCompare(boolean logInfo, URL modelURL, KernelsEnum checkpoint, int iterationCount) throws Exception
 	{
 		// load reference values at various steps from logs version
-		String path = "/home/serg/git/openworm/org.geppetto.solver.sph/src/test/resources/results/DifferentMachinesTest/";
+		String path = "/home/serg/git/openworm/geppetto/org.geppetto.solver.sph/src/test/resources/results/DifferentMachinesTest/";
 		Map<BuffersEnum, String[]> checkpointReferenceValuesMap = new HashMap<BuffersEnum, String[]>();
 		
 		Map<BuffersEnum, URL> logs = new LinkedHashMap<BuffersEnum, URL>();
@@ -117,6 +117,7 @@ public class DifferenDeviceTests {
 		Map<BuffersEnum, Integer> dimensions = solver.getBuffersSizeMap();
 		Map<BuffersEnum,List<Map<String,Vector3D>>> partcileEvolution = new HashMap<BuffersEnum,List<Map<String,Vector3D>>>();
 		while(iteration <= iterationCount){
+			System.err.println("=========STEP #" + String.valueOf(iteration) + "==========");
 			if(!logInfo){
 				logs.put(BuffersEnum.POSITION, StepValidationTest.class.getResource("/results/DifferentMachinesTest/position_" + iteration + ".txt"));
 				for (Map.Entry<BuffersEnum, URL> entry : logs.entrySet())
