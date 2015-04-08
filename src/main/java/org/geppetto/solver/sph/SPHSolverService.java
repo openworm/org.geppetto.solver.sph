@@ -996,9 +996,19 @@ public class SPHSolverService implements ISolver {
 				+ (System.currentTimeMillis() - time) + "ms");
 	}
 
-	private void updateStateTree(AspectNode aspect) {
+	@Override
+	public void updateVisualizationTree(AspectNode aspect){
 		AspectSubTreeNode visualTree = (AspectSubTreeNode) aspect
 				.getSubTree(AspectTreeType.VISUALIZATION_TREE);
+		
+		UpdateSPHVisualizationTreeVisitor updateSPHStateTreeVisitor = new UpdateSPHVisualizationTreeVisitor(
+				_positionPtr);
+		visualTree.apply(updateSPHStateTreeVisitor);
+		
+		visualTree.setModified(true);
+	}
+	
+	private void updateStateTree(AspectNode aspect) {
 		AspectSubTreeNode simulationTree = (AspectSubTreeNode) aspect
 				.getSubTree(AspectTreeType.WATCH_TREE);
 
@@ -1011,9 +1021,7 @@ public class SPHSolverService implements ISolver {
 		// reason to revoke this assumption we need to add code that at every
 		// cycle checks
 		// if some new states exist to eventually add them to the stateTree
-		UpdateSPHVisualizationTreeVisitor updateSPHStateTreeVisitor = new UpdateSPHVisualizationTreeVisitor(
-				_positionPtr);
-		visualTree.apply(updateSPHStateTreeVisitor);
+		
 
 		if (watching) {
 			updateSimulationTree(simulationTree);
@@ -1021,7 +1029,6 @@ public class SPHSolverService implements ISolver {
 
 		_position.unmap(_queue, _positionPtr);
 
-		visualTree.setModified(true);
 		simulationTree.setModified(true);
 		AspectNode aspectNode = (AspectNode) simulationTree.getParent();
 		aspectNode.setModified(true);
