@@ -6,7 +6,7 @@
 	<artifactId>solver.sph</artifactId>
 	<name>Geppetto SPH Solver Bundle</name>
 	<packaging>bundle</packaging>
-	<version>0.2.2</version>
+	<version>0.2.3</version>
 	<properties>
 		<spring.version>3.1.0.RELEASE</spring.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -154,7 +154,7 @@
 							resource=src/main/java/resource
 						</Include-Resource>
 						<Import-Package>
-							org.geppetto.core.scope,org.aopalliance.aop,org.springframework.aop,,org.springframework.aop.scope,org.springframework.aop.framework,*
+							org.geppetto.core.features,org.geppetto.core.scope,org.aopalliance.aop,org.springframework.aop,,org.springframework.aop.scope,org.springframework.aop.framework,*
 						</Import-Package>
 					</instructions>
 				</configuration>
