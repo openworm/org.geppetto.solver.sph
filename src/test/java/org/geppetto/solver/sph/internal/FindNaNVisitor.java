@@ -35,7 +35,6 @@ package org.geppetto.solver.sph.internal;
 import junit.framework.Assert;
 
 import org.geppetto.core.model.quantities.PhysicalQuantity;
-import org.geppetto.core.model.runtime.ATimeSeriesNode;
 import org.geppetto.core.model.runtime.VariableNode;
 import org.geppetto.core.model.state.visitors.DefaultStateVisitor;
 import org.geppetto.core.model.values.AValue;

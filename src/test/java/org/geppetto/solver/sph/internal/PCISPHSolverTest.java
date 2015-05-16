@@ -33,19 +33,6 @@
 
 package org.geppetto.solver.sph.internal;
 
-import java.net.URL;
-
-import junit.framework.Assert;
-
-import org.geppetto.core.model.IModel;
-import org.geppetto.core.model.runtime.ACompositeNode;
-import org.geppetto.core.model.runtime.AspectSubTreeNode;
-import org.geppetto.core.simulation.TimeConfiguration;
-import org.geppetto.model.sph.services.SPHModelInterpreterService;
-import org.geppetto.model.sph.x.SPHModelX;
-import org.geppetto.solver.sph.PCISPHTestUtilities;
-import org.geppetto.solver.sph.SPHSolverService;
-import org.junit.Test;
 
 /**
  * @author matteo@openworm.org
