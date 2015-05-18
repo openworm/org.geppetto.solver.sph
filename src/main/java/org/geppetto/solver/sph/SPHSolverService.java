@@ -1017,24 +1017,14 @@ public class SPHSolverService extends AService implements ISolver {
 	 * @param simulationTree
 	 */
 	private void updateSimulationTree(AspectSubTreeNode simulationTree) {
-		// map watchable buffers that are not already mapped
-		// NOTE: position is mapped for scene generation - improving performance
-		// by not mapping it again
-		_velocityPtr = _velocity.map(_queue, CLMem.MapFlags.Read);
-
 		if (simulationTree.getChildren().isEmpty()) {
 			simulationTree.setId(AspectTreeType.SIMULATION_TREE.toString());
-			//@tarelli Commented out next line
-			//populateSimulationTree(simulationTree);
 		} else {
 			// watch tree not empty populate new values
 			UpdateSPHSimulationTreeVisitor visitor = new UpdateSPHSimulationTreeVisitor(
 					_positionPtr);
 			simulationTree.apply(visitor);
 		}
-
-		// unmap watchable buffers
-		_velocity.unmap(_queue, _positionPtr);
 	}
 
 	private boolean containsNode(ACompositeNode node, String name) {
