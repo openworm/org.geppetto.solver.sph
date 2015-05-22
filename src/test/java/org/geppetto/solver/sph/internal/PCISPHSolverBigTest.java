@@ -37,14 +37,11 @@ import java.net.URL;
 
 import junit.framework.Assert;
 
-import org.geppetto.core.data.model.IAspectConfiguration;
-import org.geppetto.core.data.model.local.LocalAspectConfiguration;
-import org.geppetto.core.data.model.local.LocalInstancePath;
-import org.geppetto.core.data.model.local.LocalSimulatorConfiguration;
 import org.geppetto.core.model.IModel;
 import org.geppetto.core.model.runtime.AspectNode;
 import org.geppetto.core.model.runtime.AspectSubTreeNode;
 import org.geppetto.core.model.runtime.AspectSubTreeNode.AspectTreeType;
+import org.geppetto.core.simulation.TimeConfiguration;
 import org.geppetto.model.sph.services.SPHModelInterpreterService;
 import org.geppetto.model.sph.x.SPHModelX;
 import org.geppetto.solver.sph.PCISPHTestUtilities;
@@ -52,10 +49,6 @@ import org.geppetto.solver.sph.SPHSolverService;
 import org.junit.Test;
 
 public class PCISPHSolverBigTest {
-	
-	LocalSimulatorConfiguration sc=new LocalSimulatorConfiguration(1, "", "", 0.2f, null);
-	LocalInstancePath ip=new LocalInstancePath(1, "", "", "");
-	IAspectConfiguration aspectConfiguration=new LocalAspectConfiguration(1, ip, null, null, sc);
 	
 	/*
 	 * A test built around the original pureLiquid scene used to test the C++ version
@@ -74,7 +67,7 @@ public class PCISPHSolverBigTest {
 		solver.initialize(model);
 		
 		AspectNode stateSet = new AspectNode("StateSet");
-		solver.solve(aspectConfiguration,stateSet);
+		solver.solve(new TimeConfiguration(0.1f, 1, 1),stateSet);
 		
 		PCISPHTestUtilities.checkStateTreeForNaN((AspectSubTreeNode) stateSet.getSubTree(AspectSubTreeNode.AspectTreeType.VISUALIZATION_TREE), false);
 		
@@ -102,7 +95,7 @@ public class PCISPHSolverBigTest {
 		solver1.initialize(model);
 		AspectNode stateTree1 = new AspectNode("StateSet1");
 		for(int i = 0; i < cycles; i++){
-			solver1.solve(aspectConfiguration,stateTree1);
+			solver1.solve(new TimeConfiguration(0.1f, 1, 1),stateTree1);
 		}
 		
 		// run cycles at once
@@ -110,7 +103,7 @@ public class PCISPHSolverBigTest {
 		solver2.initialize(model);
 		
 		AspectNode stateTree2 = new AspectNode("StateSet2");
-		solver2.solve(aspectConfiguration,stateTree2);
+		solver2.solve(new TimeConfiguration(0.1f, cycles, 1),stateTree2);
 		
 		//checks the trees are equivalent
 		Assert.assertEquals(stateTree1.toString(),stateTree2.toString());
@@ -138,7 +131,7 @@ public class PCISPHSolverBigTest {
 		solver.initialize(model);
 		
 		AspectNode stateSet = new AspectNode("StateSet");
-		solver.solve(aspectConfiguration,stateSet);
+		solver.solve(new TimeConfiguration(null, 1, null),stateSet);
 		
 		PCISPHTestUtilities.checkStateTreeForNaN((AspectSubTreeNode) stateSet.getSubTree(AspectTreeType.VISUALIZATION_TREE), false);
 		
@@ -166,7 +159,7 @@ public class PCISPHSolverBigTest {
 		solver1.initialize(model);		
 		AspectNode stateTree = new AspectNode("State Tree");
 		for(int i = 0; i < cycles; i++){
-			solver1.solve(aspectConfiguration,stateTree);
+			solver1.solve(new TimeConfiguration(0.1f, 1, 1),stateTree);
 			if (i > 0) {
 				PCISPHTestUtilities.removeFirstStateFromTree((AspectSubTreeNode) stateTree.getSubTree(AspectTreeType.VISUALIZATION_TREE));
 			}
@@ -198,7 +191,7 @@ public class PCISPHSolverBigTest {
 		solver1.initialize(model);
 		AspectNode stateTree1 = new AspectNode("Aspect");
 		for(int i = 0; i < cycles; i++){
-			solver1.solve(aspectConfiguration,stateTree1);
+			solver1.solve(new TimeConfiguration(0.1f, 1, 1),stateTree1);
 		}
 		
 		// run cycles at once
@@ -206,7 +199,7 @@ public class PCISPHSolverBigTest {
 		solver2.initialize(model);
 		
 		AspectNode stateTree2 = new AspectNode("Aspect");
-		solver2.solve(aspectConfiguration,stateTree2);
+		solver2.solve(new TimeConfiguration(0.1f, cycles, 1),stateTree2);
 		
 		//checks the trees are equivalent
 		Assert.assertEquals(stateTree1.toString(),stateTree2.toString());
@@ -232,7 +225,7 @@ public class PCISPHSolverBigTest {
 		solver.initialize(model);
 		
 		AspectNode stateSet = new AspectNode("Aspect");
-		solver.solve(aspectConfiguration,stateSet);
+		solver.solve(new TimeConfiguration(null, 1, null),stateSet);
 		
 		PCISPHTestUtilities.checkStateTreeForNaN((AspectSubTreeNode) stateSet.getSubTree(AspectTreeType.VISUALIZATION_TREE), false);
 		

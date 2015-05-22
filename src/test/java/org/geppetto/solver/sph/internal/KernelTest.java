@@ -34,13 +34,12 @@
 package org.geppetto.solver.sph.internal;
 
 import static java.lang.System.out;
-import static org.junit.Assert.assertEquals;
-
 import java.io.IOException;
 
 import org.bridj.Pointer;
 import org.geppetto.solver.sph.SPHSolverService;
 import org.junit.Test;
+import static org.junit.Assert.assertEquals;
 
 import com.nativelibs4java.opencl.CLBuffer;
 import com.nativelibs4java.opencl.CLContext;

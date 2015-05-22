@@ -41,11 +41,8 @@ import java.util.Map;
 
 import junit.framework.Assert;
 
-import org.geppetto.core.data.model.IAspectConfiguration;
-import org.geppetto.core.data.model.local.LocalAspectConfiguration;
-import org.geppetto.core.data.model.local.LocalInstancePath;
-import org.geppetto.core.data.model.local.LocalSimulatorConfiguration;
 import org.geppetto.core.model.runtime.AspectNode;
+import org.geppetto.core.simulation.TimeConfiguration;
 import org.geppetto.model.sph.Vector3D;
 import org.geppetto.model.sph.services.SPHModelInterpreterService;
 import org.geppetto.model.sph.x.SPHModelX;
@@ -58,10 +55,6 @@ import org.junit.Test;
 
 public class StepValidationWithCheckpointsTest {
 
-	LocalSimulatorConfiguration sc=new LocalSimulatorConfiguration(1, "", "", 0.2f, null);
-	LocalInstancePath ip=new LocalInstancePath(1, "", "", "");
-	IAspectConfiguration aspectConfiguration=new LocalAspectConfiguration(1, ip, null, null, sc);
-	
 	@Test
 	public void testCheckpoints_780_CLEARBUFFERS() throws Exception {
 		// load reference values at various steps from C++ version
@@ -327,7 +320,7 @@ public class StepValidationWithCheckpointsTest {
 
 		AspectNode aspect= new AspectNode("Aspect");
 		// calculate step
-		solver.solve(aspectConfiguration,aspect);
+		solver.solve(new TimeConfiguration(null, 1, null),aspect);
 		
 		// get checkpoint of interest
 		PCISPHCheckPoint checkpoint_values = solver.getCheckpointsMap().get(checkpoint);

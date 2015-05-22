@@ -5,11 +5,10 @@ import java.util.List;
 
 import junit.framework.Assert;
 
-import org.geppetto.core.data.model.IAspectConfiguration;
-import org.geppetto.core.data.model.local.LocalAspectConfiguration;
-import org.geppetto.core.data.model.local.LocalInstancePath;
-import org.geppetto.core.data.model.local.LocalSimulatorConfiguration;
 import org.geppetto.core.model.runtime.AspectNode;
+import org.geppetto.core.model.runtime.AspectSubTreeNode;
+import org.geppetto.core.model.values.FloatValue;
+import org.geppetto.core.simulation.TimeConfiguration;
 import org.geppetto.model.sph.Vector3D;
 import org.geppetto.model.sph.common.SPHConstants;
 import org.geppetto.model.sph.services.SPHModelInterpreterService;
@@ -21,12 +20,10 @@ import org.geppetto.solver.sph.PCISPHCheckPoint;
 import org.geppetto.solver.sph.SPHSolverService;
 import org.junit.Test;
 
+import com.android.dx.cf.code.Simulator;
+
 public class PhysicsLawsTest {
 
-	LocalSimulatorConfiguration sc=new LocalSimulatorConfiguration(1, "", "", 0.2f, null);
-	LocalInstancePath ip=new LocalInstancePath(1, "", "", "");
-	IAspectConfiguration aspectConfiguration=new LocalAspectConfiguration(1, ip, null, null, sc);
-	
 	@Test
 	public void testGravitation_SingleParticle() throws Exception {
 		// load Java generated scene
@@ -60,7 +57,7 @@ public class PhysicsLawsTest {
 		
 		AspectNode stateSet = new AspectNode("Aspect");
 
-		solver.solve(aspectConfiguration,stateSet);
+		solver.solve(new TimeConfiguration(null, steps, null),stateSet);
 		
 		PCISPHCheckPoint check = solver.getCheckpointsMap().get(KernelsEnum.INTEGRATE);
 		List<Float> velocity = check.velocity;
@@ -104,7 +101,7 @@ public class PhysicsLawsTest {
 		AspectNode stateSet = new AspectNode("Aspect");
 		while(s * SPHConstants.SIMULATION_SCALE <= destination_dis){
 			s_b = s;
-			solver.solve(aspectConfiguration,stateSet);
+			solver.solve(new TimeConfiguration(null, steps, null),stateSet);
 			stateSet.apply(positionVisitor);
 			//stateSet.
 			//PCISPHCheckPoint check = solver.getCheckpointsMap().get(KernelsEnum.INTEGRATE);
@@ -146,7 +143,7 @@ public class PhysicsLawsTest {
 		GetPositionVisitor positionVisitor = new GetPositionVisitor();
 		AspectNode stateSet = new AspectNode("Aspect");
 		while(s * SPHConstants.SIMULATION_SCALE <= destination_dis){
-			solver.solve(aspectConfiguration,stateSet);
+			solver.solve(new TimeConfiguration(null, steps, null),stateSet);
 			stateSet.apply(positionVisitor);
 			end_p = positionVisitor.getParticlePosition();
 			s = Vector3DX.subtraction(end_p, initPosition).length();
@@ -182,7 +179,7 @@ public class PhysicsLawsTest {
 		}
 		initPosition = Vector3DX.mutiplicationOnScalar(initPosition, 1.f/(float)particleCount);
 		Vector3DX end_p;
-		solver.solve(aspectConfiguration,stateSet);
+		solver.solve(new TimeConfiguration(null, steps, null),stateSet);
 		stateSet.apply(positionVisitor);
 		end_p = positionVisitor.getParticlePosition();
 		float result = Vector3DX.subtraction(initPosition, end_p).length();
