@@ -34,6 +34,7 @@ package org.geppetto.solver.sph;
 
 import org.bridj.Pointer;
 import org.geppetto.core.model.quantities.PhysicalQuantity;
+import org.geppetto.core.model.quantities.Quantity;
 import org.geppetto.core.model.runtime.VariableNode;
 import org.geppetto.core.model.state.visitors.DefaultStateVisitor;
 import org.geppetto.core.model.values.FloatValue;
@@ -70,21 +71,21 @@ public class UpdateSPHSimulationTreeVisitor extends DefaultStateVisitor {
 		// 3. node.addValue
 		if(node.getId().equals("x"))
 		{
-			PhysicalQuantity q = new PhysicalQuantity();
+			Quantity q = new Quantity();
 			q.setValue(_xV);
-			node.addPhysicalQuantity(q);
+			node.addQuantity(q);
 		}
 		else if(node.getId().equals("y"))
 		{
-			PhysicalQuantity q = new PhysicalQuantity();
+			Quantity q = new Quantity();
 			q.setValue(_yV);
-			node.addPhysicalQuantity(q);
+			node.addQuantity(q);
 		}
 		else if(node.getId().equals("z"))
 		{
-			PhysicalQuantity q = new PhysicalQuantity();
+			Quantity q = new Quantity();
 			q.setValue(_zV);
-			node.addPhysicalQuantity(q);
+			node.addQuantity(q);
 		}
 		
 		return super.visitVariableNode(node);

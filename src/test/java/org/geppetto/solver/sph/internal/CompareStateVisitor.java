@@ -37,6 +37,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.geppetto.core.model.quantities.PhysicalQuantity;
+import org.geppetto.core.model.quantities.Quantity;
 import org.geppetto.core.model.runtime.CompositeNode;
 import org.geppetto.core.model.runtime.VariableNode;
 import org.geppetto.core.model.state.visitors.DefaultStateVisitor;
@@ -87,7 +88,7 @@ public class CompareStateVisitor extends DefaultStateVisitor
 	public boolean visitVariableNode(VariableNode node)
 	{
 		// get last step
-		PhysicalQuantity p = node.getTimeSeries().get(node.getTimeSeries().size() - 1);
+		Quantity p = node.getTimeSeries().get(node.getTimeSeries().size() - 1);
 		AValue v = p.getValue();
 		Float nodeVal = Float.parseFloat(v.getStringValue());
 		
