@@ -53,7 +53,7 @@ import org.junit.Test;
 
 public class PCISPHSolverBigTest {
 	
-	LocalSimulatorConfiguration sc=new LocalSimulatorConfiguration(1, "", "", 0.2f, null);
+	LocalSimulatorConfiguration sc=new LocalSimulatorConfiguration(1, "", "", 0.0002f, 0.2f, null);
 	LocalInstancePath ip=new LocalInstancePath(1, "", "", "");
 	IAspectConfiguration aspectConfiguration=new LocalAspectConfiguration(1, ip, null, null, sc);
 	
