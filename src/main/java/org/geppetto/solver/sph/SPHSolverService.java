@@ -43,30 +43,21 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.StringTokenizer;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.bridj.Pointer;
 import org.geppetto.core.common.GeppettoExecutionException;
-import org.geppetto.core.common.GeppettoInitializationException;
 import org.geppetto.core.data.model.IAspectConfiguration;
 import org.geppetto.core.model.IModel;
-import org.geppetto.core.model.quantities.PhysicalQuantity;
 import org.geppetto.core.model.runtime.ACompositeNode;
 import org.geppetto.core.model.runtime.ANode;
 import org.geppetto.core.model.runtime.AspectNode;
 import org.geppetto.core.model.runtime.AspectSubTreeNode;
 import org.geppetto.core.model.runtime.AspectSubTreeNode.AspectTreeType;
-import org.geppetto.core.model.runtime.CompositeNode;
 import org.geppetto.core.model.runtime.EntityNode;
-import org.geppetto.core.model.runtime.VariableNode;
-import org.geppetto.core.model.values.FloatValue;
-import org.geppetto.core.model.values.ValuesFactory;
 import org.geppetto.core.services.AService;
-import org.geppetto.core.simulation.IRunConfiguration;
 import org.geppetto.core.solver.ISolver;
-import org.geppetto.core.utilities.VariablePathSerializer;
 import org.geppetto.model.sph.Connection;
 import org.geppetto.model.sph.common.SPHConstants;
 import org.geppetto.model.sph.x.SPHModelX;
@@ -942,19 +933,16 @@ public class SPHSolverService extends AService implements ISolver
 		long time = System.currentTimeMillis();
 		logger.info("SPH solver start");
 
-		for(int i = 0; i < aspectConfiguration.getSimulatorConfiguration().getTimestep(); i++)
-		{
-			// TODO: setActivationSignal
+		// TODO: setActivationSignal
 
-			long end = 0;
-			long start = System.currentTimeMillis();
-			logger.info("SPH STEP START");
-			step();
-			updateStateTree(aspect);
+		long end = 0;
+		long start = System.currentTimeMillis();
+		logger.info("SPH STEP START");
+		step();
+		updateStateTree(aspect);
 
-			end = System.currentTimeMillis();
-			logger.info("SPH STEP END, took " + (end - start) + "ms");
-		}
+		end = System.currentTimeMillis();
+		logger.info("SPH STEP END, took " + (end - start) + "ms");
 
 		logger.info("SPH solver end, took: " + (System.currentTimeMillis() - time) + "ms");
 	}
@@ -994,16 +982,9 @@ public class SPHSolverService extends AService implements ISolver
 	 */
 	private void updateSimulationTree(AspectSubTreeNode simulationTree)
 	{
-		// map watchable buffers that are not already mapped
-		// NOTE: position is mapped for scene generation - improving performance
-		// by not mapping it again
-		_velocityPtr = _velocity.map(_queue, CLMem.MapFlags.Read);
-
 		if(simulationTree.getChildren().isEmpty())
 		{
 			simulationTree.setId(AspectTreeType.SIMULATION_TREE.toString());
-			// @tarelli Commented out next line
-			// populateSimulationTree(simulationTree);
 		}
 		else
 		{
@@ -1011,9 +992,6 @@ public class SPHSolverService extends AService implements ISolver
 			UpdateSPHSimulationTreeVisitor visitor = new UpdateSPHSimulationTreeVisitor(_positionPtr);
 			simulationTree.apply(visitor);
 		}
-
-		// unmap watchable buffers
-		_velocity.unmap(_queue, _positionPtr);
 	}
 
 	private boolean containsNode(ACompositeNode node, String name)

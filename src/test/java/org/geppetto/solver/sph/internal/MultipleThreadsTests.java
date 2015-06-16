@@ -91,6 +91,7 @@ public class MultipleThreadsTests {
 		AspectNode stateSet3 = new AspectNode("StateSet3");
 		AspectNode stateSet4 = new AspectNode("StateSet4");
 		AspectNode stateSet5 = new AspectNode("StateSet5");
+
 		LocalSimulatorConfiguration sc=new LocalSimulatorConfiguration(1, "", "", 0.2f, null);
 		LocalInstancePath ip=new LocalInstancePath(1, "", "", "");
 		IAspectConfiguration aspectConfiguration=new LocalAspectConfiguration(1, ip, null, null, sc);

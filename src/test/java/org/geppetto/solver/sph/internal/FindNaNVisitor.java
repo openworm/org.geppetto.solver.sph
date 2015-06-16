@@ -62,7 +62,7 @@ public class FindNaNVisitor extends DefaultStateVisitor
 		Assert.assertFalse(node.getTimeSeries().size() == 0);
 		
 		int i=0;
-		for(Quantity p:node.getTimeSeries())
+		for(Quantity p:node.getTimeSeries()) 
 		{
 			AValue v = p.getValue();
 			if(v.getStringValue().equals(NAN))	

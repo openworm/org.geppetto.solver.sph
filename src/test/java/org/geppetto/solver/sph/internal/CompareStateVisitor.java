@@ -36,7 +36,6 @@ import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.geppetto.core.model.quantities.PhysicalQuantity;
 import org.geppetto.core.model.quantities.Quantity;
 import org.geppetto.core.model.runtime.CompositeNode;
 import org.geppetto.core.model.runtime.VariableNode;
