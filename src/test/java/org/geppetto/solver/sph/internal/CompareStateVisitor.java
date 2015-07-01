@@ -39,14 +39,14 @@ import java.util.Set;
 import org.geppetto.core.model.quantities.Quantity;
 import org.geppetto.core.model.runtime.CompositeNode;
 import org.geppetto.core.model.runtime.VariableNode;
-import org.geppetto.core.model.state.visitors.DefaultStateVisitor;
+import org.geppetto.core.model.state.visitors.RuntimeTreeVisitor;
 import org.geppetto.core.model.values.AValue;
 import org.geppetto.model.sph.Vector3D;
 
 /**
  * @author giovanni@openworm.org
  */
-public class CompareStateVisitor extends DefaultStateVisitor
+public class CompareStateVisitor extends RuntimeTreeVisitor
 {
 	private Integer currentID = null;
 	private String[] referenceStates = null;

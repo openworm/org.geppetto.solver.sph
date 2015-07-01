@@ -36,11 +36,11 @@ import org.bridj.Pointer;
 import org.geppetto.core.model.quantities.PhysicalQuantity;
 import org.geppetto.core.model.quantities.Quantity;
 import org.geppetto.core.model.runtime.VariableNode;
-import org.geppetto.core.model.state.visitors.DefaultStateVisitor;
+import org.geppetto.core.model.state.visitors.RuntimeTreeVisitor;
 import org.geppetto.core.model.values.FloatValue;
 import org.geppetto.core.model.values.ValuesFactory;
 
-public class UpdateSPHSimulationTreeVisitor extends DefaultStateVisitor {
+public class UpdateSPHSimulationTreeVisitor extends RuntimeTreeVisitor {
 
 	private Pointer<Float> _positionPtr;
 

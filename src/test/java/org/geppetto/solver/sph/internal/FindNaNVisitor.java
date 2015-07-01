@@ -37,14 +37,14 @@ import junit.framework.Assert;
 import org.geppetto.core.model.quantities.PhysicalQuantity;
 import org.geppetto.core.model.quantities.Quantity;
 import org.geppetto.core.model.runtime.VariableNode;
-import org.geppetto.core.model.state.visitors.DefaultStateVisitor;
+import org.geppetto.core.model.state.visitors.RuntimeTreeVisitor;
 import org.geppetto.core.model.values.AValue;
 
 /**
  * @author matteo@openworm.org
  * @author giovanni@openworm.org
  */
-public class FindNaNVisitor extends DefaultStateVisitor
+public class FindNaNVisitor extends RuntimeTreeVisitor
 {
 	private static final String NAN = "NaN";
 	

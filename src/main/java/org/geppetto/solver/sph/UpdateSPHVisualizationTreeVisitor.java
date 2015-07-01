@@ -38,7 +38,7 @@ import org.geppetto.core.model.runtime.CylinderNode;
 import org.geppetto.core.model.runtime.ParticleNode;
 import org.geppetto.core.model.runtime.SphereNode;
 import org.geppetto.core.model.runtime.CompositeNode;
-import org.geppetto.core.model.state.visitors.DefaultStateVisitor;
+import org.geppetto.core.model.state.visitors.RuntimeTreeVisitor;
 import org.geppetto.core.model.values.FloatValue;
 import org.geppetto.core.model.values.ValuesFactory;
 import org.geppetto.core.visualisation.model.Point;
@@ -49,7 +49,7 @@ import org.geppetto.core.visualisation.model.Point;
  * This method updates the particles already present in the tree
  * adding new values as found on the position pointer
  */
-public class UpdateSPHVisualizationTreeVisitor extends DefaultStateVisitor
+public class UpdateSPHVisualizationTreeVisitor extends RuntimeTreeVisitor
 {
 
 	private FloatValue _xV, _yV, _zV, _pV;
