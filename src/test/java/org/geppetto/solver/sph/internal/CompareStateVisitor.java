@@ -33,24 +33,20 @@
 package org.geppetto.solver.sph.internal;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
-import org.geppetto.core.model.quantities.PhysicalQuantity;
-import org.geppetto.core.model.runtime.ACompositeNode;
-import org.geppetto.core.model.runtime.ATimeSeriesNode;
+import org.geppetto.core.model.quantities.Quantity;
 import org.geppetto.core.model.runtime.CompositeNode;
 import org.geppetto.core.model.runtime.VariableNode;
-import org.geppetto.core.model.state.visitors.DefaultStateVisitor;
+import org.geppetto.core.model.state.visitors.RuntimeTreeVisitor;
 import org.geppetto.core.model.values.AValue;
 import org.geppetto.model.sph.Vector3D;
 
 /**
  * @author giovanni@openworm.org
  */
-public class CompareStateVisitor extends DefaultStateVisitor
+public class CompareStateVisitor extends RuntimeTreeVisitor
 {
 	private Integer currentID = null;
 	private String[] referenceStates = null;
@@ -91,7 +87,7 @@ public class CompareStateVisitor extends DefaultStateVisitor
 	public boolean visitVariableNode(VariableNode node)
 	{
 		// get last step
-		PhysicalQuantity p = node.getTimeSeries().get(node.getTimeSeries().size() - 1);
+		Quantity p = node.getTimeSeries().get(node.getTimeSeries().size() - 1);
 		AValue v = p.getValue();
 		Float nodeVal = Float.parseFloat(v.getStringValue());
 		

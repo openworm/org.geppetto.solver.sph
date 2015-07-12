@@ -41,11 +41,13 @@ import java.util.Set;
 
 import junit.framework.Assert;
 
+import org.geppetto.core.data.model.IAspectConfiguration;
+import org.geppetto.core.data.model.local.LocalAspectConfiguration;
+import org.geppetto.core.data.model.local.LocalInstancePath;
+import org.geppetto.core.data.model.local.LocalSimulatorConfiguration;
 import org.geppetto.core.model.runtime.AspectNode;
 import org.geppetto.core.model.runtime.AspectSubTreeNode;
 import org.geppetto.core.model.runtime.AspectSubTreeNode.AspectTreeType;
-import org.geppetto.core.simulation.TimeConfiguration;
-
 import org.geppetto.model.sph.services.SPHModelInterpreterService;
 import org.geppetto.model.sph.x.SPHModelX;
 import org.geppetto.solver.sph.PCISPHTestUtilities;
@@ -54,6 +56,10 @@ import org.junit.Test;
 
 public class StepValidationTest {
 
+	LocalSimulatorConfiguration sc=new LocalSimulatorConfiguration(1, "", "", 0.0002f, 0.2f, null);
+	LocalInstancePath ip=new LocalInstancePath(1, "", "", "");
+	IAspectConfiguration aspectConfiguration=new LocalAspectConfiguration(1, ip, null, null, sc);
+	
 	@Test
 	public void testValidateLiquidScene16974() throws Exception {
 		// load reference values at various steps from C++ version
@@ -116,7 +122,7 @@ public class StepValidationTest {
 		for(int i = 0; i < 50; i++)
 		{
 			// calculate step
-			solver.solve(new TimeConfiguration(0.1f, 1, 1),stateSet);
+			solver.solve(aspectConfiguration,stateSet);
 			
 			// only keep latest step results
 			if (i > 0) {
@@ -206,7 +212,7 @@ public class StepValidationTest {
 		for(int i = 0; i < 10; i++)
 		{
 			// calculate step
-			solver.solve(new TimeConfiguration(null, 1, null),stateSet);
+			solver.solve(aspectConfiguration,stateSet);
 			
 			// only keep latest step results
 			if (i > 0) {
@@ -310,7 +316,7 @@ public class StepValidationTest {
 		for(int i = 0; i < 100; i++)
 		{
 			// calculate step
-			solver.solve(new TimeConfiguration(0.1f, 1, 1),stateSet);
+			solver.solve(aspectConfiguration,stateSet);
 			
 			// only keep latest step results
 			if (i > 0) {

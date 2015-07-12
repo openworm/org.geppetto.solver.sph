@@ -35,16 +35,16 @@ package org.geppetto.solver.sph.internal;
 import junit.framework.Assert;
 
 import org.geppetto.core.model.quantities.PhysicalQuantity;
-import org.geppetto.core.model.runtime.ATimeSeriesNode;
+import org.geppetto.core.model.quantities.Quantity;
 import org.geppetto.core.model.runtime.VariableNode;
-import org.geppetto.core.model.state.visitors.DefaultStateVisitor;
+import org.geppetto.core.model.state.visitors.RuntimeTreeVisitor;
 import org.geppetto.core.model.values.AValue;
 
 /**
  * @author matteo@openworm.org
  * @author giovanni@openworm.org
  */
-public class FindNaNVisitor extends DefaultStateVisitor
+public class FindNaNVisitor extends RuntimeTreeVisitor
 {
 	private static final String NAN = "NaN";
 	
@@ -62,7 +62,7 @@ public class FindNaNVisitor extends DefaultStateVisitor
 		Assert.assertFalse(node.getTimeSeries().size() == 0);
 		
 		int i=0;
-		for(PhysicalQuantity p:node.getTimeSeries())
+		for(Quantity p:node.getTimeSeries()) 
 		{
 			AValue v = p.getValue();
 			if(v.getStringValue().equals(NAN))	

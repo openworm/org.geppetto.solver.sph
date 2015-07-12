@@ -38,11 +38,14 @@ import java.util.Map;
 
 import junit.framework.Assert;
 
+import org.geppetto.core.data.model.IAspectConfiguration;
+import org.geppetto.core.data.model.local.LocalAspectConfiguration;
+import org.geppetto.core.data.model.local.LocalInstancePath;
+import org.geppetto.core.data.model.local.LocalSimulatorConfiguration;
 import org.geppetto.core.model.IModel;
 import org.geppetto.core.model.runtime.AspectNode;
 import org.geppetto.core.model.runtime.AspectSubTreeNode;
 import org.geppetto.core.model.runtime.AspectSubTreeNode.AspectTreeType;
-import org.geppetto.core.simulation.TimeConfiguration;
 import org.geppetto.model.sph.services.SPHModelInterpreterService;
 import org.geppetto.model.sph.x.SPHModelX;
 import org.geppetto.solver.sph.BuffersEnum;
@@ -54,6 +57,10 @@ import org.junit.Test;
 
 public class RecordCheckpointsTest {
 
+	LocalSimulatorConfiguration sc=new LocalSimulatorConfiguration(1, "", "", 0.0002f, 0.2f, null);
+	LocalInstancePath ip=new LocalInstancePath(1, "", "", "");
+	IAspectConfiguration aspectConfiguration=new LocalAspectConfiguration(1, ip, null, null, sc);
+	
 	@Test
 	public void testRecordCheckpointsIsEmpty() throws Exception {
 		URL url = this.getClass().getResource("/sphModel_15.xml");
@@ -68,7 +75,7 @@ public class RecordCheckpointsTest {
 		solver.initialize(model);
 		AspectNode stateSet = new AspectNode("Aspect");
 
-		solver.solve(new TimeConfiguration(0.1f, 1, 1),stateSet);
+		solver.solve(aspectConfiguration,stateSet);
 		
 		PCISPHTestUtilities.checkStateTreeForNaN((AspectSubTreeNode) stateSet.getSubTree(AspectTreeType.VISUALIZATION_TREE), false);
 		Assert.assertTrue("Particle count doesn't match.",  stateSet.getSubTree(AspectTreeType.VISUALIZATION_TREE).getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
@@ -91,7 +98,7 @@ public class RecordCheckpointsTest {
 		solver.initialize(model);
 		
 		AspectNode stateSet = new AspectNode("Aspect");
-		solver.solve(new TimeConfiguration(0.1f, 1, 1),stateSet);
+		solver.solve(aspectConfiguration,stateSet);
 		
 		PCISPHTestUtilities.checkStateTreeForNaN((AspectSubTreeNode) stateSet.getSubTree(AspectTreeType.VISUALIZATION_TREE), false);
 		Assert.assertTrue("Particle count doesn't match.",  stateSet.getSubTree(AspectTreeType.VISUALIZATION_TREE).getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
@@ -152,7 +159,7 @@ public class RecordCheckpointsTest {
 		
 		AspectNode stateSet = new AspectNode("Aspect");
 		// run many steps - test should give same results
-		solver.solve(new TimeConfiguration(0.1f, 10, 1),stateSet);
+		solver.solve(aspectConfiguration,stateSet);
 		
 		PCISPHTestUtilities.checkStateTreeForNaN((AspectSubTreeNode) stateSet.getSubTree(AspectTreeType.VISUALIZATION_TREE), false);
 		Assert.assertTrue("Particle count doesn't match.",  stateSet.getSubTree(AspectTreeType.VISUALIZATION_TREE).getChildren().size() == PCISPHTestUtilities.countNonBoundaryParticles((SPHModelX)model));
@@ -209,7 +216,7 @@ public class RecordCheckpointsTest {
 		solver.initialize(model);
 		
 		AspectNode stateSet = new AspectNode("Aspect");
-		solver.solve(new TimeConfiguration(null, 1, null),stateSet);
+		solver.solve(aspectConfiguration,stateSet);
 		
 		PCISPHTestUtilities.checkStateTreeForNaN((AspectSubTreeNode) stateSet.getSubTree(AspectTreeType.VISUALIZATION_TREE), false);
 		
