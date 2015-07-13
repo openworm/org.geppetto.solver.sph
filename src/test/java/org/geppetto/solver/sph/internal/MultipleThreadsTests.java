@@ -36,11 +36,13 @@ import java.net.URL;
 
 import junit.framework.Assert;
 
+import org.geppetto.core.data.model.IAspectConfiguration;
+import org.geppetto.core.data.model.local.LocalAspectConfiguration;
+import org.geppetto.core.data.model.local.LocalInstancePath;
+import org.geppetto.core.data.model.local.LocalSimulatorConfiguration;
 import org.geppetto.core.model.IModel;
 import org.geppetto.core.model.runtime.AspectNode;
-import org.geppetto.core.model.runtime.AspectSubTreeNode;
 import org.geppetto.core.model.runtime.AspectSubTreeNode.AspectTreeType;
-import org.geppetto.core.simulation.TimeConfiguration;
 import org.geppetto.model.sph.services.SPHModelInterpreterService;
 import org.geppetto.model.sph.x.SPHModelX;
 import org.geppetto.solver.sph.PCISPHTestUtilities;
@@ -90,11 +92,14 @@ public class MultipleThreadsTests {
 		AspectNode stateSet4 = new AspectNode("StateSet4");
 		AspectNode stateSet5 = new AspectNode("StateSet5");
 
-		solver.solve(new TimeConfiguration(0.1f, 2, 1), stateSet);
-		solver2.solve(new TimeConfiguration(0.2f, 4, 1),stateSet2);
-		solver3.solve(new TimeConfiguration(0.3f, 5, 1),stateSet3);
-		solver4.solve(new TimeConfiguration(0.4f, 3, 1),stateSet4);
-		solver5.solve(new TimeConfiguration(0.5f, 2, 1),stateSet5);
+		LocalSimulatorConfiguration sc=new LocalSimulatorConfiguration(1, "", "", 0.0002f, 0.2f, null);
+		LocalInstancePath ip=new LocalInstancePath(1, "", "", "");
+		IAspectConfiguration aspectConfiguration=new LocalAspectConfiguration(1, ip, null, null, sc);
+		solver.solve(aspectConfiguration, stateSet);
+		solver2.solve(aspectConfiguration,stateSet2);
+		solver3.solve(aspectConfiguration,stateSet3);
+		solver4.solve(aspectConfiguration,stateSet4);
+		solver5.solve(aspectConfiguration,stateSet5);
 		
 		// NOTE: this is commented out as it fails on Apple CPU - should pass everywhere else
 		// PCISPHTestUtilities.checkStateTreeForNaN(stateSet, false);
