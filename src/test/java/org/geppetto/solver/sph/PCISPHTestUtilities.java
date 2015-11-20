@@ -12,7 +12,7 @@ import java.util.List;
 import junit.framework.Assert;
 
 import org.geppetto.core.model.runtime.AspectSubTreeNode;
-import org.geppetto.core.model.state.visitors.RemoveTimeStepsVisitor;
+import org.geppetto.core.model.typesystem.visitor.RemoveTimeStepsVisitor;
 import org.geppetto.model.sph.common.SPHConstants;
 import org.geppetto.model.sph.x.SPHModelX;
 import org.geppetto.model.sph.x.Vector3DX;

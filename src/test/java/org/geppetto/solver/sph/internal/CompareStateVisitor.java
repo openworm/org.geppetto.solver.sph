@@ -36,17 +36,17 @@ import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.geppetto.core.model.quantities.Quantity;
-import org.geppetto.core.model.runtime.CompositeNode;
-import org.geppetto.core.model.runtime.VariableNode;
-import org.geppetto.core.model.state.visitors.RuntimeTreeVisitor;
-import org.geppetto.core.model.values.AValue;
+import org.geppetto.core.model.typesystem.values.AValue;
+import org.geppetto.core.model.typesystem.values.CompositeValue;
+import org.geppetto.core.model.typesystem.values.QuantityValue;
+import org.geppetto.core.model.typesystem.values.VariableValue;
+import org.geppetto.core.model.typesystem.visitor.AnalysisVisitor;
 import org.geppetto.model.sph.Vector3D;
 
 /**
  * @author giovanni@openworm.org
  */
-public class CompareStateVisitor extends RuntimeTreeVisitor
+public class CompareStateVisitor extends AnalysisVisitor
 {
 	private Integer currentID = null;
 	private String[] referenceStates = null;
@@ -68,7 +68,7 @@ public class CompareStateVisitor extends RuntimeTreeVisitor
 	}
 	
 	@Override
-	public boolean inCompositeNode(CompositeNode node) {
+	public boolean inCompositeNode(CompositeValue node) {
 		if(node.isArray())
 			currentID = node.getIndex();
 		
@@ -76,7 +76,7 @@ public class CompareStateVisitor extends RuntimeTreeVisitor
 	}
 	
 	@Override
-	public boolean outCompositeNode(CompositeNode node) {
+	public boolean outCompositeNode(CompositeValue node) {
 		if(node.isArray())
 			currentID = null;
 		
@@ -84,10 +84,10 @@ public class CompareStateVisitor extends RuntimeTreeVisitor
 	}
 
 	@Override
-	public boolean visitVariableNode(VariableNode node)
+	public boolean visitVariableNode(VariableValue node)
 	{
 		// get last step
-		Quantity p = node.getTimeSeries().get(node.getTimeSeries().size() - 1);
+		QuantityValue p = node.getTimeSeries().get(node.getTimeSeries().size() - 1);
 		AValue v = p.getValue();
 		Float nodeVal = Float.parseFloat(v.getStringValue());
 		

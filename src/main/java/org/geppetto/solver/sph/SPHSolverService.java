@@ -50,12 +50,12 @@ import org.bridj.Pointer;
 import org.geppetto.core.common.GeppettoExecutionException;
 import org.geppetto.core.data.model.IAspectConfiguration;
 import org.geppetto.core.model.IModel;
-import org.geppetto.core.model.runtime.ACompositeNode;
 import org.geppetto.core.model.runtime.ANode;
-import org.geppetto.core.model.runtime.AspectNode;
 import org.geppetto.core.model.runtime.AspectSubTreeNode;
 import org.geppetto.core.model.runtime.AspectSubTreeNode.AspectTreeType;
 import org.geppetto.core.model.runtime.EntityNode;
+import org.geppetto.core.model.typesystem.AspectNode;
+import org.geppetto.core.model.typesystem.values.ACompositeValue;
 import org.geppetto.core.services.AService;
 import org.geppetto.core.solver.ISolver;
 import org.geppetto.model.sph.Connection;
@@ -994,7 +994,7 @@ public class SPHSolverService extends AService implements ISolver
 		}
 	}
 
-	private boolean containsNode(ACompositeNode node, String name)
+	private boolean containsNode(ACompositeValue node, String name)
 	{
 		List<ANode> children = node.getChildren();
 
@@ -1006,11 +1006,11 @@ public class SPHSolverService extends AService implements ISolver
 				addNewNode = false;
 				return addNewNode;
 			}
-			if(child instanceof ACompositeNode)
+			if(child instanceof ACompositeValue)
 			{
-				if(((ACompositeNode) child).getChildren() != null)
+				if(((ACompositeValue) child).getChildren() != null)
 				{
-					addNewNode = containsNode((ACompositeNode) child, name);
+					addNewNode = containsNode((ACompositeValue) child, name);
 				}
 			}
 
@@ -1019,23 +1019,23 @@ public class SPHSolverService extends AService implements ISolver
 		return addNewNode;
 	}
 
-	private ACompositeNode getNode(ACompositeNode node, String name)
+	private ACompositeValue getNode(ACompositeValue node, String name)
 	{
-		ACompositeNode newNode = null;
+		ACompositeValue newNode = null;
 
 		List<ANode> children = node.getChildren();
 		for(ANode child : children)
 		{
 			if(child.getId().equals(name))
 			{
-				newNode = (ACompositeNode) child;
+				newNode = (ACompositeValue) child;
 				return newNode;
 			}
-			if(child instanceof ACompositeNode)
+			if(child instanceof ACompositeValue)
 			{
-				if(((ACompositeNode) child).getChildren() != null)
+				if(((ACompositeValue) child).getChildren() != null)
 				{
-					newNode = getNode((ACompositeNode) child, name);
+					newNode = getNode((ACompositeValue) child, name);
 				}
 			}
 

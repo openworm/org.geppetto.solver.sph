@@ -33,14 +33,14 @@
 package org.geppetto.solver.sph;
 
 import org.bridj.Pointer;
-import org.geppetto.core.model.quantities.PhysicalQuantity;
-import org.geppetto.core.model.quantities.Quantity;
-import org.geppetto.core.model.runtime.VariableNode;
-import org.geppetto.core.model.state.visitors.RuntimeTreeVisitor;
-import org.geppetto.core.model.values.FloatValue;
-import org.geppetto.core.model.values.ValuesFactory;
+import org.geppetto.core.model.typesystem.values.FloatValue;
+import org.geppetto.core.model.typesystem.values.PhysicalQuantityValue;
+import org.geppetto.core.model.typesystem.values.QuantityValue;
+import org.geppetto.core.model.typesystem.values.ValuesFactory;
+import org.geppetto.core.model.typesystem.values.VariableValue;
+import org.geppetto.core.model.typesystem.visitor.AnalysisVisitor;
 
-public class UpdateSPHSimulationTreeVisitor extends RuntimeTreeVisitor {
+public class UpdateSPHSimulationTreeVisitor extends AnalysisVisitor {
 
 	private Pointer<Float> _positionPtr;
 
@@ -50,7 +50,7 @@ public class UpdateSPHSimulationTreeVisitor extends RuntimeTreeVisitor {
 	}
 
 	@Override
-	public boolean visitVariableNode(VariableNode node)
+	public boolean visitVariableNode(VariableValue node)
 	{
 		// 1. figure out which of the variables being watched this node represents
 		String fullName = node.getInstancePath();
@@ -71,19 +71,19 @@ public class UpdateSPHSimulationTreeVisitor extends RuntimeTreeVisitor {
 		// 3. node.addValue
 		if(node.getId().equals("x"))
 		{
-			Quantity q = new Quantity();
+			QuantityValue q = new QuantityValue();
 			q.setValue(_xV);
 			node.addQuantity(q);
 		}
 		else if(node.getId().equals("y"))
 		{
-			Quantity q = new Quantity();
+			QuantityValue q = new QuantityValue();
 			q.setValue(_yV);
 			node.addQuantity(q);
 		}
 		else if(node.getId().equals("z"))
 		{
-			Quantity q = new Quantity();
+			QuantityValue q = new QuantityValue();
 			q.setValue(_zV);
 			node.addQuantity(q);
 		}

@@ -5,22 +5,22 @@ import java.util.List;
 
 import junit.framework.Assert;
 
-import org.geppetto.core.model.runtime.ATimeSeriesNode;
-import org.geppetto.core.model.runtime.VariableNode;
-import org.geppetto.core.model.state.visitors.RuntimeTreeVisitor;
-import org.geppetto.core.model.values.AValue;
+import org.geppetto.core.model.typesystem.values.ATimeSeriesValue;
+import org.geppetto.core.model.typesystem.values.AValue;
+import org.geppetto.core.model.typesystem.values.VariableValue;
+import org.geppetto.core.model.typesystem.visitor.AnalysisVisitor;
 import org.geppetto.model.sph.common.SPHConstants;
 import org.geppetto.model.sph.x.Vector3DX;
 
 import com.android.dx.dex.code.PositionList;
 
-public class GetPositionVisitor extends RuntimeTreeVisitor {
+public class GetPositionVisitor extends AnalysisVisitor {
 	
 	private final Integer particleId = 0;
 	List<Vector3DX> positionList = new ArrayList<Vector3DX>();
 	Vector3DX currentPos = new Vector3DX();
 	@Override
-	public boolean visitVariableNode(VariableNode node)
+	public boolean visitVariableNode(VariableValue node)
 	{
 		Assert.assertFalse(node.getTimeSeries().size() == 0);
 		//positionList.clear();

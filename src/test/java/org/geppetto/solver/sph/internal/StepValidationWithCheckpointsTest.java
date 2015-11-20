@@ -45,7 +45,7 @@ import org.geppetto.core.data.model.IAspectConfiguration;
 import org.geppetto.core.data.model.local.LocalAspectConfiguration;
 import org.geppetto.core.data.model.local.LocalInstancePath;
 import org.geppetto.core.data.model.local.LocalSimulatorConfiguration;
-import org.geppetto.core.model.runtime.AspectNode;
+import org.geppetto.core.model.typesystem.AspectNode;
 import org.geppetto.model.sph.Vector3D;
 import org.geppetto.model.sph.services.SPHModelInterpreterService;
 import org.geppetto.model.sph.x.SPHModelX;

@@ -34,17 +34,17 @@ package org.geppetto.solver.sph.internal;
 
 import junit.framework.Assert;
 
-import org.geppetto.core.model.quantities.PhysicalQuantity;
-import org.geppetto.core.model.quantities.Quantity;
-import org.geppetto.core.model.runtime.VariableNode;
-import org.geppetto.core.model.state.visitors.RuntimeTreeVisitor;
-import org.geppetto.core.model.values.AValue;
+import org.geppetto.core.model.typesystem.values.AValue;
+import org.geppetto.core.model.typesystem.values.PhysicalQuantityValue;
+import org.geppetto.core.model.typesystem.values.QuantityValue;
+import org.geppetto.core.model.typesystem.values.VariableValue;
+import org.geppetto.core.model.typesystem.visitor.AnalysisVisitor;
 
 /**
  * @author matteo@openworm.org
  * @author giovanni@openworm.org
  */
-public class FindNaNVisitor extends RuntimeTreeVisitor
+public class FindNaNVisitor extends AnalysisVisitor
 {
 	private static final String NAN = "NaN";
 	
@@ -57,12 +57,12 @@ public class FindNaNVisitor extends RuntimeTreeVisitor
 	}
 
 	@Override
-	public boolean visitVariableNode(VariableNode node)
+	public boolean visitVariableNode(VariableValue node)
 	{
 		Assert.assertFalse(node.getTimeSeries().size() == 0);
 		
 		int i=0;
-		for(Quantity p:node.getTimeSeries()) 
+		for(QuantityValue p:node.getTimeSeries()) 
 		{
 			AValue v = p.getValue();
 			if(v.getStringValue().equals(NAN))	

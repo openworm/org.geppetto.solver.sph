@@ -33,14 +33,14 @@
 package org.geppetto.solver.sph;
 
 import org.bridj.Pointer;
-import org.geppetto.core.model.runtime.ColladaNode;
-import org.geppetto.core.model.runtime.CylinderNode;
-import org.geppetto.core.model.runtime.ParticleNode;
-import org.geppetto.core.model.runtime.SphereNode;
-import org.geppetto.core.model.runtime.CompositeNode;
-import org.geppetto.core.model.state.visitors.RuntimeTreeVisitor;
-import org.geppetto.core.model.values.FloatValue;
-import org.geppetto.core.model.values.ValuesFactory;
+import org.geppetto.core.model.typesystem.values.ColladaValue;
+import org.geppetto.core.model.typesystem.values.CompositeValue;
+import org.geppetto.core.model.typesystem.values.CylinderValue;
+import org.geppetto.core.model.typesystem.values.FloatValue;
+import org.geppetto.core.model.typesystem.values.ParticleValue;
+import org.geppetto.core.model.typesystem.values.SphereValue;
+import org.geppetto.core.model.typesystem.values.ValuesFactory;
+import org.geppetto.core.model.typesystem.visitor.AnalysisVisitor;
 import org.geppetto.core.visualisation.model.Point;
 
 /**
@@ -49,7 +49,7 @@ import org.geppetto.core.visualisation.model.Point;
  * This method updates the particles already present in the tree
  * adding new values as found on the position pointer
  */
-public class UpdateSPHVisualizationTreeVisitor extends RuntimeTreeVisitor
+public class UpdateSPHVisualizationTreeVisitor extends AnalysisVisitor
 {
 
 	private FloatValue _xV, _yV, _zV, _pV;
@@ -61,19 +61,19 @@ public class UpdateSPHVisualizationTreeVisitor extends RuntimeTreeVisitor
 	}
 
 	@Override
-	public boolean inCompositeNode(CompositeNode node)
+	public boolean inCompositeNode(CompositeValue node)
 	{		
 		return super.inCompositeNode(node);
 	}
 	
 	@Override
-	public boolean outCompositeNode(CompositeNode node)
+	public boolean outCompositeNode(CompositeValue node)
 	{
 		return super.outCompositeNode(node);
 	}
 	
 	@Override
-	public boolean visitSphereNode(SphereNode node){
+	public boolean visitSphereNode(SphereValue node){
 
 		if(node.getPosition() != null){
 			Point newPosition = new Point();
@@ -92,7 +92,7 @@ public class UpdateSPHVisualizationTreeVisitor extends RuntimeTreeVisitor
 	}
 	
 	@Override
-	public boolean visitCylinderNode(CylinderNode node){
+	public boolean visitCylinderNode(CylinderValue node){
 
 		if(node.getPosition() != null){
 			Point newPosition = new Point();
@@ -111,7 +111,7 @@ public class UpdateSPHVisualizationTreeVisitor extends RuntimeTreeVisitor
 	}
 	
 	@Override
-	public boolean visitColladaNode(ColladaNode node){
+	public boolean visitColladaNode(ColladaValue node){
 		if(node.getPosition() != null){
 			Point newPosition = new Point();
 			double x = this._xV.getAsDouble();
@@ -129,7 +129,7 @@ public class UpdateSPHVisualizationTreeVisitor extends RuntimeTreeVisitor
 	}
 	
 	@Override
-	public boolean visitParticleNode(ParticleNode node){
+	public boolean visitParticleNode(ParticleValue node){
 		if(node.getPosition() != null){
 			
 			int index = node.getIndex() * 4;
