@@ -35,7 +35,7 @@ package org.geppetto.solver.sph;
 import org.bridj.Pointer;
 import org.geppetto.core.model.typesystem.values.ColladaValue;
 import org.geppetto.core.model.typesystem.values.CompositeValue;
-import org.geppetto.core.model.typesystem.values.CylinderValue;
+import org.geppetto.core.model.typesystem.values.Cylinder;
 import org.geppetto.core.model.typesystem.values.FloatValue;
 import org.geppetto.core.model.typesystem.values.ParticleValue;
 import org.geppetto.core.model.typesystem.values.SphereValue;
@@ -92,7 +92,7 @@ public class UpdateSPHVisualizationTreeVisitor extends AnalysisVisitor
 	}
 	
 	@Override
-	public boolean visitCylinderNode(CylinderValue node){
+	public boolean visitCylinderNode(Cylinder node){
 
 		if(node.getPosition() != null){
 			Point newPosition = new Point();
