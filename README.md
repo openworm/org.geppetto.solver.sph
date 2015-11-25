@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.org/openworm/org.geppetto.solver.sph.png?branch=master)](https://travis-ci.org/openworm/org.geppetto.solver.sph)
 
 <p align="center">
-  <img src="https://raw.github.com/openworm/org.geppetto.frontend/master/src/main/webapp/images/geppetto-logo@2x.png" alt="Geppetto logo"/>
+  <img src="https://dl.dropboxusercontent.com/u/7538688/geppetto%20logo.png?dl=1" alt="Geppetto logo"/>
 </p>
 
 # Geppetto Sibernetic (PCI-SPH) Solver
